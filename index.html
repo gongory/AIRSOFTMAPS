@@ -3,40 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Visor IGN - Herramientas Geográficas</title>
-
+    <title>Visor IGN Pro - Edición y Personalización</title>
+ 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-
+ 
     <style>
         :root {
             --ign-blue: #003366;
             --ign-gold: #e6b800;
             --danger: #dc3545;
             --success: #28a745;
-            --grid-red: #ff0000;
+            --info: #0d6efd;
             --shadow: 0 4px 12px rgba(0,0,0,0.15);
             --bg-sidebar: #ffffff;
             --light-gray: #f8fafc;
         }
-
+ 
         body, html {
             margin: 0; padding: 0; height: 100%;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             overflow: hidden;
             background: #f0f0f0;
         }
-
+ 
         #map-container { position: relative; height: 100vh; width: 100%; }
         #map { height: 100%; width: 100%; background: #eee; }
-
+ 
         #cancel-crop-btn {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
             z-index: 2000; background: var(--danger); color: white; border: none;
             padding: 12px 28px; border-radius: 50px; font-weight: 600;
             box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;
         }
-
+ 
         .sidebar {
             position: absolute; top: 10px; right: 10px; z-index: 1001;
             width: 340px; max-width: calc(100vw - 20px);
@@ -46,186 +46,390 @@
             border: 1px solid #e2e8f0;
         }
         .sidebar.oculto { transform: translateX(120%); }
-
+ 
         .header {
             background: var(--ign-blue); color: white; padding: 16px; border-radius: 12px 12px 0 0;
             display: flex; align-items: center; justify-content: space-between;
         }
         .content { padding: 16px; overflow-y: auto; flex: 1; }
-
+ 
         .section-title {
             font-size: 11px; font-weight: 800; color: #64748b;
             margin-bottom: 12px; text-transform: uppercase;
             border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; margin-top: 20px;
             letter-spacing: 0.5px;
         }
-
-        .folder { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; overflow: hidden; background: var(--light-gray); }
-        .folder-header { background: #fff; padding: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ign-blue); }
-        .folder-content { padding: 12px; display: none; }
-        .folder.open .folder-content { display: block; }
-
+ 
         .btn-outline {
             background: white; color: var(--ign-blue); border: 1.5px solid var(--ign-blue);
             width: 100%; padding: 10px; border-radius: 8px; cursor: pointer;
             font-weight: 600; margin-bottom: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box;
         }
         .btn-outline:hover, .btn-outline.active { background: var(--ign-blue); color: white; }
-        .btn-success { background: var(--success); color: white; border: none; width: 100%; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px; font-size: 13px; }
-
-        .form-input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0; margin-bottom: 12px; box-sizing: border-box; font-size: 13px; background: #fff; }
-
+       
+        .form-input, .form-select {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0;
+            margin-bottom: 12px; box-sizing: border-box; font-size: 13px; background: #fff;
+        }
+ 
+        .grid-config-group {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+        }
+ 
+        .mtn-card {
+            background: #fff; border: 1px solid var(--ign-gold); border-left: 4px solid var(--ign-gold);
+            padding: 12px; border-radius: 6px; margin-bottom: 15px;
+        }
+        .mtn-title { font-weight: bold; font-size: 14px; color: var(--ign-blue); margin-bottom: 5px; }
+ 
         .coord-display {
             position: absolute; bottom: 20px; left: 10px; z-index: 999; background: rgba(255,255,255,0.95);
             padding: 8px 16px; border-radius: 30px; font-size: 12px; font-family: 'Consolas', monospace;
             border: 1px solid #e2e8f0; font-weight: 600; box-shadow: var(--shadow); pointer-events: none; min-width: 260px; text-align: center;
         }
-
+ 
         .fab-menu {
             position: absolute; bottom: 25px; right: 20px; z-index: 1000; background: var(--ign-blue); color: white;
             border: none; border-radius: 50px; padding: 14px 28px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px;
         }
-
-        .edit-item { background: white; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+ 
         .grid-label {
             background: rgba(255,255,255,0.9); padding: 2px 5px; border-radius: 3px;
-            font-size: 10px; color: var(--grid-red); font-weight: bold; border: 1px solid var(--grid-red);
+            font-size: 10px; font-weight: bold; border: 1px solid currentColor;
             white-space: nowrap; pointer-events: none;
         }
-
+ 
         .gallery-item { margin-bottom: 10px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 4px; }
         .gallery-item img { width: 100%; display: block; border-radius: 4px; }
-
-        .hide-controls .leaflet-control-container, 
-        .hide-controls .fab-menu, 
+ 
+        .hide-controls .leaflet-control-container,
+        .hide-controls .fab-menu,
         .hide-controls .coord-display,
         .hide-controls .sidebar { visibility: hidden !important; }
-        
-        #importInput { display: none; }
+
+        .edit-tools-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
-
+ 
 <div id="map-container">
     <div id="map"></div>
 </div>
-
-<button id="cancel-crop-btn" onclick="stopPolygonalCrop()">✕ Cancelar Recorte (Esc)</button>
+ 
+<button id="cancel-crop-btn" onclick="stopDrawing()">✕ Cancelar Acción (Esc)</button>
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
-
+ 
 <button class="fab-menu" id="fabBtn" onclick="toggleMenu()">🛠️ Herramientas</button>
-
+ 
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
-        <span style="font-weight: 600; font-size: 16px;">Panel de Control</span>
+        <span style="font-weight: 600; font-size: 16px;">IGN Visor Pro</span>
         <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="toggleMenu()">✕</button>
     </div>
     <div class="content">
+       
         <div class="section-title">🔍 Buscador</div>
         <div style="display:flex; gap:5px; margin-bottom:12px;">
             <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad, dirección..." onkeypress="if(event.key==='Enter') buscarLugar()">
             <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="buscarLugar()">Ir</button>
         </div>
-
+ 
+        <div class="section-title">🗺️ Información MTN</div>
+        <div id="mtnInfo" class="mtn-card">
+            <div class="mtn-title">Identificando hoja...</div>
+        </div>
+        <button id="mtnGridBtn" class="btn-outline" onclick="toggleMtnGrid()">Ver Cuadrículas MTN</button>
+ 
         <div class="section-title">🌍 Capas Base</div>
-        <select id="baseLayer" class="form-input" onchange="changeLayer(this.value)">
+        <select id="baseLayer" class="form-select" onchange="changeLayer(this.value)">
             <option value="mtn">Mapa Topográfico (MTN)</option>
             <option value="pnoa">Satélite (PNOA)</option>
             <option value="base">Callejero IGN</option>
             <option value="osm">OpenStreetMap</option>
         </select>
-
-        <div class="section-title">📏 Escala Cartográfica</div>
-        <select id="scaleSelector" class="form-input" onchange="changeScale(this.value)">
-            <option value="custom">Personalizada</option>
-            <option value="18">1:2.500 (Urbano)</option>
-            <option value="17">1:5.000 (Catastro)</option>
-            <option value="16">1:10.000 (Local)</option>
-            <option value="15">1:25.000 (MTN25)</option>
-            <option value="14">1:50.000 (MTN50)</option>
-            <option value="12">1:200.000 (Provincial)</option>
-        </select>
-
-        <div class="section-title">💾 Gestión de Ediciones</div>
-        <div class="folder open" id="editsFolder">
-            <div class="folder-header" onclick="toggleFolder('editsFolder')">
-                <span>✏️ Dibujos y Capas</span>
-                <span>▼</span>
-            </div>
-            <div class="folder-content">
-                <input type="text" id="editSessionName" class="form-input" placeholder="Nombre de sesión...">
-                <button class="btn-success" onclick="saveCurrentEdits()">💾 Guardar en Local</button>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:12px;">
-                    <button class="btn-outline" style="margin-bottom:0;" onclick="exportarGeoJSON()">📤 Exportar</button>
-                    <button class="btn-outline" style="margin-bottom:0;" onclick="triggerImport()">📥 Importar</button>
-                    <input type="file" id="importInput" accept=".geojson,.json" onchange="importarGeoJSON(event)">
-                </div>
-                <div id="savedEditsList"></div>
-                <button class="btn-outline" style="color:var(--danger); border-color:var(--danger); margin-top:10px;" onclick="clearAllDrawings()">🗑️ Borrar Todo</button>
-            </div>
-        </div>
-
-        <div class="section-title">📍 Coordenadas</div>
-        <select id="gridType" class="form-input" onchange="updateUI()">
+ 
+        <div class="section-title">📍 Sistema y Cuadrícula</div>
+        <label style="font-size: 11px; color: #64748b; display: block; margin-bottom: 4px;">Formato de Coordenadas</label>
+        <select id="gridType" class="form-select" onchange="updateUI()">
             <option value="decimal">Grados Decimales (DD)</option>
             <option value="dms">G. M. S. (DMS)</option>
             <option value="utm">UTM (Métricas)</option>
         </select>
-
-        <div class="section-title">🌐 Visualización</div>
-        <button id="gridToggleBtn" class="btn-outline" onclick="toggleGrid()">Activar Cuadrícula</button>
-
-        <div class="section-title">📸 Capturas</div>
-        <div class="folder" id="cropFolder">
-            <div class="folder-header" onclick="toggleFolder('cropFolder')">
-                <span>📁 Galería de Recortes</span>
-                <span>▼</span>
+ 
+        <div id="gridControls" style="background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+            <div class="grid-config-group">
+                <div>
+                    <label style="font-size: 10px; font-weight: bold; color: #475569;">Grosor</label>
+                    <select id="gridWeight" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="updateGrid()">
+                        <option value="1">Baja (Fina)</option>
+                        <option value="2.5" selected>Media</option>
+                        <option value="5">Grande (Gruesa)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 10px; font-weight: bold; color: #475569;">Color</label>
+                    <select id="gridColor" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="updateGrid()">
+                        <option value="red" selected>Rojo</option>
+                        <option value="blue">Azul</option>
+                        <option value="green">Verde</option>
+                        <option value="black">Negro</option>
+                        <option value="yellow">Amarillo</option>
+                    </select>
+                </div>
             </div>
-            <div class="folder-content">
-                <button class="btn-outline" id="cropPanelBtn" onclick="startPolygonalCrop()">✂️ Nuevo Recorte Poligonal</button>
-                <div id="gallery" style="margin-top:10px;"></div>
-            </div>
+           
+            <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Numérica (Zoom)</label>
+            <select id="gridScale" class="form-select" style="font-size:12px;" onchange="updateGridByScale()">
+                <option value="auto" selected>Automática (Ajuste óptimo)</option>
+                <option value="2000">1:2.000 (Muy Detallado)</option>
+                <option value="5000">1:5.000</option>
+                <option value="10000">1:10.000</option>
+                <option value="25000">1:25.000 (MTN25)</option>
+                <option value="50000">1:50.000 (MTN50)</option>
+                <option value="100000">1:100.000</option>
+                <option value="250000">1:250.000</option>
+                <option value="500000">1:500.000</option>
+                <option value="1000000">1:1.000.000</option>
+            </select>
+ 
+            <button id="gridToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleGrid()">Activar Cuadrícula</button>
         </div>
+ 
+        <div class="section-title">✏️ Edición de Mapa</div>
+        <div class="edit-tools-grid">
+            <button class="btn-outline" onclick="enableTool('marker')">📍 Marcador</button>
+            <button class="btn-outline" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
+            <button class="btn-outline" onclick="enableTool('polygon')">polygon; Área</button>
+            <button class="btn-outline" onclick="captureMap()">📸 Capturar</button>
+        </div>
+        <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
+        
+        <div id="gallery"></div>
     </div>
 </div>
-
+ 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
+ 
 <script>
-    // Configuración Inicial
-    let snapshots = [];
-    let savedEdits = JSON.parse(localStorage.getItem('ign_saved_edits') || '[]');
-    let isCropping = false, gridLayer = null, isGridVisible = false;
-
-    // Capas WMTS IGN
+    // --- Configuración e Inicialización ---
+    let activeHandler = null, gridLayer = null, isGridVisible = false;
+    let mtnGridLayer = null, isMtnGridVisible = false;
+ 
     const layers = {
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
-        pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN - PNOA', crossOrigin: 'anonymous' }),
+        pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN - PNOA', crossOrigin: 'anonymous' }),
         base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
         osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' })
     };
-
-    const map = L.map('map', { 
-        center: [40.4167, -3.7037], 
-        zoom: 6, 
-        layers: [layers.mtn],
-        zoomControl: false 
-    });
-
+ 
+    const map = L.map('map', { center: [40.4167, -3.7037], zoom: 6, layers: [layers.mtn], zoomControl: false });
     L.control.zoom({ position: 'topleft' }).addTo(map);
-
+ 
+    // Capa para elementos dibujados
     const drawnItems = new L.FeatureGroup().addTo(map);
-    const drawControl = new L.Control.Draw({ 
-        position: 'topleft', 
-        draw: { circlemarker: false, circle: false }, 
-        edit: { featureGroup: drawnItems } 
+
+    // Configuración de herramientas de dibujo
+    const drawOptions = {
+        polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } },
+        polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } },
+        marker: {}
+    };
+
+    // --- Lógica de Edición ---
+    function enableTool(type) {
+        stopDrawing(); // Limpiar estados previos
+        toggleMenu(); // Cerrar menú para facilitar dibujo
+        
+        if (type === 'delete') {
+            document.getElementById('cancel-crop-btn').style.display = 'block';
+            document.getElementById('cancel-crop-btn').innerText = "✕ Salir de Borrado";
+            drawnItems.eachLayer(layer => {
+                layer.on('click', () => {
+                    drawnItems.removeLayer(layer);
+                });
+            });
+            return;
+        }
+
+        document.getElementById('cancel-crop-btn').style.display = 'block';
+        
+        if (type === 'marker') activeHandler = new L.Draw.Marker(map, drawOptions.marker);
+        if (type === 'polyline') activeHandler = new L.Draw.Polyline(map, drawOptions.polyline);
+        if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, drawOptions.polygon);
+
+        if (activeHandler) activeHandler.enable();
+    }
+
+    map.on(L.Draw.Event.CREATED, (e) => {
+        const layer = e.layer;
+        
+        // Añadir popup de borrado individual si no se usa la herramienta global
+        layer.bindPopup('Elemento de edición.<br><button onclick="removeLayerById(' + L.stamp(layer) + ')" style="color:red; cursor:pointer; border:1px solid red; background:white; margin-top:5px; border-radius:4px; padding:2px 5px;">Eliminar este</button>');
+        
+        drawnItems.addLayer(layer);
+        stopDrawing();
     });
-    map.addControl(drawControl);
 
+    function removeLayerById(id) {
+        drawnItems.eachLayer(layer => {
+            if (L.stamp(layer) === id) drawnItems.removeLayer(layer);
+        });
+    }
+
+    function stopDrawing() {
+        if (activeHandler) {
+            activeHandler.disable();
+            activeHandler = null;
+        }
+        // Quitar listeners de borrado individual para evitar errores
+        drawnItems.eachLayer(layer => {
+            layer.off('click');
+        });
+        document.getElementById('cancel-crop-btn').style.display = 'none';
+        document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar Acción (Esc)";
+    }
+
+    async function captureMap() {
+        toggleMenu();
+        document.body.classList.add('hide-controls');
+        // Esperar un momento para que se oculte la UI
+        setTimeout(async () => {
+            const canvas = await html2canvas(document.getElementById('map'), { 
+                useCORS: true,
+                allowTaint: false,
+                ignoreElements: (el) => el.classList.contains('leaflet-control-container')
+            });
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+            item.innerHTML = `<img src="${canvas.toDataURL()}"><a href="${canvas.toDataURL()}" download="mapa_ign_editado.png" style="display:block; text-align:center; padding:5px; text-decoration:none; color:var(--ign-blue); font-weight:bold;">⬇️ Descargar Captura</a>`;
+            document.getElementById('gallery').prepend(item);
+            document.body.classList.remove('hide-controls');
+            toggleMenu();
+        }, 100);
+    }
+ 
+    // --- Lógica MTN ---
+    function getMTNLeaf(lat, lon) {
+        const refLat = 44.0, refLon = -9.5;
+        const row = Math.floor((refLat - lat) / (10/60)) + 1;
+        const col = Math.floor((lon - refLon) / (20/60)) + 1;
+        return (row * 30 + col).toString().padStart(4, '0');
+    }
+ 
+    function updateMtnInfo() {
+        const center = map.getCenter();
+        const hoja = getMTNLeaf(center.lat, center.lng);
+        const infoDiv = document.getElementById('mtnInfo');
+        if (infoDiv) {
+            infoDiv.innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div>
+                <a href="https://centrodedescargas.cnig.es/CentroDescargas/buscar.do?serie=MTN50&numHoja=${hoja}" target="_blank" style="font-size:10px; color:var(--info); text-decoration:none;">Descargar Hoja Oficial</a>`;
+        }
+    }
+ 
+    function toggleMtnGrid() {
+        isMtnGridVisible = !isMtnGridVisible;
+        const btn = document.getElementById('mtnGridBtn');
+       
+        if (isMtnGridVisible) {
+            if (mtnGridLayer) map.removeLayer(mtnGridLayer);
+            mtnGridLayer = L.layerGroup();
+           
+            const b = map.getBounds();
+            const stepLat = 10/60; 
+            const stepLon = 20/60; 
+           
+            const sLat = Math.floor(b.getSouth() / stepLat) * stepLat;
+            const eLat = Math.ceil(b.getNorth() / stepLat) * stepLat;
+            const sLng = Math.floor(b.getWest() / stepLon) * stepLon;
+            const eLng = Math.ceil(b.getEast() / stepLon) * stepLon;
+ 
+            const gridStyle = { color: '#e6b800', weight: 1.5, opacity: 0.8, dashArray: '5, 5' };
+ 
+            for (let lat = sLat; lat <= eLat; lat += stepLat) {
+                L.polyline([[lat, b.getWest()], [lat, b.getEast()]], gridStyle).addTo(mtnGridLayer);
+            }
+            for (let lng = sLng; lng <= eLng; lng += stepLon) {
+                L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], gridStyle).addTo(mtnGridLayer);
+            }
+           
+            mtnGridLayer.addTo(map);
+            btn.innerText = "Ocultar Cuadrículas MTN";
+            btn.classList.add('active');
+        } else {
+            if (mtnGridLayer) map.removeLayer(mtnGridLayer);
+            btn.innerText = "Ver Cuadrículas MTN";
+            btn.classList.remove('active');
+        }
+    }
+ 
+    // --- Cuadrícula Visual ---
+    function toggleGrid() {
+        isGridVisible = !isGridVisible;
+        const btn = document.getElementById('gridToggleBtn');
+        if (isGridVisible) {
+            updateGrid();
+            map.on('moveend', updateGrid);
+            btn.innerText = "Desactivar Cuadrícula";
+            btn.classList.add('active');
+        } else {
+            if (gridLayer) map.removeLayer(gridLayer);
+            map.off('moveend', updateGrid);
+            btn.innerText = "Activar Cuadrícula";
+            btn.classList.remove('active');
+        }
+    }
+
+    function updateGridByScale() {
+        const scale = document.getElementById('gridScale').value;
+        if (scale !== 'auto') {
+            const zoomLevels = { "2000": 18, "5000": 16, "10000": 15, "25000": 14, "50000": 13, "100000": 12, "250000": 10, "500000": 9, "1000000": 8 };
+            if (zoomLevels[scale]) map.setZoom(zoomLevels[scale]);
+        }
+        updateGrid();
+    }
+ 
+    function updateGrid() {
+        if (!isGridVisible) return;
+        if (gridLayer) map.removeLayer(gridLayer);
+        gridLayer = L.layerGroup();
+       
+        const b = map.getBounds(), z = map.getZoom();
+        const type = document.getElementById('gridType').value;
+        const color = document.getElementById('gridColor').value;
+        const weight = parseFloat(document.getElementById('gridWeight').value);
+        
+        let step = (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : 1.0);
+ 
+        const sLat = Math.floor(b.getSouth() / step) * step;
+        const eLat = Math.ceil(b.getNorth() / step) * step;
+        const sLng = Math.floor(b.getWest() / step) * step;
+        const eLng = Math.ceil(b.getEast() / step) * step;
+ 
+        const lineStyle = { color: color, weight: weight, opacity: 0.6 };
+ 
+        if (((eLat - sLat) / step) * ((eLng - sLng) / step) > 2000) return;
+ 
+        for (let lat = sLat; lat <= eLat; lat += step) {
+            L.polyline([[lat, b.getWest()], [lat, b.getEast()]], lineStyle).addTo(gridLayer);
+            let label = (type === 'utm') ? `Y:${latLonToUTM(lat, b.getCenter().lng).y.toFixed(0)}` : (type === 'dms' ? formatDMS(lat, true) : lat.toFixed(3));
+            L.marker([lat, b.getWest()], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [-5, 10], style: `color:${color}` }) }).addTo(gridLayer);
+        }
+        for (let lng = sLng; lng <= eLng; lng += step) {
+            L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], lineStyle).addTo(gridLayer);
+            let label = (type === 'utm') ? `X:${latLonToUTM(b.getCenter().lat, lng).x.toFixed(0)}` : (type === 'dms' ? formatDMS(lng, false) : lng.toFixed(3));
+            L.marker([b.getNorth(), lng], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [30, -5], style: `color:${color}` }) }).addTo(gridLayer);
+        }
+        gridLayer.addTo(map);
+    }
+ 
     // --- Utilidades Geográficas ---
-
     function latLonToUTM(lat, lon) {
         const a = 6378137.0, f = 1 / 298.257223563;
         const k0 = 0.9996;
@@ -241,242 +445,46 @@
         if (lat < 0) y += 10000000.0;
         return { x, y, huso };
     }
-
+ 
     function formatDMS(deg, isLat) {
         const abs = Math.abs(deg);
         const d = Math.floor(abs), m = Math.floor((abs - d) * 60), s = ((abs - d - m/60) * 3600).toFixed(1);
         const ref = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
         return `${d}°${m}'${s}"${ref}`;
     }
-
-    function formatCoordinates(latlng) {
-        const type = document.getElementById('gridType').value;
-        if (type === 'dms') return `${formatDMS(latlng.lat, true)} | ${formatDMS(latlng.lng, false)}`;
-        if (type === 'utm') {
-            const u = latLonToUTM(latlng.lat, latlng.lng);
-            return `Huso ${u.huso} | X: ${u.x.toFixed(0)} Y: ${u.y.toFixed(0)}`;
-        }
-        return `Lat: ${latlng.lat.toFixed(6)} | Lon: ${latlng.lng.toFixed(6)}`;
-    }
-
-    // --- Manejo del Mapa ---
-
+ 
+    // --- Eventos y Control ---
     map.on('mousemove', (e) => {
-        document.getElementById('liveCoords').innerText = formatCoordinates(e.latlng);
+        const type = document.getElementById('gridType').value;
+        let coords = `Lat: ${e.latlng.lat.toFixed(6)} | Lon: ${e.latlng.lng.toFixed(6)}`;
+        if (type === 'dms') coords = `${formatDMS(e.latlng.lat, true)} | ${formatDMS(e.latlng.lng, false)}`;
+        if (type === 'utm') {
+            const u = latLonToUTM(e.latlng.lat, e.latlng.lng);
+            coords = `Huso ${u.huso} | X: ${u.x.toFixed(0)} Y: ${u.y.toFixed(0)}`;
+        }
+        document.getElementById('liveCoords').innerText = coords;
     });
-
+ 
+    map.on('move', updateMtnInfo);
+ 
     function changeLayer(val) {
         Object.values(layers).forEach(l => map.removeLayer(l));
         layers[val].addTo(map);
     }
-
-    function changeScale(z) {
-        if (z !== 'custom') map.setZoom(parseInt(z));
-    }
-
-    async function buscarLugar() {
-        const query = document.getElementById('searchInput').value;
-        if (!query) return;
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
-            const data = await res.json();
-            if (data.length > 0) {
-                map.setView([data[0].lat, data[0].lon], 15);
-            }
-        } catch (e) { console.error("Error en búsqueda"); }
-    }
-
-    // --- Cuadrícula ---
-
-    function toggleGrid() {
-        isGridVisible = !isGridVisible;
-        const btn = document.getElementById('gridToggleBtn');
-        if (isGridVisible) {
-            updateGrid();
-            map.on('moveend', updateGrid);
-            btn.innerText = "Quitar Cuadrícula";
-            btn.classList.add('active');
-        } else {
-            if (gridLayer) map.removeLayer(gridLayer);
-            map.off('moveend', updateGrid);
-            btn.innerText = "Activar Cuadrícula";
-            btn.classList.remove('active');
-        }
-    }
-
-    function updateGrid() {
-        if (!isGridVisible) return;
-        if (gridLayer) map.removeLayer(gridLayer);
-        gridLayer = L.layerGroup();
-        const b = map.getBounds(), z = map.getZoom(), type = document.getElementById('gridType').value;
-
-        let step = z > 15 ? 0.002 : z > 13 ? 0.01 : z > 10 ? 0.05 : 0.2;
-        const sLat = Math.floor(b.getSouth() / step) * step, eLat = Math.ceil(b.getNorth() / step) * step;
-        const sLng = Math.floor(b.getWest() / step) * step, eLng = Math.ceil(b.getEast() / step) * step;
-
-        for (let lat = sLat; lat <= eLat; lat += step) {
-            L.polyline([[lat, b.getWest()], [lat, b.getEast()]], {color: 'red', weight: 1, opacity: 0.3}).addTo(gridLayer);
-            let label = (type === 'utm') ? `Y:${latLonToUTM(lat, b.getCenter().lng).y.toFixed(0)}` : (type === 'dms' ? formatDMS(lat, true) : lat.toFixed(3));
-            L.marker([lat, b.getWest()], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [-5, 10] }) }).addTo(gridLayer);
-        }
-        for (let lng = sLng; lng <= eLng; lng += step) {
-            L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], {color: 'red', weight: 1, opacity: 0.3}).addTo(gridLayer);
-            let label = (type === 'utm') ? `X:${latLonToUTM(b.getCenter().lat, lng).x.toFixed(0)}` : (type === 'dms' ? formatDMS(lng, false) : lng.toFixed(3));
-            L.marker([b.getNorth(), lng], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [30, -5] }) }).addTo(gridLayer);
-        }
-        gridLayer.addTo(map);
-    }
-
-    // --- Gestión de Ediciones ---
-
-    function updateUI() {
-        if(isGridVisible) updateGrid();
-        updateEditsList();
-    }
-
-    function toggleFolder(id) { document.getElementById(id).classList.toggle('open'); }
+ 
     function toggleMenu() { document.getElementById('panelLateral').classList.toggle('oculto'); }
-
-    function updateEditsList() {
-        const list = document.getElementById('savedEditsList');
-        list.innerHTML = savedEdits.length ? savedEdits.map((e, i) => `
-            <div class="edit-item">
-                <div style="flex:1"><b>${e.name}</b><br><small style="color:#888">${e.date}</small></div>
-                <div style="display:flex; gap:4px;">
-                    <button onclick="loadEdits(${i})" title="Cargar">📂</button>
-                    <button onclick="deleteEdits(${i})" style="color:red" title="Borrar">🗑️</button>
-                </div>
-            </div>`).join('') : '<p style="font-size:11px; text-align:center; color:#999; padding:10px;">No hay sesiones guardadas</p>';
+    async function buscarLugar() {
+        const q = document.getElementById('searchInput').value;
+        if (!q) return;
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+        const data = await res.json();
+        if (data[0]) map.setView([data[0].lat, data[0].lon], 15);
     }
-
-    function saveCurrentEdits() {
-        const name = document.getElementById('editSessionName').value || `Sesión ${savedEdits.length + 1}`;
-        const data = drawnItems.toGeoJSON();
-        if (!data.features.length) return alert("Dibuja algo en el mapa antes de guardar.");
-        savedEdits.push({ name, date: new Date().toLocaleString(), data });
-        localStorage.setItem('ign_saved_edits', JSON.stringify(savedEdits));
-        document.getElementById('editSessionName').value = '';
-        updateEditsList();
-    }
-
-    function loadEdits(index) {
-        L.geoJSON(savedEdits[index].data, {
-            onEachFeature: (feature, layer) => {
-                drawnItems.addLayer(layer);
-            }
-        });
-        if (drawnItems.getLayers().length > 0) map.fitBounds(drawnItems.getBounds());
-    }
-
-    function deleteEdits(index) {
-        if(confirm("¿Eliminar esta sesión permanentemente?")) {
-            savedEdits.splice(index, 1);
-            localStorage.setItem('ign_saved_edits', JSON.stringify(savedEdits));
-            updateEditsList();
-        }
-    }
-
-    function clearAllDrawings() {
-        if (confirm("Se borrarán todos los elementos dibujados actualmente.")) drawnItems.clearLayers();
-    }
-
-    function exportarGeoJSON() {
-        const data = drawnItems.toGeoJSON();
-        if (!data.features.length) return alert("Mapa vacío.");
-        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `mapa_ign_${Date.now()}.geojson`;
-        a.click();
-    }
-
-    function triggerImport() { document.getElementById('importInput').click(); }
-
-    function importarGeoJSON(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const geojson = JSON.parse(e.target.result);
-                L.geoJSON(geojson, { onEachFeature: (f, l) => drawnItems.addLayer(l) });
-                map.fitBounds(drawnItems.getBounds());
-            } catch (err) { alert("Archivo GeoJSON no válido."); }
-        };
-        reader.readAsText(file);
-    }
-
-    // --- Recorte Poligonal ---
-
-    let cropPolygon = null;
-
-    function startPolygonalCrop() {
-        isCropping = true;
-        document.getElementById('cancel-crop-btn').style.display = 'block';
-        toggleMenu(); // Cerrar panel para ver mejor
-        
-        cropPolygon = new L.Draw.Polygon(map, drawControl.options.draw.polygon);
-        cropPolygon.enable();
-
-        map.once(L.Draw.Event.CREATED, async (e) => {
-            const layer = e.layer;
-            await processCrop(layer);
-            stopPolygonalCrop();
-        });
-    }
-
-    function stopPolygonalCrop() {
-        if (cropPolygon) cropPolygon.disable();
-        isCropping = false;
-        document.getElementById('cancel-crop-btn').style.display = 'none';
-    }
-
-    async function processCrop(layer) {
-        document.body.classList.add('hide-controls');
-        
-        try {
-            const canvas = await html2canvas(document.getElementById('map'), {
-                useCORS: true,
-                allowTaint: false,
-                ignoreElements: (el) => el.classList.contains('leaflet-control-container')
-            });
-
-            // Lógica de máscara si fuera necesaria, aquí guardamos la captura completa del área visible
-            // Para un recorte exacto por polígono se requeriría procesamiento de bits, 
-            // simplificamos guardando la vista del usuario en ese momento.
-            
-            const imgUrl = canvas.toDataURL();
-            const date = new Date().toLocaleTimeString();
-            
-            const gallery = document.getElementById('gallery');
-            const item = document.createElement('div');
-            item.className = 'gallery-item';
-            item.innerHTML = `
-                <img src="${imgUrl}">
-                <div style="font-size:10px; margin-top:5px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>Recorte ${date}</span>
-                    <a href="${imgUrl}" download="recorte_ign.png" style="text-decoration:none">💾</a>
-                </div>
-            `;
-            gallery.prepend(item);
-            if(!document.getElementById('cropFolder').classList.contains('open')) toggleFolder('cropFolder');
-
-        } catch (err) {
-            console.error(err);
-        } finally {
-            document.body.classList.remove('hide-controls');
-        }
-    }
-
-    // Atajos de teclado
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isCropping) stopPolygonalCrop();
-    });
-
-    // Carga inicial
-    updateEditsList();
+ 
+    function updateUI() { if(isGridVisible) updateGrid(); }
+ 
+    updateMtnInfo();
 </script>
-
+ 
 </body>
 </html>
