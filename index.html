@@ -244,6 +244,7 @@
         </div>
         <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
         
+        <div class="section-title">📸 Galería de Capturas</div>
         <div id="gallery"></div>
     </div>
 </div>
@@ -351,27 +352,37 @@
         // Si es un marcador, calculamos coordenadas y altitud
         if (e.layerType === 'marker') {
             const latlng = layer.getLatLng();
-            const lat = latlng.lat.toFixed(5);
-            const lng = latlng.lng.toFixed(5);
+            const lat = latlng.lat;
+            const lng = latlng.lng;
             
-            baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: <i>Calculando...</i></div>`;
+            // Adaptar las coordenadas según el tipo seleccionado actualmente
+            const type = document.getElementById('gridType').value;
+            let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lng.toFixed(5)}`;
+            if (type === 'dms') {
+                coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lng, false)}`;
+            } else if (type === 'utm') {
+                const u = latLonToUTM(lat, lng);
+                coordText = `Huso: ${u.huso}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`;
+            }
+            
+            baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>Calculando...</i></div>`;
             layer.setPopupContent(baseText + deleteBtn);
             layer.openPopup(); // Abre el popup automáticamente
             
             try {
                 // Consulta a la API pública de elevación
-                const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`);
+                const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lng.toFixed(5)}`);
                 const data = await res.json();
                 
                 if (data && data.elevation && data.elevation.length > 0) {
                     const alt = data.elevation[0];
-                    baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: <b>${alt} m</b></div>`;
+                    baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <b>${alt} m</b></div>`;
                 } else {
-                    baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: No disponible</div>`;
+                    baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: No disponible</div>`;
                 }
                 layer.setPopupContent(baseText + deleteBtn);
             } catch (error) {
-                baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: Error de conexión</div>`;
+                baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: Error de conexión</div>`;
                 layer.setPopupContent(baseText + deleteBtn);
             }
         } 
@@ -497,7 +508,10 @@
                     <a href="${canvas.toDataURL()}" download="${safeName}" style="text-decoration:none; color:var(--ign-blue); font-weight:bold; font-size:13px;">⬇️ Descargar</a>
                     <button onclick="this.closest('.gallery-item').remove()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size:13px; padding:0;">🗑️ Borrar</button>
                 </div>`;
+            
+            // Inserción directa en la galería principal visible
             document.getElementById('gallery').prepend(item);
+            
             document.body.classList.remove('hide-controls');
             toggleMenu();
         }, 100);
