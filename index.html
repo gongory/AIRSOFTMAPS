@@ -338,6 +338,63 @@
                 baseText = `<div style="font-size:12px;"><b>📍 Marcador</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: Error de conexión</div>`;
                 layer.setPopupContent(baseText + deleteBtn);
             }
+        } 
+        // Si es una ruta (polyline), calculamos distancia y desniveles
+        else if (e.layerType === 'polyline') {
+            const latlngs = layer.getLatLngs();
+            
+            // 1. Calcular distancia total
+            let distance = 0;
+            for (let i = 0; i < latlngs.length - 1; i++) {
+                distance += latlngs[i].distanceTo(latlngs[i+1]);
+            }
+            const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+            
+            baseText = `<div style="font-size:12px;"><b>📏 Ruta</b><br>Distancia: <b>${distText}</b><br>Desnivel: <i>Calculando...</i></div>`;
+            layer.setPopupContent(baseText + deleteBtn);
+            layer.openPopup();
+            
+            try {
+                // Muestreo de puntos (evitar que la URL de la API sea demasiado larga)
+                let samplePoints = latlngs;
+                if (latlngs.length > 90) {
+                    const step = Math.ceil(latlngs.length / 90);
+                    samplePoints = latlngs.filter((_, idx) => idx % step === 0);
+                    // Asegurar que el último punto siempre se incluya
+                    if (samplePoints[samplePoints.length - 1] !== latlngs[latlngs.length - 1]) {
+                        samplePoints.push(latlngs[latlngs.length - 1]);
+                    }
+                }
+
+                // Obtener coordenadas formateadas para la consulta
+                const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(',');
+                const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
+                
+                // Consulta a la API
+                const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
+                const data = await res.json();
+                
+                if (data && data.elevation && data.elevation.length > 0) {
+                    let elevGain = 0;
+                    let elevLoss = 0;
+                    const elevations = data.elevation;
+                    
+                    // 2. Calcular desnivel positivo y negativo acumulado
+                    for (let i = 0; i < elevations.length - 1; i++) {
+                        let diff = elevations[i+1] - elevations[i];
+                        if (diff > 0) elevGain += diff;
+                        else elevLoss += Math.abs(diff);
+                    }
+                    
+                    baseText = `<div style="font-size:12px;"><b>📏 Ruta</b><br>Distancia: <b>${distText}</b><br>Desnivel Positivo: <span style="color:var(--success)"><b>+${elevGain.toFixed(0)} m</b></span><br>Desnivel Negativo: <span style="color:var(--danger)"><b>-${elevLoss.toFixed(0)} m</b></span></div>`;
+                } else {
+                    baseText = `<div style="font-size:12px;"><b>📏 Ruta</b><br>Distancia: <b>${distText}</b><br>Desnivel: No disponible</div>`;
+                }
+                layer.setPopupContent(baseText + deleteBtn);
+            } catch (error) {
+                baseText = `<div style="font-size:12px;"><b>📏 Ruta</b><br>Distancia: <b>${distText}</b><br>Desnivel: Error de conexión</div>`;
+                layer.setPopupContent(baseText + deleteBtn);
+            }
         }
     });
 
