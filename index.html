@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Visor IGN Pro - Perfil Topográfico Preciso</title>
+    <title>Visor IGN Pro - Edición y Personalización</title>
  
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -66,7 +66,7 @@
             font-weight: 600; margin-bottom: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box;
         }
         .btn-outline:hover, .btn-outline.active { background: var(--ign-blue); color: white; }
-        
+       
         .form-input, .form-select {
             width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0;
             margin-bottom: 12px; box-sizing: border-box; font-size: 13px; background: #fff;
@@ -93,61 +93,25 @@
             border: none; border-radius: 50px; padding: 14px 28px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px;
         }
  
-        #elevation-panel {
-            position: absolute; bottom: -280px; left: 0; width: 100%;
-            height: 250px; background: white; z-index: 1002;
-            transition: bottom 0.5s ease-in-out; 
-            border-top: 4px solid var(--ign-blue);
-            padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 25px rgba(0,0,0,0.2);
+        .grid-label {
+            background: rgba(255,255,255,0.9); padding: 2px 5px; border-radius: 3px;
+            font-size: 10px; font-weight: bold; border: 1px solid currentColor;
+            white-space: nowrap; pointer-events: none;
         }
-        #elevation-panel.active { bottom: 0; }
-        
-        .close-panel {
-            position: absolute; top: 10px; right: 20px;
-            cursor: pointer; font-weight: bold; color: var(--danger); font-size: 20px;
-            z-index: 10;
-        }
-
-        .chart-container {
-            width: 100%; height: 140px; display: flex; align-items: flex-end; gap: 1px;
-            border-bottom: 2px solid #e2e8f0; margin-top: 15px;
-            background: #fafafa;
-            position: relative;
-            overflow: hidden;
-        }
-        .bar { 
-            background: var(--ign-blue); 
-            flex: 1; 
-            position: relative; 
-            min-width: 2px;
-            opacity: 0.7;
-        }
-        .bar:hover { opacity: 1; background: var(--info); }
-        
-        .chart-grid-line {
-            position: absolute; left: 0; width: 100%; border-top: 1px solid #eee;
-            pointer-events: none; z-index: 1;
-        }
-        .chart-label-y {
-            position: absolute; left: 5px; font-size: 9px; color: #94a3b8; z-index: 2;
-        }
+ 
+        .gallery-item { margin-bottom: 10px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 4px; }
+        .gallery-item img { width: 100%; display: block; border-radius: 4px; }
+ 
+        .hide-controls .leaflet-control-container,
+        .hide-controls .fab-menu,
+        .hide-controls .coord-display,
+        .hide-controls .sidebar { visibility: hidden !important; }
 
         .edit-tools-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
             margin-bottom: 10px;
-        }
-        
-        .hide-controls .leaflet-control-container,
-        .hide-controls .fab-menu,
-        .hide-controls .coord-display,
-        .hide-controls .sidebar { visibility: hidden !important; }
-
-        .grid-label {
-            background: rgba(255,255,255,0.9); padding: 2px 5px; border-radius: 3px;
-            font-size: 10px; font-weight: bold; border: 1px solid currentColor;
-            white-space: nowrap; pointer-events: none;
         }
     </style>
 </head>
@@ -162,29 +126,16 @@
  
 <button class="fab-menu" id="fabBtn" onclick="toggleMenu()">🛠️ Herramientas</button>
  
-<div id="elevation-panel">
-    <span class="close-panel" onclick="toggleElevationPanel(false)">✕</span>
-    <h4 style="margin: 0; color: var(--ign-blue); display: flex; align-items: center; justify-content: space-between;">
-        <span>🏔️ Perfil de Elevación Coherente</span>
-        <span id="elev-total-dist" style="font-size: 12px; color: #64748b; font-weight: normal;"></span>
-    </h4>
-    <div id="elevation-chart" class="chart-container"></div>
-    <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: #475569; font-weight: 600;">
-        <div id="elev-min" style="color: var(--success);">Altitud Mínima</div>
-        <div id="elev-avg" style="color: var(--ign-blue);">Pendiente Media</div>
-        <div id="elev-max" style="color: var(--danger);">Altitud Máxima</div>
-    </div>
-</div>
-
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
         <span style="font-weight: 600; font-size: 16px;">IGN Visor Pro</span>
         <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="toggleMenu()">✕</button>
     </div>
     <div class="content">
+       
         <div class="section-title">🔍 Buscador</div>
         <div style="display:flex; gap:5px; margin-bottom:12px;">
-            <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad, dirección..." onkeypress="if(event.key==='Enter') buscarLugar()">
+            <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas (lat, lon)..." onkeypress="if(event.key==='Enter') buscarLugar()">
             <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="buscarLugar()">Ir</button>
         </div>
  
@@ -227,43 +178,61 @@
                         <option value="blue">Azul</option>
                         <option value="green">Verde</option>
                         <option value="black">Negro</option>
+                        <option value="yellow">Amarillo</option>
                     </select>
                 </div>
             </div>
+           
+            <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Numérica (Zoom)</label>
+            <select id="gridScale" class="form-select" style="font-size:12px;" onchange="updateGridByScale()">
+                <option value="auto" selected>Automática (Ajuste óptimo)</option>
+                <option value="2000">1:2.000 (Muy Detallado)</option>
+                <option value="5000">1:5.000</option>
+                <option value="10000">1:10.000</option>
+                <option value="25000">1:25.000 (MTN25)</option>
+                <option value="50000">1:50.000 (MTN50)</option>
+                <option value="100000">1:100.000</option>
+                <option value="250000">1:250.000</option>
+                <option value="500000">1:500.000</option>
+                <option value="1000000">1:1.000.000</option>
+            </select>
+ 
             <button id="gridToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleGrid()">Activar Cuadrícula</button>
         </div>
  
-        <div class="section-title">📐 Configuración de Ruta</div>
-        <div class="grid-config-group">
-            <select id="routeWeight" class="form-select" style="font-size:12px;">
-                <option value="2">2px (Fino)</option>
-                <option value="4" selected>4px (Normal)</option>
-                <option value="6">6px (Medio)</option>
-                <option value="8">8px (Grueso)</option>
-                <option value="10">10px (Extra)</option>
-                <option value="12">12px (Max)</option>
-            </select>
-            <select id="routeColor" class="form-select" style="font-size:12px;">
-                <option value="#f39c12" selected>Naranja</option>
-                <option value="#dc3545">Rojo</option>
-                <option value="#0d6efd">Azul</option>
-                <option value="#28a745">Verde</option>
-                <option value="#000000">Negro</option>
-                <option value="#ff00ff">Fucsia</option>
-                <option value="#00ffff">Cian</option>
-            </select>
+        <div class="section-title">✏️ Edición de Mapa</div>
+        <div class="grid-config-group" style="margin-bottom: 10px;">
+            <div>
+                <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Grosor de Línea</label>
+                <select id="drawWeight" class="form-select" style="margin-bottom:0; font-size:12px;">
+                    <option value="2">Fina</option>
+                    <option value="4" selected>Normal</option>
+                    <option value="6">Gruesa</option>
+                    <option value="8">Muy Gruesa</option>
+                    <option value="12">Extra Gruesa</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Color de Línea</label>
+                <select id="drawColor" class="form-select" style="margin-bottom:0; font-size:12px;">
+                    <option value="#2ecc71" selected>Verde</option>
+                    <option value="#e74c3c">Rojo</option>
+                    <option value="#3498db">Azul</option>
+                    <option value="#f1c40f">Amarillo</option>
+                    <option value="#9b59b6">Morado</option>
+                    <option value="#34495e">Oscuro</option>
+                </select>
+            </div>
         </div>
- 
-        <div class="section-title">✏️ Herramientas</div>
         <div class="edit-tools-grid">
-            <button class="btn-outline" onclick="enableTool('marker')">📌 Marcador</button>
-            <button class="btn-outline" onclick="enableTool('polyline')">📏 Ruta</button>
-            <button class="btn-outline" onclick="enableTool('polygon')">⬡ Área</button>
-            <button class="btn-outline" onclick="captureMap()">📸 Captura</button>
+            <button class="btn-outline" onclick="enableTool('marker')">📍 Marcador</button>
+            <button class="btn-outline" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
+            <button class="btn-outline" onclick="enableTool('polygon')">polygon; Área</button>
+            <button class="btn-outline" onclick="captureMap()">📸 Capturar</button>
         </div>
-        <button class="btn-outline" onclick="exportKML()">🗺️ Exportar KML</button>
-        <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrado Individual</button>
-        <button class="btn-outline" style="border-color: #64748b; color: #64748b;" onclick="clearAll()">🧨 Borrar Todo</button>
+        <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
+        
+        <div id="gallery"></div>
     </div>
 </div>
  
@@ -272,34 +241,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
  
 <script>
-    // --- Lógica de Altitud Basada en Coordenadas (Coherente) ---
-    // Simula una base de datos topográfica usando ruido de Perlin/Fractal mapeado a la Tierra
-    function getAltitudeAt(lat, lng) {
-        const seed = 42;
-        // Escalas para simular montañas (grandes), colinas (medias) y rocas (pequeñas)
-        const scale1 = 0.5, scale2 = 2.5, scale3 = 12.0;
-        
-        const noise = (l, g, s) => {
-            let n = Math.sin(l * s + seed) * Math.cos(g * s - seed);
-            n += Math.sin(g * s * 0.5) * 0.5;
-            return n;
-        };
-
-        // Base de altitud en España (media 600m)
-        let base = 600;
-        // Macizos montañosos
-        let m1 = noise(lat, lng, scale1) * 800;
-        // Valles y cerros
-        let m2 = noise(lat, lng, scale2) * 150;
-        // Rugosidad local
-        let m3 = noise(lat, lng, scale3) * 20;
-
-        return Math.max(0, base + m1 + m2 + m3);
-    }
-
+    // --- Configuración e Inicialización ---
     let activeHandler = null, gridLayer = null, isGridVisible = false;
     let mtnGridLayer = null, isMtnGridVisible = false;
-
+ 
     const layers = {
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
         pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN - PNOA', crossOrigin: 'anonymous' }),
@@ -309,278 +254,319 @@
  
     const map = L.map('map', { center: [40.4167, -3.7037], zoom: 6, layers: [layers.mtn], zoomControl: false });
     L.control.zoom({ position: 'topleft' }).addTo(map);
+ 
+    // Capa para elementos dibujados
     const drawnItems = new L.FeatureGroup().addTo(map);
 
-    // --- Perfil de Elevación Corregido ---
-    function showElevation(layerId) {
-        const layer = drawnItems.getLayer(layerId);
-        if (!layer) return;
+    // Configuración de herramientas de dibujo
+    const drawOptions = {
+        polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } },
+        polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } },
+        marker: {}
+    };
 
-        const latlngs = layer.getLatLngs();
-        if (latlngs.length < 2) return;
+    // --- Lógica de Edición ---
+    
+    // Función específica para el borrado con clic (evita borrar otros eventos)
+    const deleteClickHandler = function(e) {
+        drawnItems.removeLayer(e.target);
+    };
 
-        const container = document.getElementById('elevation-chart');
-        container.innerHTML = '';
+    function enableTool(type) {
+        stopDrawing(); // Limpiar estados previos
+        toggleMenu(); // Cerrar menú para facilitar dibujo
         
-        let profile = [];
-        const steps = 150; // Resolución del gráfico
-        const distTotal = calculateDistance(latlngs);
-
-        // Interpolación y muestreo real
-        for (let i = 0; i < steps; i++) {
-            const targetDist = (i / (steps - 1)) * distTotal;
-            const pt = interpolatePointAtDistance(latlngs, targetDist);
-            const alt = getAltitudeAt(pt.lat, pt.lng);
-            profile.push(alt);
+        if (type === 'delete') {
+            document.getElementById('cancel-crop-btn').style.display = 'block';
+            document.getElementById('cancel-crop-btn').innerText = "✕ Salir de Borrado";
+            drawnItems.eachLayer(layer => {
+                layer.on('click', deleteClickHandler);
+            });
+            return;
         }
 
-        const maxH = Math.max(...profile);
-        const minH = Math.min(...profile);
-        const range = maxH - minH || 10;
+        document.getElementById('cancel-crop-btn').style.display = 'block';
         
-        // Eje Y (Altitud)
-        for(let j=0; j<=4; j++) {
-            const line = document.createElement('div');
-            line.className = 'chart-grid-line';
-            line.style.bottom = `${j * 25}%`;
-            const label = document.createElement('div');
-            label.className = 'chart-label-y';
-            label.style.bottom = `${j * 25 + 1}%`;
-            label.innerText = `${(minH + (range * (j/4))).toFixed(0)}m`;
-            container.appendChild(line);
-            container.appendChild(label);
+        if (type === 'marker') activeHandler = new L.Draw.Marker(map, drawOptions.marker);
+        if (type === 'polyline') {
+            const weightSelected = parseInt(document.getElementById('drawWeight').value) || 4;
+            const colorSelected = document.getElementById('drawColor').value || '#2ecc71';
+            drawOptions.polyline.shapeOptions.weight = weightSelected;
+            drawOptions.polyline.shapeOptions.color = colorSelected;
+            activeHandler = new L.Draw.Polyline(map, drawOptions.polyline);
         }
+        if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, drawOptions.polygon);
 
-        // Barras del gráfico
-        profile.forEach(h => {
-            const bar = document.createElement('div');
-            bar.className = 'bar';
-            const hPerc = ((h - minH) / range) * 90;
-            bar.style.height = `${Math.max(2, hPerc)}%`;
-            container.appendChild(bar);
-        });
-
-        document.getElementById('elev-total-dist').innerText = `Distancia: ${formatDistance(distTotal)}`;
-        document.getElementById('elev-min').innerText = `Mín: ${minH.toFixed(0)}m`;
-        document.getElementById('elev-max').innerText = `Máx: ${maxH.toFixed(0)}m`;
-        
-        const slope = ((maxH - minH) / distTotal) * 100;
-        document.getElementById('elev-avg').innerText = `Pendiente: ${slope.toFixed(1)}%`;
-        
-        toggleElevationPanel(true);
+        if (activeHandler) activeHandler.enable();
     }
 
-    function interpolatePointAtDistance(path, dist) {
-        let current = 0;
-        for (let i = 0; i < path.length - 1; i++) {
-            const segmentDist = path[i].distanceTo(path[i+1]);
-            if (current + segmentDist >= dist) {
-                const ratio = (dist - current) / segmentDist;
-                return {
-                    lat: path[i].lat + (path[i+1].lat - path[i].lat) * ratio,
-                    lng: path[i].lng + (path[i+1].lng - path[i].lng) * ratio
-                };
+    map.on(L.Draw.Event.CREATED, async (e) => {
+        const layer = e.layer;
+        const id = L.stamp(layer);
+        
+        // Texto base y botón de borrado
+        let baseText = 'Elemento de edición.';
+        let deleteBtn = `<br><button onclick="removeLayerById(${id})" style="color:red; cursor:pointer; border:1px solid red; background:white; margin-top:5px; border-radius:4px; padding:2px 5px;">Eliminar este</button>`;
+        
+        layer.bindPopup(baseText + deleteBtn);
+        drawnItems.addLayer(layer);
+        stopDrawing();
+
+        // Si es un marcador, calculamos coordenadas y altitud
+        if (e.layerType === 'marker') {
+            const latlng = layer.getLatLng();
+            const lat = latlng.lat.toFixed(5);
+            const lng = latlng.lng.toFixed(5);
+            
+            baseText = `<div style="font-size:12px;"><b>📍 Marcador</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: <i>Calculando...</i></div>`;
+            layer.setPopupContent(baseText + deleteBtn);
+            layer.openPopup(); // Abre el popup automáticamente
+            
+            try {
+                // Consulta a la API pública de elevación
+                const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`);
+                const data = await res.json();
+                
+                if (data && data.elevation && data.elevation.length > 0) {
+                    const alt = data.elevation[0];
+                    baseText = `<div style="font-size:12px;"><b>📍 Marcador</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: <b>${alt} m</b></div>`;
+                } else {
+                    baseText = `<div style="font-size:12px;"><b>📍 Marcador</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: No disponible</div>`;
+                }
+                layer.setPopupContent(baseText + deleteBtn);
+            } catch (error) {
+                baseText = `<div style="font-size:12px;"><b>📍 Marcador</b><br>Lat: ${lat}<br>Lon: ${lng}<br>Altitud: Error de conexión</div>`;
+                layer.setPopupContent(baseText + deleteBtn);
             }
-            current += segmentDist;
         }
-        return path[path.length - 1];
+    });
+
+    function removeLayerById(id) {
+        drawnItems.eachLayer(layer => {
+            if (L.stamp(layer) === id) drawnItems.removeLayer(layer);
+        });
     }
 
-    function toggleElevationPanel(show) {
-        document.getElementById('elevation-panel').classList.toggle('active', show);
+    function stopDrawing() {
+        if (activeHandler) {
+            activeHandler.disable();
+            activeHandler = null;
+        }
+        // Quitar SOLO el listener de borrado individual, manteniendo el del popup
+        drawnItems.eachLayer(layer => {
+            layer.off('click', deleteClickHandler);
+        });
+        document.getElementById('cancel-crop-btn').style.display = 'none';
+        document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar Acción (Esc)";
     }
 
-    // --- Cuadrícula y MTN ---
+    async function captureMap() {
+        toggleMenu();
+        document.body.classList.add('hide-controls');
+        // Esperar un momento para que se oculte la UI
+        setTimeout(async () => {
+            const canvas = await html2canvas(document.getElementById('map'), { 
+                useCORS: true,
+                allowTaint: false,
+                ignoreElements: (el) => el.classList.contains('leaflet-control-container')
+            });
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+            item.innerHTML = `<img src="${canvas.toDataURL()}"><a href="${canvas.toDataURL()}" download="mapa_ign_editado.png" style="display:block; text-align:center; padding:5px; text-decoration:none; color:var(--ign-blue); font-weight:bold;">⬇️ Descargar Captura</a>`;
+            document.getElementById('gallery').prepend(item);
+            document.body.classList.remove('hide-controls');
+            toggleMenu();
+        }, 100);
+    }
+ 
+    // --- Lógica MTN ---
+    function getMTNLeaf(lat, lon) {
+        const refLat = 44.0, refLon = -9.5;
+        const row = Math.floor((refLat - lat) / (10/60)) + 1;
+        const col = Math.floor((lon - refLon) / (20/60)) + 1;
+        return (row * 30 + col).toString().padStart(4, '0');
+    }
+ 
+    function updateMtnInfo() {
+        const center = map.getCenter();
+        const hoja = getMTNLeaf(center.lat, center.lng);
+        const infoDiv = document.getElementById('mtnInfo');
+        if (infoDiv) {
+            infoDiv.innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div>
+                <a href="https://centrodedescargas.cnig.es/CentroDescargas/buscar.do?serie=MTN50&numHoja=${hoja}" target="_blank" style="font-size:10px; color:var(--info); text-decoration:none;">Descargar Hoja Oficial</a>`;
+        }
+    }
+ 
     function toggleMtnGrid() {
         isMtnGridVisible = !isMtnGridVisible;
         const btn = document.getElementById('mtnGridBtn');
+       
         if (isMtnGridVisible) {
             if (mtnGridLayer) map.removeLayer(mtnGridLayer);
             mtnGridLayer = L.layerGroup();
+           
             const b = map.getBounds();
-            const stepLat = 10/60, stepLon = 20/60; 
-            for (let lat = Math.floor(b.getSouth() / stepLat) * stepLat; lat <= b.getNorth(); lat += stepLat) {
-                L.polyline([[lat, b.getWest()], [lat, b.getEast()]], { color: '#e6b800', weight: 1, dashArray: '5,5' }).addTo(mtnGridLayer);
+            const stepLat = 10/60; 
+            const stepLon = 20/60; 
+           
+            const sLat = Math.floor(b.getSouth() / stepLat) * stepLat;
+            const eLat = Math.ceil(b.getNorth() / stepLat) * stepLat;
+            const sLng = Math.floor(b.getWest() / stepLon) * stepLon;
+            const eLng = Math.ceil(b.getEast() / stepLon) * stepLon;
+ 
+            const gridStyle = { color: '#e6b800', weight: 1.5, opacity: 0.8, dashArray: '5, 5' };
+ 
+            for (let lat = sLat; lat <= eLat; lat += stepLat) {
+                L.polyline([[lat, b.getWest()], [lat, b.getEast()]], gridStyle).addTo(mtnGridLayer);
             }
-            for (let lng = Math.floor(b.getWest() / stepLon) * stepLon; lng <= b.getEast(); lng += stepLon) {
-                L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], { color: '#e6b800', weight: 1, dashArray: '5,5' }).addTo(mtnGridLayer);
+            for (let lng = sLng; lng <= eLng; lng += stepLon) {
+                L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], gridStyle).addTo(mtnGridLayer);
             }
+           
             mtnGridLayer.addTo(map);
+            btn.innerText = "Ocultar Cuadrículas MTN";
             btn.classList.add('active');
         } else {
             if (mtnGridLayer) map.removeLayer(mtnGridLayer);
+            btn.innerText = "Ver Cuadrículas MTN";
             btn.classList.remove('active');
         }
     }
-
+ 
+    // --- Cuadrícula Visual ---
     function toggleGrid() {
         isGridVisible = !isGridVisible;
         const btn = document.getElementById('gridToggleBtn');
         if (isGridVisible) {
             updateGrid();
             map.on('moveend', updateGrid);
-            btn.classList.add('active');
             btn.innerText = "Desactivar Cuadrícula";
+            btn.classList.add('active');
         } else {
             if (gridLayer) map.removeLayer(gridLayer);
             map.off('moveend', updateGrid);
-            btn.classList.remove('active');
             btn.innerText = "Activar Cuadrícula";
+            btn.classList.remove('active');
         }
     }
 
+    function updateGridByScale() {
+        const scale = document.getElementById('gridScale').value;
+        if (scale !== 'auto') {
+            const zoomLevels = { "2000": 18, "5000": 16, "10000": 15, "25000": 14, "50000": 13, "100000": 12, "250000": 10, "500000": 9, "1000000": 8 };
+            if (zoomLevels[scale]) map.setZoom(zoomLevels[scale]);
+        }
+        updateGrid();
+    }
+ 
     function updateGrid() {
         if (!isGridVisible) return;
         if (gridLayer) map.removeLayer(gridLayer);
         gridLayer = L.layerGroup();
+       
         const b = map.getBounds(), z = map.getZoom();
         const type = document.getElementById('gridType').value;
         const color = document.getElementById('gridColor').value;
         const weight = parseFloat(document.getElementById('gridWeight').value);
-        let step = (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.05 : z > 9 ? 0.2 : 1.0);
-        for (let lat = Math.floor(b.getSouth() / step) * step; lat <= b.getNorth(); lat += step) {
-            L.polyline([[lat, b.getWest()], [lat, b.getEast()]], { color, weight, opacity: 0.5 }).addTo(gridLayer);
-            let label = type === 'utm' ? latLonToUTM(lat, b.getCenter().lng).y.toFixed(0) : (type === 'dms' ? formatDMS(lat, true) : lat.toFixed(3));
-            L.marker([lat, b.getWest()], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [-5, 10] }) }).addTo(gridLayer);
+        
+        let step = (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : 1.0);
+ 
+        const sLat = Math.floor(b.getSouth() / step) * step;
+        const eLat = Math.ceil(b.getNorth() / step) * step;
+        const sLng = Math.floor(b.getWest() / step) * step;
+        const eLng = Math.ceil(b.getEast() / step) * step;
+ 
+        const lineStyle = { color: color, weight: weight, opacity: 0.6 };
+ 
+        if (((eLat - sLat) / step) * ((eLng - sLng) / step) > 2000) return;
+ 
+        for (let lat = sLat; lat <= eLat; lat += step) {
+            L.polyline([[lat, b.getWest()], [lat, b.getEast()]], lineStyle).addTo(gridLayer);
+            let label = (type === 'utm') ? `Y:${latLonToUTM(lat, b.getCenter().lng).y.toFixed(0)}` : (type === 'dms' ? formatDMS(lat, true) : lat.toFixed(3));
+            L.marker([lat, b.getWest()], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [-5, 10], style: `color:${color}` }) }).addTo(gridLayer);
         }
-        for (let lng = Math.floor(b.getWest() / step) * step; lng <= b.getEast(); lng += step) {
-            L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], { color, weight, opacity: 0.5 }).addTo(gridLayer);
-            let label = type === 'utm' ? latLonToUTM(b.getCenter().lat, lng).x.toFixed(0) : (type === 'dms' ? formatDMS(lng, false) : lng.toFixed(3));
-            L.marker([b.getNorth(), lng], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [20, -5] }) }).addTo(gridLayer);
+        for (let lng = sLng; lng <= eLng; lng += step) {
+            L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], lineStyle).addTo(gridLayer);
+            let label = (type === 'utm') ? `X:${latLonToUTM(b.getCenter().lat, lng).x.toFixed(0)}` : (type === 'dms' ? formatDMS(lng, false) : lng.toFixed(3));
+            L.marker([b.getNorth(), lng], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [30, -5], style: `color:${color}` }) }).addTo(gridLayer);
         }
         gridLayer.addTo(map);
     }
-
-    // --- Herramientas de Dibujo ---
-    function enableTool(type) {
-        stopDrawing();
-        toggleMenu();
-        if (type === 'delete') {
-            document.getElementById('cancel-crop-btn').style.display = 'block';
-            document.getElementById('cancel-crop-btn').innerText = "✕ Haz clic en objetos para eliminar";
-            drawnItems.eachLayer(l => l.on('click', (e) => drawnItems.removeLayer(e.target)));
-            return;
-        }
-        document.getElementById('cancel-crop-btn').style.display = 'block';
-        const color = document.getElementById('routeColor').value;
-        const weight = parseInt(document.getElementById('routeWeight').value);
-        if (type === 'marker') activeHandler = new L.Draw.Marker(map);
-        if (type === 'polyline') activeHandler = new L.Draw.Polyline(map, { shapeOptions: { color, weight } });
-        if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, { shapeOptions: { color, fillOpacity: 0.2 } });
-        if (activeHandler) activeHandler.enable();
-    }
-
-    function stopDrawing() {
-        if (activeHandler) activeHandler.disable();
-        activeHandler = null;
-        document.getElementById('cancel-crop-btn').style.display = 'none';
-        drawnItems.eachLayer(l => l.off('click'));
-    }
-
-    map.on(L.Draw.Event.CREATED, (e) => {
-        const layer = e.layer;
-        drawnItems.addLayer(layer);
-        const lid = L.stamp(layer);
-        if (e.layerType === 'polyline') {
-            const d = calculateDistance(layer.getLatLngs());
-            layer.bindPopup(`<b>Ruta</b><br>Distancia: ${formatDistance(d)}<br><br><button onclick="showElevation(${lid})" style="background:var(--ign-blue); color:white; border:none; padding:8px; border-radius:5px; width:100%; cursor:pointer;">📈 Perfil Altitud</button>`).openPopup();
-        } else if (e.layerType === 'polygon') {
-            layer.bindPopup(`<b>Área</b><br>Superficie: ${L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]).toFixed(0)} m²`);
-        }
-        stopDrawing();
-    });
-
-    // --- Utilidades ---
-    function calculateDistance(latlngs) {
-        let total = 0;
-        for (let i = 0; i < latlngs.length - 1; i++) total += latlngs[i].distanceTo(latlngs[i+1]);
-        return total;
-    }
-    function formatDistance(m) { return m >= 1000 ? (m / 1000).toFixed(2) + " km" : m.toFixed(0) + " m"; }
-    
+ 
+    // --- Utilidades Geográficas ---
     function latLonToUTM(lat, lon) {
-        const a = 6378137.0, f = 1 / 298.257223563, k0 = 0.9996;
+        const a = 6378137.0, f = 1 / 298.257223563;
+        const k0 = 0.9996;
         let huso = Math.floor((lon + 180) / 6) + 1;
         const lon0 = (huso - 1) * 6 - 180 + 3;
         const phi = lat * Math.PI / 180, lambda = lon * Math.PI / 180, lambda0 = lon0 * Math.PI / 180;
         const e2 = 2 * f - f * f, ep2 = e2 / (1 - e2);
         const N = a / Math.sqrt(1 - e2 * Math.sin(phi) * Math.sin(phi));
         const T = Math.tan(phi) ** 2, C = ep2 * Math.cos(phi) ** 2, A = (lambda - lambda0) * Math.cos(phi);
-        const M = a * ((1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 / 256) * phi - (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 * e2 * e2 / 1024) * Math.sin(2 * phi) + (15 * e2 / 256 + 45 * e2 * e2 / 1024) * Math.sin(4 * phi));
-        const x = k0 * N * (A + (1 - T + C) * A ** 3 / 6) + 500000.0;
-        const y = k0 * (M + N * Math.tan(phi) * (A ** 2 / 2));
-        return { x, y };
+        const M = a * ((1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256) * phi - (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 * e2 * e2 / 1024) * Math.sin(2 * phi) + (15 * e2 / 256 + 45 * e2 * e2 / 1024) * Math.sin(4 * phi) - (35 * e2 / 3072) * Math.sin(6 * phi));
+        const x = k0 * N * (A + (1 - T + C) * A ** 3 / 6 + (5 - 18 * T + T ** 2 + 72 * C - 58 * ep2) * A ** 5 / 120) + 500000.0;
+        let y = k0 * (M + N * Math.tan(phi) * (A ** 2 / 2 + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24 + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720));
+        if (lat < 0) y += 10000000.0;
+        return { x, y, huso };
     }
-
+ 
     function formatDMS(deg, isLat) {
         const abs = Math.abs(deg);
-        const d = Math.floor(abs), m = Math.floor((abs - d) * 60), s = ((abs - d - m/60) * 3600).toFixed(0);
-        return `${d}°${m}'${s}"${deg >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W')}`;
+        const d = Math.floor(abs), m = Math.floor((abs - d) * 60), s = ((abs - d - m/60) * 3600).toFixed(1);
+        const ref = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+        return `${d}°${m}'${s}"${ref}`;
     }
-
-    function updateMtnInfo() {
-        const c = map.getCenter();
-        const row = Math.floor((44.0 - c.lat) / (10/60)) + 1;
-        const col = Math.floor((c.lng + 9.5) / (20/60)) + 1;
-        const hoja = (row * 30 + col).toString().padStart(4, '0');
-        document.getElementById('mtnInfo').innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div><span style="font-size:10px;">Zona centro del visor</span>`;
-    }
-
-    async function captureMap() {
-        toggleMenu();
-        document.body.classList.add('hide-controls');
-        setTimeout(async () => {
-            const canvas = await html2canvas(document.getElementById('map'), { useCORS: true });
-            const link = document.createElement('a');
-            link.download = 'mapa_ign.png';
-            link.href = canvas.toDataURL();
-            link.click();
-            document.body.classList.remove('hide-controls');
-            toggleMenu();
-        }, 500);
-    }
-
-    function exportKML() {
-        let kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>`;
-        drawnItems.eachLayer(l => {
-            if (l instanceof L.Polyline && !(l instanceof L.Polygon)) {
-                const coords = l.getLatLngs().map(ll => `${ll.lng},${ll.lat},0`).join(' ');
-                kml += `<Placemark><LineString><coordinates>${coords}</coordinates></LineString></Placemark>`;
-            }
-        });
-        kml += `</Document></kml>`;
-        const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'ruta.kml';
-        link.click();
-    }
-
-    function clearAll() { if(confirm("¿Borrar todo?")) { drawnItems.clearLayers(); toggleElevationPanel(false); } }
-    function toggleMenu() { document.getElementById('panelLateral').classList.toggle('oculto'); }
-    function changeLayer(val) { Object.values(layers).forEach(l => map.removeLayer(l)); layers[val].addTo(map); }
-    function updateUI() { if(isGridVisible) updateGrid(); }
-    
+ 
+    // --- Eventos y Control ---
     map.on('mousemove', (e) => {
         const type = document.getElementById('gridType').value;
-        let txt = `Lat: ${e.latlng.lat.toFixed(5)} | Lon: ${e.latlng.lng.toFixed(5)}`;
-        if(type === 'dms') txt = `${formatDMS(e.latlng.lat, true)} | ${formatDMS(e.latlng.lng, false)}`;
-        if(type === 'utm') { const u = latLonToUTM(e.latlng.lat, e.latlng.lng); txt = `X: ${u.x.toFixed(0)} Y: ${u.y.toFixed(0)}`; }
-        document.getElementById('liveCoords').innerText = txt;
+        let coords = `Lat: ${e.latlng.lat.toFixed(6)} | Lon: ${e.latlng.lng.toFixed(6)}`;
+        if (type === 'dms') coords = `${formatDMS(e.latlng.lat, true)} | ${formatDMS(e.latlng.lng, false)}`;
+        if (type === 'utm') {
+            const u = latLonToUTM(e.latlng.lat, e.latlng.lng);
+            coords = `Huso ${u.huso} | X: ${u.x.toFixed(0)} Y: ${u.y.toFixed(0)}`;
+        }
+        document.getElementById('liveCoords').innerText = coords;
     });
-
-    async function buscarLugar() {
-        const q = document.getElementById('searchInput').value;
-        if(!q) return;
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}, España`);
-            const data = await res.json();
-            if(data.length > 0) map.setView([data[0].lat, data[0].lon], 14);
-        } catch(e) {}
+ 
+    map.on('move', updateMtnInfo);
+ 
+    function changeLayer(val) {
+        Object.values(layers).forEach(l => map.removeLayer(l));
+        layers[val].addTo(map);
     }
+ 
+    function toggleMenu() { document.getElementById('panelLateral').classList.toggle('oculto'); }
     
-    map.on('moveend', updateMtnInfo);
+    async function buscarLugar() {
+        const q = document.getElementById('searchInput').value.trim();
+        if (!q) return;
+
+        // Comprobar si el texto ingresado son coordenadas decimales (ej: 40.41, -3.70 o 40.41 -3.70)
+        const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/);
+        if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lon = parseFloat(coordMatch[2]);
+            if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                map.setView([lat, lon], 15);
+                return; // Coordenadas válidas, centramos y salimos
+            }
+        }
+
+        // Si no son coordenadas, hacemos la búsqueda normal por texto (ciudad, calle...)
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+            const data = await res.json();
+            if (data[0]) map.setView([data[0].lat, data[0].lon], 15);
+        } catch (error) {
+            console.error("Error en la búsqueda:", error);
+        }
+    }
+ 
+    function updateUI() { if(isGridVisible) updateGrid(); }
+ 
     updateMtnInfo();
 </script>
+ 
 </body>
 </html>
