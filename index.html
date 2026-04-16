@@ -396,6 +396,29 @@
                 layer.setPopupContent(baseText + deleteBtn);
             }
         }
+        // Si es un polígono (área), calculamos los metros cuadrados
+        else if (e.layerType === 'polygon') {
+            let latlngs = layer.getLatLngs();
+            // Adaptación para el formato de array de anillos de Leaflet
+            if (latlngs.length > 0 && Array.isArray(latlngs[0])) {
+                latlngs = latlngs[0];
+            }
+            
+            // Calculamos el área en metros cuadrados
+            const area = L.GeometryUtil.geodesicArea(latlngs);
+            
+            // Formatear el resultado dependiendo del tamaño
+            let areaText = area.toFixed(2) + ' m²';
+            if (area > 1000000) {
+                areaText = (area / 1000000).toFixed(2) + ' km²';
+            } else if (area > 10000) {
+                areaText = (area / 10000).toFixed(2) + ' ha';
+            }
+            
+            baseText = `<div style="font-size:12px;"><b>🔲 Área</b><br>Superficie: <b>${areaText}</b></div>`;
+            layer.setPopupContent(baseText + deleteBtn);
+            layer.openPopup();
+        }
     });
 
     function removeLayerById(id) {
@@ -429,7 +452,11 @@
             });
             const item = document.createElement('div');
             item.className = 'gallery-item';
-            item.innerHTML = `<img src="${canvas.toDataURL()}"><a href="${canvas.toDataURL()}" download="mapa_ign_editado.png" style="display:block; text-align:center; padding:5px; text-decoration:none; color:var(--ign-blue); font-weight:bold;">⬇️ Descargar Captura</a>`;
+            item.innerHTML = `<img src="${canvas.toDataURL()}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding: 0 5px;">
+                    <a href="${canvas.toDataURL()}" download="mapa_ign_editado.png" style="text-decoration:none; color:var(--ign-blue); font-weight:bold; font-size:13px;">⬇️ Descargar</a>
+                    <button onclick="this.closest('.gallery-item').remove()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size:13px; padding:0;">🗑️ Borrar</button>
+                </div>`;
             document.getElementById('gallery').prepend(item);
             document.body.classList.remove('hide-controls');
             toggleMenu();
