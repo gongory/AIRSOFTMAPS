@@ -224,14 +224,20 @@
         </select>
  
         <div class="section-title">📍 Sistema y Cuadrícula</div>
-        <label style="font-size: 11px; color: #64748b; display: block; margin-bottom: 4px;">Formato de Coordenadas</label>
-        <select id="gridType" class="form-select" onchange="updateUI()">
-            <option value="decimal">Grados Decimales (DD)</option>
-            <option value="dms">G. M. S. (DMS)</option>
-            <option value="utm">UTM (Métricas)</option>
-        </select>
- 
-        <div id="gridControls" style="background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+        
+        <button class="btn-outline" id="toggleGridMenuBtn" onclick="toggleGridGroup()" style="margin-bottom: 10px; justify-content: space-between; background: #f8fafc;">
+            <span id="toggleGridMenuText">📐 Mostrar Sistema</span>
+            <span id="toggleGridMenuIcon">▼</span>
+        </button>
+
+        <div id="grid-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 12px; border: 1px solid #cbd5e0;">
+            <label style="font-size: 11px; color: #64748b; display: block; margin-bottom: 4px;">Formato de Coordenadas</label>
+            <select id="gridType" class="form-select" onchange="updateUI()" style="margin-bottom: 12px;">
+                <option value="decimal">Grados Decimales (DD)</option>
+                <option value="dms">G. M. S. (DMS)</option>
+                <option value="utm">UTM (Métricas)</option>
+            </select>
+            
             <div class="grid-config-group">
                 <div>
                     <label style="font-size: 10px; font-weight: bold; color: #475569;">Grosor</label>
@@ -254,7 +260,7 @@
             </div>
            
             <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Numérica (Zoom)</label>
-            <select id="gridScale" class="form-select" style="font-size:12px;" onchange="updateGridByScale()">
+            <select id="gridScale" class="form-select" style="font-size:12px; margin-bottom: 12px;" onchange="updateGridByScale()">
                 <option value="auto" selected>Automática (Ajuste óptimo)</option>
                 <option value="2000">1:2.000 (Muy Detallado)</option>
                 <option value="5000">1:5.000</option>
@@ -992,6 +998,21 @@
     }
  
     function updateUI() { if(isGridVisible) updateGrid(); }
+
+    function toggleGridGroup() {
+        const container = document.getElementById('grid-group-container');
+        const icon = document.getElementById('toggleGridMenuIcon');
+        const text = document.getElementById('toggleGridMenuText');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            icon.innerText = '▲';
+            text.innerText = '📐 Ocultar Sistema';
+        } else {
+            container.style.display = 'none';
+            icon.innerText = '▼';
+            text.innerText = '📐 Mostrar Sistema';
+        }
+    }
 
     function toggleEditGroup() {
         const container = document.getElementById('edit-group-container');
