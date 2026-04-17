@@ -144,6 +144,41 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Editar Elementos Existentes -->
+<div id="edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Editar Elemento</h3>
+        <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nombre</label>
+        <input type="text" id="edit-name-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;">
+
+        <div id="edit-style-options" style="display:none;">
+            <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Color</label>
+            <select id="edit-color-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;">
+                <option value="#2ecc71">Verde</option>
+                <option value="#e74c3c">Rojo</option>
+                <option value="#3498db">Azul</option>
+                <option value="#f1c40f">Amarillo</option>
+                <option value="#9b59b6">Morado</option>
+                <option value="#34495e">Oscuro</option>
+            </select>
+
+            <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grosor</label>
+            <select id="edit-weight-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;">
+                <option value="2">Fina</option>
+                <option value="4">Normal</option>
+                <option value="6">Gruesa</option>
+                <option value="8">Muy Gruesa</option>
+                <option value="12">Extra Gruesa</option>
+            </select>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 10px;">
+            <button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="closeEditModal()">Cancelar</button>
+            <button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="confirmEditModal()">Guardar Cambios</button>
+        </div>
+    </div>
+</div>
  
 <button id="cancel-crop-btn" onclick="stopDrawing()">✕ Cancelar Acción (Esc)</button>
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
@@ -373,12 +408,15 @@
             layer.feature.properties.fillOpacity = layer.options.fillOpacity;
         }
         
-        // Texto base y botón de borrado
+        // Texto base y botones de acción
         let baseText = 'Elemento de edición.';
-        let deleteBtn = `<br><button onclick="removeLayerById(${id})" style="color:red; cursor:pointer; border:1px solid red; background:white; margin-top:5px; border-radius:4px; padding:2px 5px;">Eliminar este</button>`;
+        let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
+            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
+            <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
+        </div>`;
         
         layer.feature.properties.baseText = baseText;
-        layer.bindPopup(baseText + deleteBtn);
+        layer.bindPopup(baseText + actionBtns);
         drawnItems.addLayer(layer);
         stopDrawing();
 
@@ -399,7 +437,7 @@
             }
             
             baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>Calculando...</i></div>`;
-            layer.setPopupContent(baseText + deleteBtn);
+            layer.setPopupContent(baseText + actionBtns);
             layer.openPopup(); // Abre el popup automáticamente
             
             try {
@@ -414,11 +452,11 @@
                     baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: No disponible</div>`;
                 }
                 layer.feature.properties.baseText = baseText;
-                layer.setPopupContent(baseText + deleteBtn);
+                layer.setPopupContent(baseText + actionBtns);
             } catch (error) {
                 baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: Error de conexión</div>`;
                 layer.feature.properties.baseText = baseText;
-                layer.setPopupContent(baseText + deleteBtn);
+                layer.setPopupContent(baseText + actionBtns);
             }
         } 
         // Si es una ruta (polyline), calculamos distancia y desniveles
@@ -433,7 +471,7 @@
             const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
             
             baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel: <i>Calculando...</i></div>`;
-            layer.setPopupContent(baseText + deleteBtn);
+            layer.setPopupContent(baseText + actionBtns);
             layer.openPopup();
             
             try {
@@ -473,11 +511,11 @@
                     baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel: No disponible</div>`;
                 }
                 layer.feature.properties.baseText = baseText;
-                layer.setPopupContent(baseText + deleteBtn);
+                layer.setPopupContent(baseText + actionBtns);
             } catch (error) {
                 baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel: Error de conexión</div>`;
                 layer.feature.properties.baseText = baseText;
-                layer.setPopupContent(baseText + deleteBtn);
+                layer.setPopupContent(baseText + actionBtns);
             }
         }
         // Si es un polígono (área), calculamos los metros cuadrados
@@ -501,10 +539,70 @@
             
             baseText = `<div style="font-size:12px;"><b>🔲 ${layerName}</b><br>Superficie: <b>${areaText}</b></div>`;
             layer.feature.properties.baseText = baseText;
-            layer.setPopupContent(baseText + deleteBtn);
+            layer.setPopupContent(baseText + actionBtns);
             layer.openPopup();
         }
     });
+
+    function editLayerById(id) {
+        const layer = drawnItems.getLayer(id);
+        if (!layer) return;
+
+        const modal = document.getElementById('edit-modal');
+        const nameInput = document.getElementById('edit-name-input');
+        const colorInput = document.getElementById('edit-color-input');
+        const weightInput = document.getElementById('edit-weight-input');
+        const styleOpts = document.getElementById('edit-style-options');
+
+        const oldName = layer.feature.properties.layerName;
+        nameInput.value = oldName || '';
+        
+        const isShape = (layer instanceof L.Polyline);
+        if (isShape) {
+            styleOpts.style.display = 'block';
+            colorInput.value = layer.options.color || '#2ecc71';
+            weightInput.value = layer.options.weight || 4;
+        } else {
+            styleOpts.style.display = 'none';
+        }
+
+        modal.style.display = 'flex';
+
+        window.confirmEditModal = function() {
+            modal.style.display = 'none';
+            const newName = nameInput.value.trim() || oldName;
+            
+            if (newName !== oldName) {
+                layer.feature.properties.layerName = newName;
+                if (layer.feature.properties.baseText) {
+                    layer.feature.properties.baseText = layer.feature.properties.baseText
+                        .replace(`<b>📍 ${oldName}</b>`, `<b>📍 ${newName}</b>`)
+                        .replace(`<b>📏 ${oldName}</b>`, `<b>📏 ${newName}</b>`)
+                        .replace(`<b>🔲 ${oldName}</b>`, `<b>🔲 ${newName}</b>`);
+                }
+            }
+
+            if (isShape) {
+                const newColor = colorInput.value;
+                const newWeight = parseInt(weightInput.value);
+                layer.setStyle({ color: newColor, weight: newWeight });
+                layer.options.color = newColor;
+                layer.options.weight = newWeight;
+                layer.feature.properties.color = newColor;
+                layer.feature.properties.weight = newWeight;
+            }
+
+            const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
+                <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
+                <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
+            </div>`;
+            layer.setPopupContent(layer.feature.properties.baseText + actionBtns);
+        };
+
+        window.closeEditModal = function() {
+            modal.style.display = 'none';
+        };
+    }
 
     function removeLayerById(id) {
         drawnItems.eachLayer(layer => {
@@ -793,8 +891,11 @@
                             drawnItems.addLayer(layer);
                             const id = L.stamp(layer);
                             const baseText = feature.properties.baseText || 'Elemento de edición.';
-                            const deleteBtn = `<br><button onclick="removeLayerById(${id})" style="color:red; cursor:pointer; border:1px solid red; background:white; margin-top:5px; border-radius:4px; padding:2px 5px;">Eliminar este</button>`;
-                            layer.bindPopup(baseText + deleteBtn);
+                            const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
+                                <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
+                                <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
+                            </div>`;
+                            layer.bindPopup(baseText + actionBtns);
                         }
                     });
                 }
