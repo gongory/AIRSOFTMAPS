@@ -132,6 +132,18 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Confirmación Nuevo Proyecto -->
+<div id="confirm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;">
+        <h3 style="margin-top:0; margin-bottom:15px; color:var(--danger); font-size:18px;">⚠️ Nuevo Proyecto</h3>
+        <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">¿Estás seguro? Se borrarán todos los marcadores, rutas, áreas y capturas actuales.</p>
+        <div style="display:flex; justify-content:center; gap:10px;">
+            <button style="padding:8px 15px; border-radius:6px; border:1px solid #cbd5e0; background:white; color:#475569; cursor:pointer; font-weight:bold;" onclick="closeConfirmModal()">Cancelar</button>
+            <button style="padding:8px 15px; border-radius:6px; border:none; background:var(--danger); color:white; cursor:pointer; font-weight:bold;" onclick="acceptConfirmModal()">Sí, borrar todo</button>
+        </div>
+    </div>
+</div>
  
 <button id="cancel-crop-btn" onclick="stopDrawing()">✕ Cancelar Acción (Esc)</button>
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
@@ -140,12 +152,23 @@
  
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
-        <span style="font-weight: 600; font-size: 16px;">IGN Visor Pro</span>
+        <span id="app-title" style="font-weight: 600; font-size: 16px;">IGN Visor Pro</span>
         <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="toggleMenu()">✕</button>
     </div>
     <div class="content">
        
-        <div class="section-title">🔍 Buscador</div>
+        <div style="display:flex; gap:8px; margin-bottom: 15px;">
+            <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0;" onclick="nuevoProyecto()">📄 Nuevo</button>
+            <button class="btn-outline" style="margin-bottom: 0;" onclick="renombrarProyecto()">✏️ Renombrar</button>
+        </div>
+       
+        <div style="display:flex; gap:8px; margin-bottom: 15px;">
+            <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar</button>
+            <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar</button>
+            <input type="file" id="file-loader" style="display:none;" accept=".json" onchange="cargarProyecto(event)">
+        </div>
+       
+        <div class="section-title" style="margin-top: 0;">🔍 Buscador</div>
         <div style="display:flex; gap:5px; margin-bottom:12px;">
             <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas (lat, lon)..." onkeypress="if(event.key==='Enter') buscarLugar()">
             <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="buscarLugar()">Ir</button>
@@ -257,6 +280,7 @@
     // --- Configuración e Inicialización ---
     let activeHandler = null, gridLayer = null, isGridVisible = false;
     let mtnGridLayer = null, isMtnGridVisible = false;
+    let projectName = "Proyecto_IGN";
  
     const layers = {
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
@@ -341,10 +365,19 @@
         let defaultName = e.layerType === 'marker' ? 'Marcador' : (e.layerType === 'polyline' ? 'Ruta' : 'Área');
         const layerName = await askName(`Nombre para ${defaultName}:`, defaultName);
         
+        layer.feature = layer.feature || { type: 'Feature', properties: {} };
+        layer.feature.properties.layerName = layerName;
+        if (layer.options) {
+            layer.feature.properties.color = layer.options.color;
+            layer.feature.properties.weight = layer.options.weight;
+            layer.feature.properties.fillOpacity = layer.options.fillOpacity;
+        }
+        
         // Texto base y botón de borrado
         let baseText = 'Elemento de edición.';
         let deleteBtn = `<br><button onclick="removeLayerById(${id})" style="color:red; cursor:pointer; border:1px solid red; background:white; margin-top:5px; border-radius:4px; padding:2px 5px;">Eliminar este</button>`;
         
+        layer.feature.properties.baseText = baseText;
         layer.bindPopup(baseText + deleteBtn);
         drawnItems.addLayer(layer);
         stopDrawing();
@@ -380,9 +413,11 @@
                 } else {
                     baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: No disponible</div>`;
                 }
+                layer.feature.properties.baseText = baseText;
                 layer.setPopupContent(baseText + deleteBtn);
             } catch (error) {
                 baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: Error de conexión</div>`;
+                layer.feature.properties.baseText = baseText;
                 layer.setPopupContent(baseText + deleteBtn);
             }
         } 
@@ -437,9 +472,11 @@
                 } else {
                     baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel: No disponible</div>`;
                 }
+                layer.feature.properties.baseText = baseText;
                 layer.setPopupContent(baseText + deleteBtn);
             } catch (error) {
                 baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel: Error de conexión</div>`;
+                layer.feature.properties.baseText = baseText;
                 layer.setPopupContent(baseText + deleteBtn);
             }
         }
@@ -463,6 +500,7 @@
             }
             
             baseText = `<div style="font-size:12px;"><b>🔲 ${layerName}</b><br>Superficie: <b>${areaText}</b></div>`;
+            layer.feature.properties.baseText = baseText;
             layer.setPopupContent(baseText + deleteBtn);
             layer.openPopup();
         }
@@ -676,6 +714,99 @@
  
     function toggleMenu() { document.getElementById('panelLateral').classList.toggle('oculto'); }
     
+    async function renombrarProyecto() {
+        toggleMenu();
+        const name = await askName("Renombrar proyecto:", projectName);
+        projectName = name.trim() || "Proyecto_IGN";
+        document.getElementById('app-title').innerText = "IGN Visor - " + projectName;
+        toggleMenu();
+    }
+
+    function nuevoProyecto() {
+        toggleMenu(); // Ocultar panel lateral temporalmente
+        document.getElementById('confirm-modal').style.display = 'flex';
+        
+        window.acceptConfirmModal = async function() {
+            document.getElementById('confirm-modal').style.display = 'none';
+            
+            const name = await askName("Nombre del nuevo proyecto:", "Nuevo_Proyecto");
+            projectName = name.trim() || "Nuevo_Proyecto";
+            document.getElementById('app-title').innerText = "IGN Visor - " + projectName;
+
+            drawnItems.clearLayers(); // Borra todos los dibujos
+            document.getElementById('gallery').innerHTML = ''; // Borra la galería
+            stopDrawing(); // Detiene cualquier herramienta activa
+            map.setView([40.4167, -3.7037], 6); // Centra el mapa por defecto
+            toggleMenu(); // Reabre el panel
+        };
+        
+        window.closeConfirmModal = function() {
+            document.getElementById('confirm-modal').style.display = 'none';
+            toggleMenu(); // Reabre el panel sin borrar nada
+        };
+    }
+
+    function guardarProyecto() {
+        const data = {
+            view: { center: map.getCenter(), zoom: map.getZoom() },
+            features: drawnItems.toGeoJSON()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const safeName = projectName.replace(/[^a-z0-9_-]/gi, '_');
+        a.download = safeName + ".json";
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function cargarProyecto(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        projectName = file.name.replace('.json', '');
+        document.getElementById('app-title').innerText = "IGN Visor - " + projectName;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.view) map.setView(data.view.center, data.view.zoom);
+                if (data.features) {
+                    drawnItems.clearLayers();
+                    L.geoJSON(data.features, {
+                        pointToLayer: function (feature, latlng) {
+                            return L.marker(latlng, drawOptions.marker);
+                        },
+                        style: function (feature) {
+                            let styleOpt = {};
+                            if (feature.geometry.type === 'LineString') styleOpt = Object.assign({}, drawOptions.polyline.shapeOptions);
+                            if (feature.geometry.type === 'Polygon') styleOpt = Object.assign({}, drawOptions.polygon.shapeOptions);
+                            
+                            if (feature.properties.color) styleOpt.color = feature.properties.color;
+                            if (feature.properties.weight) styleOpt.weight = feature.properties.weight;
+                            if (feature.properties.fillOpacity) styleOpt.fillOpacity = feature.properties.fillOpacity;
+                            return styleOpt;
+                        },
+                        onEachFeature: function (feature, layer) {
+                            drawnItems.addLayer(layer);
+                            const id = L.stamp(layer);
+                            const baseText = feature.properties.baseText || 'Elemento de edición.';
+                            const deleteBtn = `<br><button onclick="removeLayerById(${id})" style="color:red; cursor:pointer; border:1px solid red; background:white; margin-top:5px; border-radius:4px; padding:2px 5px;">Eliminar este</button>`;
+                            layer.bindPopup(baseText + deleteBtn);
+                        }
+                    });
+                }
+                toggleMenu(); 
+            } catch (err) {
+                alert("Error al cargar el proyecto. Archivo no válido.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Resetea el input por si se carga el mismo archivo 2 veces
+    }
+
     async function buscarLugar() {
         const q = document.getElementById('searchInput').value.trim();
         if (!q) return;
