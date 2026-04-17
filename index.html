@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Visor IGN Pro - Edición y Personalización</title>
+    <title>AirsoftMaps - Edición y Personalización</title>
  
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -163,7 +163,18 @@
                 <option value="#34495e">Oscuro</option>
             </select>
 
-            <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grosor</label>
+            <label id="edit-icon-label" style="font-size: 12px; font-weight: bold; color: #475569; display:none; margin-bottom:4px;">Icono Militar</label>
+            <select id="edit-icon-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px; display:none;">
+                <option value="punto">🔴 Punto normal</option>
+                <option value="base">⛺ Base / Campamento</option>
+                <option value="objetivo">🎯 Objetivo</option>
+                <option value="bandera">🚩 Bandera / Respawn</option>
+                <option value="combate">⚔️ Zona de Combate</option>
+                <option value="defensa">🛡️ Punto Defensivo</option>
+                <option value="vehiculo">🚁 Vehículo / Extracción</option>
+            </select>
+
+            <label id="edit-weight-label" style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grosor</label>
             <select id="edit-weight-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;">
                 <option value="2">Fina</option>
                 <option value="4">Normal</option>
@@ -187,7 +198,7 @@
  
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
-        <span id="app-title" style="font-weight: 600; font-size: 16px;">IGN Visor Pro</span>
+        <span id="app-title" style="font-weight: 600; font-size: 16px;">AirsoftMaps</span>
         <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="toggleMenu()">✕</button>
     </div>
     <div class="content">
@@ -341,7 +352,7 @@
     // --- Configuración e Inicialización ---
     let activeHandler = null, gridLayer = null, isGridVisible = false;
     let mtnGridLayer = null, isMtnGridVisible = false;
-    let projectName = "Proyecto_IGN";
+    let projectName = "Proyecto_AirsoftMaps";
  
     const layers = {
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
@@ -370,6 +381,27 @@
         drawnItems.removeLayer(e.target);
     };
 
+    function getMarkerIconObj(color, type) {
+        const icons = {
+            'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩',
+            'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁'
+        };
+        if (!type || type === 'punto') {
+            return L.divIcon({
+                className: 'custom-colored-marker',
+                html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+        }
+        return L.divIcon({
+            className: 'custom-colored-marker',
+            html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${icons[type]}</div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+    }
+
     function enableTool(type) {
         stopDrawing(); // Limpiar estados previos
         toggleMenu(); // Cerrar menú para facilitar dibujo
@@ -387,12 +419,7 @@
         
         if (type === 'marker') {
             const colorSelected = document.getElementById('markerColor').value || '#e74c3c';
-            drawOptions.marker.icon = L.divIcon({
-                className: 'custom-colored-marker',
-                html: `<div style="background-color: ${colorSelected}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
-            });
+            drawOptions.marker.icon = getMarkerIconObj(colorSelected, 'punto');
             activeHandler = new L.Draw.Marker(map, drawOptions.marker);
         }
         if (type === 'polyline') {
@@ -440,6 +467,7 @@
         
         if (e.layerType === 'marker') {
             layer.feature.properties.color = document.getElementById('markerColor').value || '#e74c3c';
+            layer.feature.properties.iconType = 'punto';
         } else if (layer.options) {
             layer.feature.properties.color = layer.options.color;
             layer.feature.properties.weight = layer.options.weight;
@@ -590,6 +618,9 @@
         const nameInput = document.getElementById('edit-name-input');
         const colorInput = document.getElementById('edit-color-input');
         const weightInput = document.getElementById('edit-weight-input');
+        const weightLabel = document.getElementById('edit-weight-label');
+        const iconInput = document.getElementById('edit-icon-input');
+        const iconLabel = document.getElementById('edit-icon-label');
         const styleOpts = document.getElementById('edit-style-options');
 
         const oldName = layer.feature.properties.layerName;
@@ -604,10 +635,17 @@
             
             if (isMarker) {
                 weightInput.style.display = 'none';
-                weightInput.previousElementSibling.style.display = 'none';
+                if(weightLabel) weightLabel.style.display = 'none';
+                if(iconInput) {
+                    iconInput.style.display = 'block';
+                    iconInput.value = layer.feature.properties.iconType || 'punto';
+                }
+                if(iconLabel) iconLabel.style.display = 'block';
             } else {
                 weightInput.style.display = 'block';
-                weightInput.previousElementSibling.style.display = 'block';
+                if(weightLabel) weightLabel.style.display = 'block';
+                if(iconInput) iconInput.style.display = 'none';
+                if(iconLabel) iconLabel.style.display = 'none';
                 weightInput.value = layer.options.weight || 4;
             }
         } else {
@@ -640,13 +678,10 @@
                 layer.feature.properties.weight = newWeight;
             } else if (isMarker) {
                 const newColor = colorInput.value;
-                layer.setIcon(L.divIcon({
-                    className: 'custom-colored-marker',
-                    html: `<div style="background-color: ${newColor}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                }));
+                const newIconType = iconInput ? iconInput.value : 'punto';
+                layer.setIcon(getMarkerIconObj(newColor, newIconType));
                 layer.feature.properties.color = newColor;
+                layer.feature.properties.iconType = newIconType;
             }
 
             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
@@ -681,7 +716,7 @@
     }
 
     async function captureMap() {
-        const captureName = await askName("Introduce un nombre para la captura:", "Mapa_IGN");
+        const captureName = await askName("Introduce un nombre para la captura:", "Mapa_AirsoftMaps");
         const safeName = captureName.endsWith('.png') ? captureName : captureName + '.png';
 
         toggleMenu();
@@ -872,8 +907,8 @@
     async function renombrarProyecto() {
         toggleMenu();
         const name = await askName("Renombrar proyecto:", projectName);
-        projectName = name.trim() || "Proyecto_IGN";
-        document.getElementById('app-title').innerText = "IGN Visor - " + projectName;
+        projectName = name.trim() || "Proyecto_AirsoftMaps";
+        document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
         toggleMenu();
     }
 
@@ -886,7 +921,7 @@
             
             const name = await askName("Nombre del nuevo proyecto:", "Nuevo_Proyecto");
             projectName = name.trim() || "Nuevo_Proyecto";
-            document.getElementById('app-title').innerText = "IGN Visor - " + projectName;
+            document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
 
             drawnItems.clearLayers(); // Borra todos los dibujos
             document.getElementById('gallery').innerHTML = ''; // Borra la galería
@@ -921,7 +956,7 @@
         if (!file) return;
         
         projectName = file.name.replace('.json', '');
-        document.getElementById('app-title').innerText = "IGN Visor - " + projectName;
+        document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
 
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -932,14 +967,9 @@
                     drawnItems.clearLayers();
                     L.geoJSON(data.features, {
                         pointToLayer: function (feature, latlng) {
-                            const color = feature.properties.color || '#2ecc71';
-                            const icon = L.divIcon({
-                                className: 'custom-colored-marker',
-                                html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
-                                iconSize: [20, 20],
-                                iconAnchor: [10, 10]
-                            });
-                            return L.marker(latlng, { icon: icon });
+                            const color = feature.properties.color || '#e74c3c';
+                            const iconType = feature.properties.iconType || 'punto';
+                            return L.marker(latlng, { icon: getMarkerIconObj(color, iconType) });
                         },
                         style: function (feature) {
                             let styleOpt = {};
