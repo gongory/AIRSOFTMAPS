@@ -30,13 +30,6 @@
         #map-container { position: relative; height: 100vh; width: 100%; }
         #map { height: 100%; width: 100%; background: #eee; }
  
-        #cancel-crop-btn {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 2000; background: var(--danger); color: white; border: none;
-            padding: 12px 28px; border-radius: 50px; font-weight: 600;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;
-        }
- 
         .sidebar {
             position: absolute; top: 10px; right: 10px; z-index: 1001;
             width: 340px; max-width: calc(100vw - 20px);
@@ -105,7 +98,8 @@
         .hide-controls .leaflet-control-container,
         .hide-controls .fab-menu,
         .hide-controls .coord-display,
-        .hide-controls .sidebar { visibility: hidden !important; }
+        .hide-controls .sidebar,
+        .hide-controls #drawing-actions { visibility: hidden !important; }
 
         .edit-tools-grid {
             display: grid;
@@ -191,7 +185,11 @@
     </div>
 </div>
  
-<button id="cancel-crop-btn" onclick="stopDrawing()">✕ Cancelar Acción (Esc)</button>
+<div id="drawing-actions" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; gap: 10px; width: max-content; justify-content: center;">
+    <button id="undo-point-btn" onclick="undoLastPoint()" style="background: var(--ign-gold); color: var(--ign-blue); border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">↩️ Deshacer Punto</button>
+    <button id="cancel-crop-btn" onclick="stopDrawing()" style="background: var(--danger); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer;">✕ Cancelar Acción (Esc)</button>
+</div>
+
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
  
 <button class="fab-menu" id="fabBtn" onclick="toggleMenu()">🛠️ Herramientas</button>
@@ -401,21 +399,33 @@
             iconAnchor: [14, 14]
         });
     }
+    
+    function undoLastPoint() {
+        if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') {
+            activeHandler.deleteLastVertex();
+        }
+    }
 
     function enableTool(type) {
         stopDrawing(); // Limpiar estados previos
         toggleMenu(); // Cerrar menú para facilitar dibujo
         
         if (type === 'delete') {
-            document.getElementById('cancel-crop-btn').style.display = 'block';
+            document.getElementById('drawing-actions').style.display = 'flex';
             document.getElementById('cancel-crop-btn').innerText = "✕ Salir de Borrado";
+            document.getElementById('undo-point-btn').style.display = 'none';
             drawnItems.eachLayer(layer => {
                 layer.on('click', deleteClickHandler);
             });
             return;
         }
 
-        document.getElementById('cancel-crop-btn').style.display = 'block';
+        document.getElementById('drawing-actions').style.display = 'flex';
+        if (type === 'polyline' || type === 'polygon') {
+            document.getElementById('undo-point-btn').style.display = 'block';
+        } else {
+            document.getElementById('undo-point-btn').style.display = 'none';
+        }
         
         if (type === 'marker') {
             const colorSelected = document.getElementById('markerColor').value || '#e74c3c';
@@ -711,7 +721,8 @@
         drawnItems.eachLayer(layer => {
             layer.off('click', deleteClickHandler);
         });
-        document.getElementById('cancel-crop-btn').style.display = 'none';
+        document.getElementById('drawing-actions').style.display = 'none';
+        document.getElementById('undo-point-btn').style.display = 'none';
         document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar Acción (Esc)";
     }
 
