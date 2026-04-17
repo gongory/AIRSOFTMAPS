@@ -283,7 +283,7 @@
                 </select>
             </div>
             <div>
-                <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Color de Línea</label>
+                <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Color de Línea/Marcador</label>
                 <select id="drawColor" class="form-select" style="margin-bottom:0; font-size:12px;">
                     <option value="#2ecc71" selected>Verde</option>
                     <option value="#e74c3c">Rojo</option>
@@ -359,7 +359,16 @@
 
         document.getElementById('cancel-crop-btn').style.display = 'block';
         
-        if (type === 'marker') activeHandler = new L.Draw.Marker(map, drawOptions.marker);
+        if (type === 'marker') {
+            const colorSelected = document.getElementById('drawColor').value || '#2ecc71';
+            drawOptions.marker.icon = L.divIcon({
+                className: 'custom-colored-marker',
+                html: `<div style="background-color: ${colorSelected}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            activeHandler = new L.Draw.Marker(map, drawOptions.marker);
+        }
         if (type === 'polyline') {
             const weightSelected = parseInt(document.getElementById('drawWeight').value) || 4;
             const colorSelected = document.getElementById('drawColor').value || '#2ecc71';
@@ -402,7 +411,10 @@
         
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
-        if (layer.options) {
+        
+        if (e.layerType === 'marker') {
+            layer.feature.properties.color = document.getElementById('drawColor').value || '#2ecc71';
+        } else if (layer.options) {
             layer.feature.properties.color = layer.options.color;
             layer.feature.properties.weight = layer.options.weight;
             layer.feature.properties.fillOpacity = layer.options.fillOpacity;
@@ -558,10 +570,20 @@
         nameInput.value = oldName || '';
         
         const isShape = (layer instanceof L.Polyline);
-        if (isShape) {
+        const isMarker = (layer instanceof L.Marker);
+        
+        if (isShape || isMarker) {
             styleOpts.style.display = 'block';
-            colorInput.value = layer.options.color || '#2ecc71';
-            weightInput.value = layer.options.weight || 4;
+            colorInput.value = layer.feature.properties.color || layer.options.color || '#2ecc71';
+            
+            if (isMarker) {
+                weightInput.style.display = 'none';
+                weightInput.previousElementSibling.style.display = 'none';
+            } else {
+                weightInput.style.display = 'block';
+                weightInput.previousElementSibling.style.display = 'block';
+                weightInput.value = layer.options.weight || 4;
+            }
         } else {
             styleOpts.style.display = 'none';
         }
@@ -590,6 +612,15 @@
                 layer.options.weight = newWeight;
                 layer.feature.properties.color = newColor;
                 layer.feature.properties.weight = newWeight;
+            } else if (isMarker) {
+                const newColor = colorInput.value;
+                layer.setIcon(L.divIcon({
+                    className: 'custom-colored-marker',
+                    html: `<div style="background-color: ${newColor}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                }));
+                layer.feature.properties.color = newColor;
             }
 
             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
@@ -875,7 +906,14 @@
                     drawnItems.clearLayers();
                     L.geoJSON(data.features, {
                         pointToLayer: function (feature, latlng) {
-                            return L.marker(latlng, drawOptions.marker);
+                            const color = feature.properties.color || '#2ecc71';
+                            const icon = L.divIcon({
+                                className: 'custom-colored-marker',
+                                html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10]
+                            });
+                            return L.marker(latlng, { icon: icon });
                         },
                         style: function (feature) {
                             let styleOpt = {};
