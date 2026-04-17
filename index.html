@@ -271,35 +271,55 @@
         </div>
  
         <div class="section-title">✏️ Edición de Mapa</div>
-        <div class="grid-config-group" style="margin-bottom: 10px;">
-            <div>
-                <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Grosor de Línea</label>
-                <select id="drawWeight" class="form-select" style="margin-bottom:0; font-size:12px;">
-                    <option value="2">Fina</option>
-                    <option value="4" selected>Normal</option>
-                    <option value="6">Gruesa</option>
-                    <option value="8">Muy Gruesa</option>
-                    <option value="12">Extra Gruesa</option>
-                </select>
+        
+        <button class="btn-outline" id="toggleEditBtn" onclick="toggleEditGroup()" style="margin-bottom: 10px; justify-content: space-between; background: #f8fafc;">
+            <span id="toggleEditText">🛠️ Mostrar Herramientas</span>
+            <span id="toggleEditIcon">▼</span>
+        </button>
+        
+        <div id="edit-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e0;">
+            <div class="grid-config-group" style="margin-bottom: 10px;">
+                <div>
+                    <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Grosor de Línea</label>
+                    <select id="drawWeight" class="form-select" style="margin-bottom:0; font-size:12px;">
+                        <option value="2">Fina</option>
+                        <option value="4" selected>Normal</option>
+                        <option value="6">Gruesa</option>
+                        <option value="8">Muy Gruesa</option>
+                        <option value="12">Extra Gruesa</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Color de Línea</label>
+                    <select id="drawColor" class="form-select" style="margin-bottom:0; font-size:12px;">
+                        <option value="#2ecc71" selected>Verde</option>
+                        <option value="#e74c3c">Rojo</option>
+                        <option value="#3498db">Azul</option>
+                        <option value="#f1c40f">Amarillo</option>
+                        <option value="#9b59b6">Morado</option>
+                        <option value="#34495e">Oscuro</option>
+                    </select>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Color de Marcador</label>
+                    <select id="markerColor" class="form-select" style="margin-bottom:0; font-size:12px;">
+                        <option value="#2ecc71">Verde</option>
+                        <option value="#e74c3c" selected>Rojo</option>
+                        <option value="#3498db">Azul</option>
+                        <option value="#f1c40f">Amarillo</option>
+                        <option value="#9b59b6">Morado</option>
+                        <option value="#34495e">Oscuro</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Color de Línea/Marcador</label>
-                <select id="drawColor" class="form-select" style="margin-bottom:0; font-size:12px;">
-                    <option value="#2ecc71" selected>Verde</option>
-                    <option value="#e74c3c">Rojo</option>
-                    <option value="#3498db">Azul</option>
-                    <option value="#f1c40f">Amarillo</option>
-                    <option value="#9b59b6">Morado</option>
-                    <option value="#34495e">Oscuro</option>
-                </select>
+            <div class="edit-tools-grid" style="margin-bottom: 0;">
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('marker')">📍 Marcador</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polygon')">polygon; Área</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="captureMap()">📸 Capturar</button>
             </div>
         </div>
-        <div class="edit-tools-grid">
-            <button class="btn-outline" onclick="enableTool('marker')">📍 Marcador</button>
-            <button class="btn-outline" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
-            <button class="btn-outline" onclick="enableTool('polygon')">polygon; Área</button>
-            <button class="btn-outline" onclick="captureMap()">📸 Capturar</button>
-        </div>
+
         <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
         
         <div class="section-title">📸 Galería de Capturas</div>
@@ -360,7 +380,7 @@
         document.getElementById('cancel-crop-btn').style.display = 'block';
         
         if (type === 'marker') {
-            const colorSelected = document.getElementById('drawColor').value || '#2ecc71';
+            const colorSelected = document.getElementById('markerColor').value || '#e74c3c';
             drawOptions.marker.icon = L.divIcon({
                 className: 'custom-colored-marker',
                 html: `<div style="background-color: ${colorSelected}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
@@ -413,7 +433,7 @@
         layer.feature.properties.layerName = layerName;
         
         if (e.layerType === 'marker') {
-            layer.feature.properties.color = document.getElementById('drawColor').value || '#2ecc71';
+            layer.feature.properties.color = document.getElementById('markerColor').value || '#e74c3c';
         } else if (layer.options) {
             layer.feature.properties.color = layer.options.color;
             layer.feature.properties.weight = layer.options.weight;
@@ -972,6 +992,21 @@
     }
  
     function updateUI() { if(isGridVisible) updateGrid(); }
+
+    function toggleEditGroup() {
+        const container = document.getElementById('edit-group-container');
+        const icon = document.getElementById('toggleEditIcon');
+        const text = document.getElementById('toggleEditText');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            icon.innerText = '▲';
+            text.innerText = '🛠️ Ocultar Herramientas';
+        } else {
+            container.style.display = 'none';
+            icon.innerText = '▼';
+            text.innerText = '🛠️ Mostrar Herramientas';
+        }
+    }
  
     updateMtnInfo();
 </script>
