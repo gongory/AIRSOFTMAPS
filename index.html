@@ -79,6 +79,7 @@
             position: absolute; bottom: 20px; left: 10px; z-index: 999; background: rgba(255,255,255,0.95);
             padding: 8px 16px; border-radius: 30px; font-size: 12px; font-family: 'Consolas', monospace;
             border: 1px solid #e2e8f0; font-weight: 600; box-shadow: var(--shadow); pointer-events: none; min-width: 260px; text-align: center;
+            transition: bottom 0.3s ease;
         }
  
         .fab-menu {
@@ -108,30 +109,33 @@
             margin-bottom: 10px;
         }
 
-        /* Estilo para la barra de escala cartográfica clásica (Blanco y Negro) */
         .leaflet-control-scale-line {
-            border: 2px solid #222 !important; /* Cerrar el rectángulo completo */
-            background-color: rgba(255, 255, 255, 0.9) !important; /* Fondo claro para destacar el número */
+            border: 2px solid #222 !important;
+            background-color: rgba(255, 255, 255, 0.9) !important;
             background-image: 
-                linear-gradient(to bottom, #222, #222), /* Línea divisoria horizontal */
-                linear-gradient(to right, #ffffff 50%, #222222 50%) !important; /* Bloques B/N */
-            background-size: 
-                100% 2px, 
-                100% 6px !important; 
-            background-position: 
-                0 calc(100% - 6px), 
-                0 100% !important; 
+                linear-gradient(to bottom, #222, #222), 
+                linear-gradient(to right, #ffffff 50%, #222222 50%) !important;
+            background-size: 100% 2px, 100% 6px !important; 
+            background-position: 0 calc(100% - 6px), 0 100% !important; 
             background-repeat: no-repeat !important;
             color: #000 !important;
             font-weight: 900 !important;
             font-size: 12px !important;
-            text-align: center !important; /* Centra el texto indicando que mide el TOTAL */
+            text-align: center !important;
             line-height: 1.2 !important;
-            padding: 4px 5px 12px 5px !important; /* El margen inferior de 12px aloja la regleta */
+            padding: 4px 5px 12px 5px !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;
-            text-shadow: none !important; /* Quitamos la sombra porque ya hay fondo blanco */
+            text-shadow: none !important;
         }
+
+        .layer-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        .layer-item:last-child { border-bottom: none; }
+        .layer-vis-btn { background: none; border: none; cursor: pointer; color: #475569; font-size: 14px; padding: 0 5px;}
+        .layer-vis-btn.hidden { opacity: 0.3; }
+        .layer-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; font-weight: 600; color: var(--ign-blue);}
     </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
  
@@ -139,7 +143,6 @@
     <div id="map"></div>
 </div>
 
-<!-- Modal Personalizado para Nombres -->
 <div id="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
         <h3 id="modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">Nombrar elemento</h3>
@@ -151,7 +154,6 @@
     </div>
 </div>
 
-<!-- Modal Confirmación Nuevo Proyecto -->
 <div id="confirm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;">
         <h3 style="margin-top:0; margin-bottom:15px; color:var(--danger); font-size:18px;">⚠️ Nuevo Proyecto</h3>
@@ -163,7 +165,6 @@
     </div>
 </div>
 
-<!-- Modal para Editar Elementos Existentes -->
 <div id="edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
         <h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Editar Elemento</h3>
@@ -181,25 +182,32 @@
                 <option value="#34495e">Oscuro</option>
             </select>
 
-            <label id="edit-icon-label" style="font-size: 12px; font-weight: bold; color: #475569; display:none; margin-bottom:4px;">Icono Militar</label>
-            <select id="edit-icon-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px; display:none;">
-                <option value="punto">🔴 Punto normal</option>
-                <option value="base">⛺ Base / Campamento</option>
-                <option value="objetivo">🎯 Objetivo</option>
-                <option value="bandera">🚩 Bandera / Respawn</option>
-                <option value="combate">⚔️ Zona de Combate</option>
-                <option value="defensa">🛡️ Punto Defensivo</option>
-                <option value="vehiculo">🚁 Vehículo / Extracción</option>
-            </select>
+            <div id="edit-marker-specifics" style="display:none;">
+                <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Icono Militar</label>
+                <select id="edit-icon-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;">
+                    <option value="punto">🔴 Punto normal</option>
+                    <option value="base">⛺ Base / Campamento</option>
+                    <option value="objetivo">🎯 Objetivo</option>
+                    <option value="bandera">🚩 Bandera / Respawn</option>
+                    <option value="combate">⚔️ Zona de Combate</option>
+                    <option value="defensa">🛡️ Punto Defensivo</option>
+                    <option value="vehiculo">🚁 Vehículo / Extracción</option>
+                </select>
 
-            <label id="edit-weight-label" style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grosor</label>
-            <select id="edit-weight-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;">
-                <option value="2">Fina</option>
-                <option value="4">Normal</option>
-                <option value="6">Gruesa</option>
-                <option value="8">Muy Gruesa</option>
-                <option value="12">Extra Gruesa</option>
-            </select>
+                <label style="font-size: 12px; font-weight: bold; color: var(--ign-gold); display:block; margin-bottom:4px;">⭕ Radio de Acción (metros)</label>
+                <input type="number" id="edit-buffer-input" min="0" step="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: 50 o vacío para ninguno">
+            </div>
+
+            <div id="edit-shape-specifics" style="display:none;">
+                <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grosor</label>
+                <select id="edit-weight-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;">
+                    <option value="2">Fina</option>
+                    <option value="4">Normal</option>
+                    <option value="6">Gruesa</option>
+                    <option value="8">Muy Gruesa</option>
+                    <option value="12">Extra Gruesa</option>
+                </select>
+            </div>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 10px;">
@@ -253,7 +261,7 @@
        
         <div class="section-title" style="margin-top: 0;">🔍 Buscador</div>
         <div style="display:flex; gap:5px; margin-bottom:12px;">
-            <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas (lat, lon)..." onkeypress="if(event.key==='Enter') buscarLugar()">
+            <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas..." onkeypress="if(event.key==='Enter') buscarLugar()">
             <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="buscarLugar()">Ir</button>
         </div>
  
@@ -263,13 +271,34 @@
         </div>
         <button id="mtnGridBtn" class="btn-outline" onclick="toggleMtnGrid()">Ver Cuadrículas MTN</button>
  
-        <div class="section-title">🌍 Capas Base</div>
-        <select id="baseLayer" class="form-select" onchange="changeLayer(this.value)">
-            <option value="mtn">Mapa Topográfico (MTN)</option>
-            <option value="pnoa">Satélite (PNOA)</option>
-            <option value="base">Callejero IGN</option>
-            <option value="osm">OpenStreetMap</option>
-        </select>
+        <div class="section-title">🌍 Mezclador de Mapas</div>
+        
+        <button class="btn-outline" id="toggleMapMixerBtn" onclick="toggleMapMixerGroup()" style="margin-bottom: 10px; justify-content: space-between; background: #f8fafc;">
+            <span id="toggleMapMixerText">🗺️ Mostrar Mezclador</span>
+            <span id="toggleMapMixerIcon">▼</span>
+        </button>
+
+        <div id="map-mixer-container" style="display: none; background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0; margin-bottom: 15px;">
+            <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Capa Principal (Fondo)</label>
+            <select id="baseLayer" class="form-select" style="margin-bottom: 8px;" onchange="changeLayer()">
+                <option value="mtn">Mapa Topográfico (MTN)</option>
+                <option value="pnoa">Satélite (PNOA)</option>
+                <option value="base">Callejero IGN</option>
+                <option value="osm">OpenStreetMap</option>
+            </select>
+            
+            <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Capa Secundaria (Superpuesta)</label>
+            <select id="overlayLayer" class="form-select" style="margin-bottom: 8px;" onchange="changeLayer()">
+                <option value="none">Ninguna</option>
+                <option value="mtn">Mapa Topográfico (MTN)</option>
+                <option value="pnoa" selected>Satélite (PNOA)</option>
+                <option value="base">Callejero IGN</option>
+                <option value="osm">OpenStreetMap</option>
+            </select>
+
+            <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Opacidad Capa Secundaria</label>
+            <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4" style="width:100%; margin-bottom: 0;" oninput="changeLayer()">
+        </div>
  
         <div class="section-title">📍 Sistema y Cuadrícula</div>
         
@@ -307,18 +336,15 @@
                 </div>
             </div>
            
-            <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Numérica (Zoom)</label>
+            <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Numérica</label>
             <select id="gridScale" class="form-select" style="font-size:12px; margin-bottom: 12px;" onchange="updateGridByScale()">
-                <option value="auto" selected>Automática (Ajuste óptimo)</option>
-                <option value="2000">1:2.000 (Muy Detallado)</option>
+                <option value="auto" selected>Automática</option>
+                <option value="2000">1:2.000</option>
                 <option value="5000">1:5.000</option>
                 <option value="10000">1:10.000</option>
-                <option value="25000">1:25.000 (MTN25)</option>
-                <option value="50000">1:50.000 (MTN50)</option>
+                <option value="25000">1:25.000</option>
+                <option value="50000">1:50.000</option>
                 <option value="100000">1:100.000</option>
-                <option value="250000">1:250.000</option>
-                <option value="500000">1:500.000</option>
-                <option value="1000000">1:1.000.000</option>
             </select>
  
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -342,8 +368,6 @@
                         <option value="2">Fina</option>
                         <option value="4" selected>Normal</option>
                         <option value="6">Gruesa</option>
-                        <option value="8">Muy Gruesa</option>
-                        <option value="12">Extra Gruesa</option>
                     </select>
                 </div>
                 <div>
@@ -353,7 +377,6 @@
                         <option value="#e74c3c">Rojo</option>
                         <option value="#3498db">Azul</option>
                         <option value="#f1c40f">Amarillo</option>
-                        <option value="#9b59b6">Morado</option>
                         <option value="#34495e">Oscuro</option>
                     </select>
                 </div>
@@ -364,7 +387,6 @@
                         <option value="#e74c3c" selected>Rojo</option>
                         <option value="#3498db">Azul</option>
                         <option value="#f1c40f">Amarillo</option>
-                        <option value="#9b59b6">Morado</option>
                         <option value="#34495e">Oscuro</option>
                     </select>
                 </div>
@@ -379,7 +401,12 @@
 
         <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
         
-        <div class="section-title">📸 Galería de Capturas</div>
+        <div class="section-title">🗂️ Gestor de Capas</div>
+        <div id="layer-list" style="max-height: 150px; overflow-y: auto; background: #fff; border: 1px solid #cbd5e0; border-radius: 8px; margin-bottom:15px;">
+            <div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">No hay elementos dibujados</div>
+        </div>
+
+        <div class="section-title" style="margin-top:0;">📸 Galería de Capturas</div>
         <div id="gallery"></div>
     </div>
 </div>
@@ -389,98 +416,203 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
  
 <script>
-    // --- Configuración e Inicialización ---
     let activeHandler = null, gridLayer = null, isGridVisible = false;
     let mtnGridLayer = null, isMtnGridVisible = false;
     let projectName = "Proyecto_AirsoftMaps";
     let scaleControlObj = null;
  
-    const layers = {
+    const createLayers = () => ({
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
         pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN - PNOA', crossOrigin: 'anonymous' }),
         base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
-        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' })
-    };
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' })
+    });
+
+    const baseLayers = createLayers();
+    const overLayers = createLayers();
+    
+    let currentBase = baseLayers.mtn;
+    let currentOverlay = overLayers.pnoa;
+    currentOverlay.setOpacity(0.4);
  
-    // Añadido preferCanvas: true para que html2canvas pueda capturar las líneas sin cortarlas
-    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [layers.mtn], zoomControl: false });
+    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false });
     L.control.zoom({ position: 'topleft' }).addTo(map);
  
-    // Capa para elementos dibujados
     const drawnItems = new L.FeatureGroup().addTo(map);
 
-    // Configuración de herramientas de dibujo
     const drawOptions = {
         polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } },
         polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } },
         marker: {}
     };
 
-    // --- Lógica de Edición ---
-    
-    // Función específica para el borrado con clic (evita borrar otros eventos)
+    function renderChart(layer, id) {
+        setTimeout(() => {
+            const ctx = document.getElementById(`chart-${id}`);
+            if (ctx && layer.feature.properties.chartData && window.Chart) {
+                let chartStatus = Chart.getChart(`chart-${id}`);
+                if (chartStatus != undefined) { chartStatus.destroy(); }
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: layer.feature.properties.chartData.labels,
+                        datasets: [{
+                            label: 'Altitud (m)',
+                            data: layer.feature.properties.chartData.data,
+                            borderColor: '#e6b800',
+                            backgroundColor: 'rgba(230, 184, 0, 0.2)',
+                            borderWidth: 2,
+                            fill: true,
+                            pointRadius: 0,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: {font: {size: 9}, maxTicksLimit: 5}, title: {display: true, text: 'Dist. (km)', font:{size:10}} },
+                            y: { ticks: {font: {size: 9}} }
+                        }
+                    }
+                });
+            }
+        }, 50);
+    }
+
+    function attachChartListener(layer, id) {
+        layer.on('popupopen', function() {
+            renderChart(layer, id);
+        });
+    }
+
+    function updateLayerTree() {
+        const list = document.getElementById('layer-list');
+        const layers = drawnItems.getLayers();
+        if (layers.length === 0) {
+            list.innerHTML = '<div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">Vacio</div>';
+            return;
+        }
+        let html = '';
+        layers.forEach(layer => {
+            const id = L.stamp(layer);
+            const name = layer.feature?.properties?.layerName || 'Elemento';
+            const isHidden = layer.isHidden || false;
+            const eyeIcon = isHidden ? '👁️‍🗨️' : '👁️';
+            const eyeClass = isHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
+            
+            let typeIcon = '📍';
+            if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) typeIcon = '📏';
+            if (layer instanceof L.Polygon) typeIcon = '🔲';
+
+            html += `<div class="layer-item">
+                <span class="layer-name-text" title="${name}">${typeIcon} ${name}</span>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <button class="${eyeClass}" onclick="toggleLayerVisibility(${id})" title="Ver">${eyeIcon}</button>
+                    <button style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:12px; padding:0 5px;" onclick="removeLayerById(${id})">🗑️</button>
+                </div>
+            </div>`;
+        });
+        list.innerHTML = html;
+    }
+
+    function toggleLayerVisibility(id) {
+        const layer = drawnItems.getLayer(id);
+        if (!layer) return;
+        
+        layer.isHidden = !layer.isHidden;
+        
+        if (layer.isHidden) {
+            if (layer instanceof L.Marker) layer.setOpacity(0);
+            else layer.setStyle({ opacity: 0, fillOpacity: 0 });
+            if (layer.bufferCircle) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
+            layer.closePopup();
+        } else {
+            if (layer instanceof L.Marker) layer.setOpacity(1);
+            else layer.setStyle({ 
+                opacity: 1, 
+                fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) 
+            });
+            if (layer.bufferCircle) layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
+        }
+        updateLayerTree();
+    }
+
+    function updateMarkerBuffer(layer) {
+        if (!(layer instanceof L.Marker)) return;
+        const radius = parseFloat(layer.feature?.properties?.bufferRadius) || 0;
+        
+        if (radius > 0) {
+            if (layer.bufferCircle) {
+                layer.bufferCircle.setLatLng(layer.getLatLng());
+                layer.bufferCircle.setRadius(radius);
+                layer.bufferCircle.setStyle({color: layer.feature.properties.color});
+            } else {
+                layer.bufferCircle = L.circle(layer.getLatLng(), {
+                    radius: radius,
+                    color: layer.feature.properties.color,
+                    weight: 2,
+                    fillOpacity: 0.15,
+                    dashArray: '5, 5',
+                    interactive: false 
+                }).addTo(map);
+            }
+            if (layer.isHidden) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
+            else layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
+        } else if (layer.bufferCircle) {
+            map.removeLayer(layer.bufferCircle);
+            layer.bufferCircle = null;
+        }
+    }
+
     const deleteClickHandler = function(e) {
-        drawnItems.removeLayer(e.target);
+        removeLayerById(L.stamp(e.target));
     };
 
     function getMarkerIconObj(color, type) {
-        const icons = {
-            'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩',
-            'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁'
-        };
+        const icons = { 'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁' };
         if (!type || type === 'punto') {
             return L.divIcon({
                 className: 'custom-colored-marker',
                 html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                iconSize: [20, 20], iconAnchor: [10, 10]
             });
         }
         return L.divIcon({
             className: 'custom-colored-marker',
             html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${icons[type]}</div>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 14]
+            iconSize: [28, 28], iconAnchor: [14, 14]
         });
     }
     
     function undoLastPoint() {
-        if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') {
-            activeHandler.deleteLastVertex();
-        }
+        if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') activeHandler.deleteLastVertex();
     }
 
     function enableTool(type) {
-        stopDrawing(); // Limpiar estados previos
-        toggleMenu(); // Cerrar menú para facilitar dibujo
+        stopDrawing(); 
+        toggleMenu(); 
         
         if (type === 'delete') {
             document.getElementById('drawing-actions').style.display = 'flex';
-            document.getElementById('cancel-crop-btn').innerText = "✕ Salir de Borrado";
+            document.getElementById('cancel-crop-btn').innerText = "✕ Salir";
             document.getElementById('undo-point-btn').style.display = 'none';
-            drawnItems.eachLayer(layer => {
-                layer.on('click', deleteClickHandler);
-            });
+            drawnItems.eachLayer(layer => layer.on('click', deleteClickHandler));
             return;
         }
 
         document.getElementById('drawing-actions').style.display = 'flex';
-        if (type === 'polyline' || type === 'polygon') {
-            document.getElementById('undo-point-btn').style.display = 'block';
-        } else {
-            document.getElementById('undo-point-btn').style.display = 'none';
-        }
+        document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon') ? 'block' : 'none';
         
         if (type === 'marker') {
-            const colorSelected = document.getElementById('markerColor').value || '#e74c3c';
-            drawOptions.marker.icon = getMarkerIconObj(colorSelected, 'punto');
+            drawOptions.marker.icon = getMarkerIconObj(document.getElementById('markerColor').value || '#e74c3c', 'punto');
             activeHandler = new L.Draw.Marker(map, drawOptions.marker);
         }
         if (type === 'polyline') {
-            const weightSelected = parseInt(document.getElementById('drawWeight').value) || 4;
-            const colorSelected = document.getElementById('drawColor').value || '#2ecc71';
-            drawOptions.polyline.shapeOptions.weight = weightSelected;
-            drawOptions.polyline.shapeOptions.color = colorSelected;
+            drawOptions.polyline.shapeOptions.weight = parseInt(document.getElementById('drawWeight').value) || 4;
+            drawOptions.polyline.shapeOptions.color = document.getElementById('drawColor').value || '#2ecc71';
             activeHandler = new L.Draw.Polyline(map, drawOptions.polyline);
         }
         if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, drawOptions.polygon);
@@ -488,7 +620,6 @@
         if (activeHandler) activeHandler.enable();
     }
 
-    // Función asíncrona para el modal de renombrar (evita bloqueos del navegador)
     function askName(title, defaultText) {
         return new Promise((resolve) => {
             const modal = document.getElementById('custom-modal');
@@ -497,15 +628,8 @@
             input.value = defaultText;
             modal.style.display = 'flex';
             setTimeout(() => input.select(), 100);
-
-            window.confirmModal = function() {
-                modal.style.display = 'none';
-                resolve(input.value.trim() || defaultText);
-            };
-            window.closeModal = function() {
-                modal.style.display = 'none';
-                resolve(defaultText);
-            };
+            window.confirmModal = () => { modal.style.display = 'none'; resolve(input.value.trim() || defaultText); };
+            window.closeModal = () => { modal.style.display = 'none'; resolve(defaultText); };
         });
     }
 
@@ -518,149 +642,118 @@
         
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
+        layer.isHidden = false;
         
         if (e.layerType === 'marker') {
             layer.feature.properties.color = document.getElementById('markerColor').value || '#e74c3c';
             layer.feature.properties.iconType = 'punto';
+            layer.feature.properties.bufferRadius = 0;
         } else if (layer.options) {
             layer.feature.properties.color = layer.options.color;
             layer.feature.properties.weight = layer.options.weight;
             layer.feature.properties.fillOpacity = layer.options.fillOpacity;
         }
         
-        // Texto base y botones de acción
-        let baseText = 'Elemento de edición.';
+        let baseText = 'Elemento';
         let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
-            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
-            <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
+            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
+            <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
         </div>`;
         
-        layer.feature.properties.baseText = baseText;
-        layer.bindPopup(baseText + actionBtns);
         drawnItems.addLayer(layer);
+        updateLayerTree(); 
         stopDrawing();
 
-        // Si es un marcador, calculamos coordenadas y altitud
         if (e.layerType === 'marker') {
-            const latlng = layer.getLatLng();
-            const lat = latlng.lat;
-            const lng = latlng.lng;
+            const lat = layer.getLatLng().lat;
+            const lng = layer.getLatLng().lng;
             
-            // Adaptar las coordenadas según el tipo seleccionado actualmente
             const type = document.getElementById('gridType').value;
             let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lng.toFixed(5)}`;
-            if (type === 'dms') {
-                coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lng, false)}`;
-            } else if (type === 'utm') {
+            if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lng, false)}`;
+            else if (type === 'utm') {
                 const u = latLonToUTM(lat, lng);
                 coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`;
             }
             
-            baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>Calculando...</i></div>`;
-            layer.setPopupContent(baseText + actionBtns);
-            layer.openPopup(); // Abre el popup automáticamente
+            baseText = `<div><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
+            layer.bindPopup(baseText + actionBtns).openPopup(); 
             
             try {
-                // Consulta a la API pública de elevación
                 const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lng.toFixed(5)}`);
                 const data = await res.json();
-                
-                if (data && data.elevation && data.elevation.length > 0) {
-                    const alt = data.elevation[0];
-                    baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <b>${alt} m</b></div>`;
-                } else {
-                    baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: No disponible</div>`;
-                }
-                layer.feature.properties.baseText = baseText;
-                layer.setPopupContent(baseText + actionBtns);
+                baseText = `<div><b>📍 ${layerName}</b><br>${coordText}<br>Alt: <b>${data.elevation[0]} m</b></div>`;
             } catch (error) {
-                baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: Error de conexión</div>`;
-                layer.feature.properties.baseText = baseText;
-                layer.setPopupContent(baseText + actionBtns);
+                baseText = `<div><b>📍 ${layerName}</b><br>${coordText}<br>Alt: Error</div>`;
             }
+            layer.feature.properties.baseText = baseText;
+            layer.setPopupContent(baseText + actionBtns);
         } 
-        // Si es una ruta (polyline), calculamos distancia y desniveles
         else if (e.layerType === 'polyline') {
             const latlngs = layer.getLatLngs();
-            
-            // 1. Calcular distancia total
             let distance = 0;
-            for (let i = 0; i < latlngs.length - 1; i++) {
-                distance += latlngs[i].distanceTo(latlngs[i+1]);
-            }
+            for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i+1]);
             const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
             
-            baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel: <i>Calculando...</i></div>`;
-            layer.setPopupContent(baseText + actionBtns);
-            layer.openPopup();
+            baseText = `<div><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b><br>Desnivel: <i>...</i></div>`;
+            layer.bindPopup(baseText + actionBtns).openPopup();
             
             try {
-                // Muestreo de puntos (evitar que la URL de la API sea demasiado larga)
                 let samplePoints = latlngs;
                 if (latlngs.length > 90) {
                     const step = Math.ceil(latlngs.length / 90);
                     samplePoints = latlngs.filter((_, idx) => idx % step === 0);
-                    // Asegurar que el último punto siempre se incluya
-                    if (samplePoints[samplePoints.length - 1] !== latlngs[latlngs.length - 1]) {
-                        samplePoints.push(latlngs[latlngs.length - 1]);
-                    }
+                    if (samplePoints[samplePoints.length - 1] !== latlngs[latlngs.length - 1]) samplePoints.push(latlngs[latlngs.length - 1]);
                 }
 
-                // Obtener coordenadas formateadas para la consulta
                 const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(',');
                 const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
                 
-                // Consulta a la API
                 const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
                 const data = await res.json();
                 
                 if (data && data.elevation && data.elevation.length > 0) {
-                    let elevGain = 0;
-                    let elevLoss = 0;
+                    let elevGain = 0, elevLoss = 0;
                     const elevations = data.elevation;
                     
-                    // 2. Calcular desnivel positivo y negativo acumulado
-                    for (let i = 0; i < elevations.length - 1; i++) {
-                        let diff = elevations[i+1] - elevations[i];
-                        if (diff > 0) elevGain += diff;
-                        else elevLoss += Math.abs(diff);
+                    let distancesArray = [0], cumDist = 0;
+                    for (let i = 1; i < samplePoints.length; i++) {
+                        cumDist += samplePoints[i-1].distanceTo(samplePoints[i]);
+                        distancesArray.push((cumDist/1000).toFixed(2));
                     }
                     
-                    baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel Positivo: <span style="color:var(--success)"><b>+${elevGain.toFixed(0)} m</b></span><br>Desnivel Negativo: <span style="color:var(--danger)"><b>-${elevLoss.toFixed(0)} m</b></span></div>`;
-                } else {
-                    baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel: No disponible</div>`;
+                    layer.feature.properties.chartData = { labels: distancesArray, data: elevations };
+                    
+                    for (let i = 0; i < elevations.length - 1; i++) {
+                        let diff = elevations[i+1] - elevations[i];
+                        if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff);
+                    }
+                    
+                    baseText = `<div style="min-width: 260px;"><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span>
+                    <div style="height: 120px; width: 100%; margin-top: 8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                    
+                    layer.feature.properties.baseText = baseText;
+                    layer.setPopupContent(baseText + actionBtns);
+                    attachChartListener(layer, id); 
+                    renderChart(layer, id);
                 }
-                layer.feature.properties.baseText = baseText;
-                layer.setPopupContent(baseText + actionBtns);
             } catch (error) {
-                baseText = `<div style="font-size:12px;"><b>📏 ${layerName}</b><br>Distancia: <b>${distText}</b><br>Desnivel: Error de conexión</div>`;
+                baseText = `<div><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b><br>Desnivel: Error</div>`;
                 layer.feature.properties.baseText = baseText;
                 layer.setPopupContent(baseText + actionBtns);
             }
         }
-        // Si es un polígono (área), calculamos los metros cuadrados
         else if (e.layerType === 'polygon') {
             let latlngs = layer.getLatLngs();
-            // Adaptación para el formato de array de anillos de Leaflet
-            if (latlngs.length > 0 && Array.isArray(latlngs[0])) {
-                latlngs = latlngs[0];
-            }
-            
-            // Calculamos el área en metros cuadrados
+            if (latlngs.length > 0 && Array.isArray(latlngs[0])) latlngs = latlngs[0];
             const area = L.GeometryUtil.geodesicArea(latlngs);
-            
-            // Formatear el resultado dependiendo del tamaño
             let areaText = area.toFixed(2) + ' m²';
-            if (area > 1000000) {
-                areaText = (area / 1000000).toFixed(2) + ' km²';
-            } else if (area > 10000) {
-                areaText = (area / 10000).toFixed(2) + ' ha';
-            }
+            if (area > 1000000) areaText = (area / 1000000).toFixed(2) + ' km²';
+            else if (area > 10000) areaText = (area / 10000).toFixed(2) + ' ha';
             
-            baseText = `<div style="font-size:12px;"><b>🔲 ${layerName}</b><br>Superficie: <b>${areaText}</b></div>`;
+            baseText = `<div><b>🔲 ${layerName}</b><br>Área: <b>${areaText}</b></div>`;
             layer.feature.properties.baseText = baseText;
-            layer.setPopupContent(baseText + actionBtns);
-            layer.openPopup();
+            layer.bindPopup(baseText + actionBtns).openPopup();
         }
     });
 
@@ -669,138 +762,104 @@
         if (!layer) return;
 
         const modal = document.getElementById('edit-modal');
-        const nameInput = document.getElementById('edit-name-input');
-        const colorInput = document.getElementById('edit-color-input');
-        const weightInput = document.getElementById('edit-weight-input');
-        const weightLabel = document.getElementById('edit-weight-label');
-        const iconInput = document.getElementById('edit-icon-input');
-        const iconLabel = document.getElementById('edit-icon-label');
-        const styleOpts = document.getElementById('edit-style-options');
-
-        const oldName = layer.feature.properties.layerName;
-        nameInput.value = oldName || '';
+        document.getElementById('edit-name-input').value = layer.feature.properties.layerName || '';
         
         const isShape = (layer instanceof L.Polyline);
         const isMarker = (layer instanceof L.Marker);
         
+        document.getElementById('edit-style-options').style.display = (isShape || isMarker) ? 'block' : 'none';
+        
         if (isShape || isMarker) {
-            styleOpts.style.display = 'block';
-            colorInput.value = layer.feature.properties.color || layer.options.color || '#2ecc71';
+            document.getElementById('edit-color-input').value = layer.feature.properties.color || layer.options.color || '#2ecc71';
+            document.getElementById('edit-marker-specifics').style.display = isMarker ? 'block' : 'none';
+            document.getElementById('edit-shape-specifics').style.display = isShape ? 'block' : 'none';
             
             if (isMarker) {
-                weightInput.style.display = 'none';
-                if(weightLabel) weightLabel.style.display = 'none';
-                if(iconInput) {
-                    iconInput.style.display = 'block';
-                    iconInput.value = layer.feature.properties.iconType || 'punto';
-                }
-                if(iconLabel) iconLabel.style.display = 'block';
+                document.getElementById('edit-icon-input').value = layer.feature.properties.iconType || 'punto';
+                document.getElementById('edit-buffer-input').value = layer.feature.properties.bufferRadius || '';
             } else {
-                weightInput.style.display = 'block';
-                if(weightLabel) weightLabel.style.display = 'block';
-                if(iconInput) iconInput.style.display = 'none';
-                if(iconLabel) iconLabel.style.display = 'none';
-                weightInput.value = layer.options.weight || 4;
+                document.getElementById('edit-weight-input').value = layer.options.weight || 4;
             }
-        } else {
-            styleOpts.style.display = 'none';
         }
 
         modal.style.display = 'flex';
 
         window.confirmEditModal = function() {
             modal.style.display = 'none';
-            const newName = nameInput.value.trim() || oldName;
+            const newName = document.getElementById('edit-name-input').value.trim() || layer.feature.properties.layerName;
             
-            if (newName !== oldName) {
+            if (newName !== layer.feature.properties.layerName) {
+                const oldName = layer.feature.properties.layerName;
                 layer.feature.properties.layerName = newName;
                 if (layer.feature.properties.baseText) {
-                    layer.feature.properties.baseText = layer.feature.properties.baseText
-                        .replace(`<b>📍 ${oldName}</b>`, `<b>📍 ${newName}</b>`)
-                        .replace(`<b>📏 ${oldName}</b>`, `<b>📏 ${newName}</b>`)
-                        .replace(`<b>🔲 ${oldName}</b>`, `<b>🔲 ${newName}</b>`);
+                    layer.feature.properties.baseText = layer.feature.properties.baseText.replace(oldName, newName);
                 }
             }
 
             if (isShape) {
-                const newColor = colorInput.value;
-                const newWeight = parseInt(weightInput.value);
+                const newColor = document.getElementById('edit-color-input').value;
+                const newWeight = parseInt(document.getElementById('edit-weight-input').value);
                 layer.setStyle({ color: newColor, weight: newWeight });
-                layer.options.color = newColor;
-                layer.options.weight = newWeight;
-                layer.feature.properties.color = newColor;
-                layer.feature.properties.weight = newWeight;
+                layer.options.color = newColor; layer.options.weight = newWeight;
+                layer.feature.properties.color = newColor; layer.feature.properties.weight = newWeight;
             } else if (isMarker) {
-                const newColor = colorInput.value;
-                const newIconType = iconInput ? iconInput.value : 'punto';
+                const newColor = document.getElementById('edit-color-input').value;
+                const newIconType = document.getElementById('edit-icon-input').value;
                 layer.setIcon(getMarkerIconObj(newColor, newIconType));
-                layer.feature.properties.color = newColor;
-                layer.feature.properties.iconType = newIconType;
+                layer.feature.properties.color = newColor; layer.feature.properties.iconType = newIconType;
+                layer.feature.properties.bufferRadius = parseFloat(document.getElementById('edit-buffer-input').value) || 0;
+                updateMarkerBuffer(layer);
             }
 
             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
-                <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
-                <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
+                <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
+                <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
             </div>`;
             layer.setPopupContent(layer.feature.properties.baseText + actionBtns);
+            if (layer.feature.properties.chartData) renderChart(layer, id);
+            updateLayerTree(); 
         };
 
-        window.closeEditModal = function() {
-            modal.style.display = 'none';
-        };
+        window.closeEditModal = () => modal.style.display = 'none';
     }
 
     function removeLayerById(id) {
-        drawnItems.eachLayer(layer => {
-            if (L.stamp(layer) === id) drawnItems.removeLayer(layer);
-        });
+        const layer = drawnItems.getLayer(id);
+        if (layer) {
+            if (layer.bufferCircle) map.removeLayer(layer.bufferCircle);
+            drawnItems.removeLayer(layer);
+            updateLayerTree();
+        }
     }
 
     function stopDrawing() {
-        if (activeHandler) {
-            activeHandler.disable();
-            activeHandler = null;
-        }
-        // Quitar SOLO el listener de borrado individual, manteniendo el del popup
-        drawnItems.eachLayer(layer => {
-            layer.off('click', deleteClickHandler);
-        });
+        if (activeHandler) { activeHandler.disable(); activeHandler = null; }
+        drawnItems.eachLayer(layer => layer.off('click', deleteClickHandler));
         document.getElementById('drawing-actions').style.display = 'none';
-        document.getElementById('undo-point-btn').style.display = 'none';
-        document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar Acción (Esc)";
     }
 
     async function captureMap() {
         const captureName = await askName("Introduce un nombre para la captura:", "Mapa_AirsoftMaps");
-        const safeName = captureName.endsWith('.png') ? captureName : captureName + '.png';
-
         toggleMenu();
         document.body.classList.add('hide-controls');
-        // Esperar un momento para que se oculte la UI
         setTimeout(async () => {
             const canvas = await html2canvas(document.getElementById('map'), { 
-                useCORS: true,
-                allowTaint: false,
-                ignoreElements: (el) => el.classList.contains('leaflet-control-container')
+                useCORS: true, ignoreElements: (el) => el.classList.contains('leaflet-control-container')
             });
             const item = document.createElement('div');
             item.className = 'gallery-item';
             item.innerHTML = `<img src="${canvas.toDataURL()}">
-                <div style="font-size:13px; font-weight:bold; color:var(--ign-blue); text-align:center; padding-top:8px; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px;">${captureName}</div>
-                <div style="display:flex; justify-content:space-between; align-items:center; padding: 0 5px 5px 5px;">
-                    <a href="${canvas.toDataURL()}" download="${safeName}" style="text-decoration:none; color:var(--ign-blue); font-weight:bold; font-size:13px;">⬇️ Descargar</a>
-                    <button onclick="this.closest('.gallery-item').remove()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size:13px; padding:0;">🗑️ Borrar</button>
+                <div style="font-size:13px; font-weight:bold; color:var(--ign-blue); text-align:center; margin:5px 0;">${captureName}</div>
+                <div style="display:flex; justify-content:space-between; padding: 5px;">
+                    <a href="${canvas.toDataURL()}" download="${captureName}.png" style="color:var(--ign-blue); font-weight:bold;">⬇️ Descargar</a>
+                    <button onclick="this.closest('.gallery-item').remove()" style="border:none; background:none; color:var(--danger); cursor:pointer;">🗑️ Borrar</button>
                 </div>`;
-            
-            // Inserción directa en la galería principal visible
             document.getElementById('gallery').prepend(item);
-            
             document.body.classList.remove('hide-controls');
             toggleMenu();
         }, 100);
     }
  
-    // --- Lógica MTN ---
     function getMTNLeaf(lat, lon) {
         const refLat = 44.0, refLon = -9.5;
         const row = Math.floor((refLat - lat) / (10/60)) + 1;
@@ -825,56 +884,42 @@
         if (isMtnGridVisible) {
             if (mtnGridLayer) map.removeLayer(mtnGridLayer);
             mtnGridLayer = L.layerGroup();
-           
             const b = map.getBounds();
-            const stepLat = 10/60; 
-            const stepLon = 20/60; 
-           
+            const stepLat = 10/60, stepLon = 20/60; 
             const sLat = Math.floor(b.getSouth() / stepLat) * stepLat;
             const eLat = Math.ceil(b.getNorth() / stepLat) * stepLat;
             const sLng = Math.floor(b.getWest() / stepLon) * stepLon;
             const eLng = Math.ceil(b.getEast() / stepLon) * stepLon;
- 
             const gridStyle = { color: '#e6b800', weight: 1.5, opacity: 0.8, dashArray: '5, 5' };
  
-            for (let lat = sLat; lat <= eLat; lat += stepLat) {
-                L.polyline([[lat, b.getWest()], [lat, b.getEast()]], gridStyle).addTo(mtnGridLayer);
-            }
-            for (let lng = sLng; lng <= eLng; lng += stepLon) {
-                L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], gridStyle).addTo(mtnGridLayer);
-            }
+            for (let lat = sLat; lat <= eLat; lat += stepLat) L.polyline([[lat, b.getWest()], [lat, b.getEast()]], gridStyle).addTo(mtnGridLayer);
+            for (let lng = sLng; lng <= eLng; lng += stepLon) L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], gridStyle).addTo(mtnGridLayer);
            
             mtnGridLayer.addTo(map);
             btn.innerText = "Ocultar Cuadrículas MTN";
-            btn.classList.add('active');
         } else {
             if (mtnGridLayer) map.removeLayer(mtnGridLayer);
             btn.innerText = "Ver Cuadrículas MTN";
-            btn.classList.remove('active');
         }
     }
  
-    // --- Cuadrícula Visual ---
     function toggleGrid() {
         isGridVisible = !isGridVisible;
         const btn = document.getElementById('gridToggleBtn');
         if (isGridVisible) {
-            updateGrid();
-            map.on('moveend', updateGrid);
+            updateGrid(); map.on('moveend', updateGrid);
             btn.innerText = "Desactivar Cuadrícula";
-            btn.classList.add('active');
         } else {
             if (gridLayer) map.removeLayer(gridLayer);
             map.off('moveend', updateGrid);
             btn.innerText = "Activar Cuadrícula";
-            btn.classList.remove('active');
         }
     }
 
     function updateGridByScale() {
         const scale = document.getElementById('gridScale').value;
         if (scale !== 'auto') {
-            const zoomLevels = { "2000": 18, "5000": 16, "10000": 15, "25000": 14, "50000": 13, "100000": 12, "250000": 10, "500000": 9, "1000000": 8 };
+            const zoomLevels = { "2000": 18, "5000": 16, "10000": 15, "25000": 14, "50000": 13, "100000": 12 };
             if (zoomLevels[scale]) map.setZoom(zoomLevels[scale]);
         }
         updateGrid();
@@ -885,14 +930,12 @@
         if (!scaleControlObj) {
             scaleControlObj = L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
             btn.innerText = "Ocultar Escala";
-            btn.classList.add('active');
-            document.getElementById('liveCoords').style.bottom = '60px'; // Sube las coordenadas para que no se pisen
+            document.getElementById('liveCoords').style.bottom = '60px'; 
         } else {
             map.removeControl(scaleControlObj);
             scaleControlObj = null;
             btn.innerText = "Mostrar Escala";
-            btn.classList.remove('active');
-            document.getElementById('liveCoords').style.bottom = '20px'; // Restaura la posición original
+            document.getElementById('liveCoords').style.bottom = '20px'; 
         }
     }
  
@@ -905,14 +948,10 @@
         const type = document.getElementById('gridType').value;
         const color = document.getElementById('gridColor').value;
         const weight = parseFloat(document.getElementById('gridWeight').value);
-        
-        let step = (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : 1.0);
+        let step = (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : 0.5);
  
-        const sLat = Math.floor(b.getSouth() / step) * step;
-        const eLat = Math.ceil(b.getNorth() / step) * step;
-        const sLng = Math.floor(b.getWest() / step) * step;
-        const eLng = Math.ceil(b.getEast() / step) * step;
- 
+        const sLat = Math.floor(b.getSouth() / step) * step, eLat = Math.ceil(b.getNorth() / step) * step;
+        const sLng = Math.floor(b.getWest() / step) * step, eLng = Math.ceil(b.getEast() / step) * step;
         const lineStyle = { color: color, weight: weight, opacity: 0.6 };
  
         if (((eLat - sLat) / step) * ((eLng - sLng) / step) > 2000) return;
@@ -930,7 +969,6 @@
         gridLayer.addTo(map);
     }
  
-    // --- Utilidades Geográficas ---
     function latLonToUTM(lat, lon) {
         const a = 6378137.0, f = 1 / 298.257223563;
         const k0 = 0.9996;
@@ -945,14 +983,10 @@
         let y = k0 * (M + N * Math.tan(phi) * (A ** 2 / 2 + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24 + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720));
         if (lat < 0) y += 10000000.0;
         
-        // Cálculo de la Letra de Banda UTM
         const letters = "CDEFGHJKLMNPQRSTUVWXX";
         let index = Math.floor((lat + 80) / 8);
-        if (index < 0) index = 0;
-        if (index > 20) index = 20;
-        const banda = letters[index];
-        
-        return { x, y, huso, banda };
+        if (index < 0) index = 0; if (index > 20) index = 20;
+        return { x, y, huso, banda: letters[index] };
     }
  
     function formatDMS(deg, isLat) {
@@ -962,7 +996,6 @@
         return `${d}°${m}'${s}"${ref}`;
     }
  
-    // --- Eventos y Control ---
     map.on('mousemove', (e) => {
         const type = document.getElementById('gridType').value;
         let coords = `Lat: ${e.latlng.lat.toFixed(6)} | Lon: ${e.latlng.lng.toFixed(6)}`;
@@ -976,9 +1009,21 @@
  
     map.on('move', updateMtnInfo);
  
-    function changeLayer(val) {
-        Object.values(layers).forEach(l => map.removeLayer(l));
-        layers[val].addTo(map);
+    function changeLayer() {
+        const bVal = document.getElementById('baseLayer').value;
+        const oVal = document.getElementById('overlayLayer').value;
+        const op = parseFloat(document.getElementById('overlayOpacity').value);
+
+        if (currentBase) map.removeLayer(currentBase);
+        if (currentOverlay) map.removeLayer(currentOverlay);
+
+        currentBase = baseLayers[bVal]; map.addLayer(currentBase);
+
+        if (oVal !== 'none') {
+            currentOverlay = overLayers[oVal];
+            currentOverlay.setOpacity(op);
+            map.addLayer(currentOverlay);
+        } else { currentOverlay = null; }
     }
  
     function toggleMenu() { document.getElementById('panelLateral').classList.toggle('oculto'); }
@@ -986,48 +1031,37 @@
     async function renombrarProyecto() {
         toggleMenu();
         const name = await askName("Renombrar proyecto:", projectName);
-        projectName = name.trim() || "Proyecto_AirsoftMaps";
+        projectName = name.trim() || "Proyecto";
         document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
         toggleMenu();
     }
 
     function nuevoProyecto() {
-        toggleMenu(); // Ocultar panel lateral temporalmente
+        toggleMenu(); 
         document.getElementById('confirm-modal').style.display = 'flex';
-        
         window.acceptConfirmModal = async function() {
             document.getElementById('confirm-modal').style.display = 'none';
-            
             const name = await askName("Nombre del nuevo proyecto:", "Nuevo_Proyecto");
             projectName = name.trim() || "Nuevo_Proyecto";
             document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
 
-            drawnItems.clearLayers(); // Borra todos los dibujos
-            document.getElementById('gallery').innerHTML = ''; // Borra la galería
-            stopDrawing(); // Detiene cualquier herramienta activa
-            map.setView([40.4167, -3.7037], 6); // Centra el mapa por defecto
-            toggleMenu(); // Reabre el panel
+            drawnItems.eachLayer(l => { if(l.bufferCircle) map.removeLayer(l.bufferCircle); });
+            drawnItems.clearLayers(); 
+            document.getElementById('gallery').innerHTML = ''; 
+            stopDrawing(); updateLayerTree();
+            map.setView([40.4167, -3.7037], 6); 
+            toggleMenu(); 
         };
-        
-        window.closeConfirmModal = function() {
-            document.getElementById('confirm-modal').style.display = 'none';
-            toggleMenu(); // Reabre el panel sin borrar nada
-        };
+        window.closeConfirmModal = function() { document.getElementById('confirm-modal').style.display = 'none'; toggleMenu(); };
     }
 
     function guardarProyecto() {
-        const data = {
-            view: { center: map.getCenter(), zoom: map.getZoom() },
-            features: drawnItems.toGeoJSON()
-        };
+        const data = { view: { center: map.getCenter(), zoom: map.getZoom() }, features: drawnItems.toGeoJSON() };
         const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        const safeName = projectName.replace(/[^a-z0-9_-]/gi, '_');
-        a.download = safeName + ".json";
-        a.click();
-        URL.revokeObjectURL(url);
+        a.href = url; a.download = projectName.replace(/[^a-z0-9_-]/gi, '_') + ".json";
+        a.click(); URL.revokeObjectURL(url);
     }
 
     function cargarProyecto(event) {
@@ -1043,6 +1077,7 @@
                 const data = JSON.parse(e.target.result);
                 if (data.view) map.setView(data.view.center, data.view.zoom);
                 if (data.features) {
+                    drawnItems.eachLayer(l => { if(l.bufferCircle) map.removeLayer(l.bufferCircle); });
                     drawnItems.clearLayers();
                     L.geoJSON(data.features, {
                         pointToLayer: function (feature, latlng) {
@@ -1063,42 +1098,30 @@
                         onEachFeature: function (feature, layer) {
                             drawnItems.addLayer(layer);
                             const id = L.stamp(layer);
-                            const baseText = feature.properties.baseText || 'Elemento de edición.';
+                            layer.isHidden = false;
                             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
-                                <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
-                                <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
+                                <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
+                                <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
                             </div>`;
-                            layer.bindPopup(baseText + actionBtns);
+                            layer.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
+                            if (layer instanceof L.Marker) updateMarkerBuffer(layer);
+                            if (feature.properties.chartData) attachChartListener(layer, id);
                         }
                     });
                 }
-                toggleMenu(); 
-            } catch (err) {
-                alert("Error al cargar el proyecto. Archivo no válido.");
-            }
+                updateLayerTree(); toggleMenu(); 
+            } catch (err) { alert("Error al cargar el proyecto."); }
         };
         reader.readAsText(file);
-        event.target.value = ''; // Resetea el input por si se carga el mismo archivo 2 veces
+        event.target.value = ''; 
     }
 
-    // --- Importación y Exportación KML/GPX ---
-    
-    function escapeXML(str) {
-        return (str || '').replace(/&/g, '&amp;')
-                          .replace(/</g, '&lt;')
-                          .replace(/>/g, '&gt;')
-                          .replace(/"/g, '&quot;')
-                          .replace(/'/g, '&apos;');
-    }
+    function escapeXML(str) { return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;'); }
 
     function downloadFile(content, fileName, mimeType) {
         const blob = new Blob([content], {type: mimeType});
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
+        const a = document.createElement('a'); a.href = url; a.download = fileName; a.click(); URL.revokeObjectURL(url);
     }
 
     function exportKML() {
@@ -1107,12 +1130,10 @@
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
             kml += `<Placemark><name>${name}</name>`;
             if (layer instanceof L.Marker) {
-                const ll = layer.getLatLng();
-                kml += `<Point><coordinates>${ll.lng},${ll.lat},0</coordinates></Point>`;
+                const ll = layer.getLatLng(); kml += `<Point><coordinates>${ll.lng},${ll.lat},0</coordinates></Point>`;
             } else if (layer instanceof L.Polygon) {
                 const lls = layer.getLatLngs()[0];
-                let coords = lls.map(ll => `${ll.lng},${ll.lat},0`).join(' ');
-                coords += ` ${lls[0].lng},${lls[0].lat},0`;
+                let coords = lls.map(ll => `${ll.lng},${ll.lat},0`).join(' '); coords += ` ${lls[0].lng},${lls[0].lat},0`;
                 kml += `<Polygon><outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs></Polygon>`;
             } else if (layer instanceof L.Polyline) {
                 const lls = layer.getLatLngs();
@@ -1131,17 +1152,12 @@
         drawnItems.eachLayer(layer => {
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
             if (layer instanceof L.Marker) {
-                const ll = layer.getLatLng();
-                gpx += `<wpt lat="${ll.lat}" lon="${ll.lng}"><name>${name}</name></wpt>\n`;
+                const ll = layer.getLatLng(); gpx += `<wpt lat="${ll.lat}" lon="${ll.lng}"><name>${name}</name></wpt>\n`;
             } else if (layer instanceof L.Polyline) {
                 const lls = (layer instanceof L.Polygon) ? layer.getLatLngs()[0] : layer.getLatLngs();
                 gpx += `<trk><name>${name}</name><trkseg>\n`;
-                lls.forEach(ll => {
-                    gpx += `<trkpt lat="${ll.lat}" lon="${ll.lng}"></trkpt>\n`;
-                });
-                if (layer instanceof L.Polygon) {
-                    gpx += `<trkpt lat="${lls[0].lat}" lon="${lls[0].lng}"></trkpt>\n`;
-                }
+                lls.forEach(ll => { gpx += `<trkpt lat="${ll.lat}" lon="${ll.lng}"></trkpt>\n`; });
+                if (layer instanceof L.Polygon) gpx += `<trkpt lat="${lls[0].lat}" lon="${lls[0].lng}"></trkpt>\n`;
                 gpx += `</trkseg></trk>\n`;
             }
         });
@@ -1166,10 +1182,7 @@
                         const points = p.getElementsByTagName('Point');
                         if (points.length > 0) {
                             let coordsText = points[0].getElementsByTagName('coordinates')[0]?.textContent.trim();
-                            if (coordsText) {
-                                let coords = coordsText.split(',');
-                                addImportedLayer(L.marker([parseFloat(coords[1]), parseFloat(coords[0])]), name, 'marker');
-                            }
+                            if (coordsText) { let coords = coordsText.split(','); addImportedLayer(L.marker([parseFloat(coords[1]), parseFloat(coords[0])]), name, 'marker'); }
                         }
                         const lines = p.getElementsByTagName('LineString');
                         if (lines.length > 0) {
@@ -1194,8 +1207,7 @@
                     const wpts = xmlDoc.getElementsByTagName('wpt');
                     Array.from(wpts).forEach(w => {
                         const name = w.getElementsByTagName('name')[0]?.textContent || 'Punto GPX';
-                        const lat = parseFloat(w.getAttribute('lat'));
-                        const lon = parseFloat(w.getAttribute('lon'));
+                        const lat = parseFloat(w.getAttribute('lat')), lon = parseFloat(w.getAttribute('lon'));
                         addImportedLayer(L.marker([lat, lon]), name, 'marker');
                     });
                     const trks = xmlDoc.getElementsByTagName('trk');
@@ -1203,22 +1215,14 @@
                         const name = t.getElementsByTagName('name')[0]?.textContent || 'Ruta GPX';
                         const trkpts = t.getElementsByTagName('trkpt');
                         const latlngs = [];
-                        Array.from(trkpts).forEach(pt => {
-                            latlngs.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]);
-                        });
-                        if (latlngs.length > 0) {
-                            addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline');
-                        }
+                        Array.from(trkpts).forEach(pt => { latlngs.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]); });
+                        if (latlngs.length > 0) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline');
                     });
                 }
                 
-                if(drawnItems.getLayers().length > 0) {
-                    map.fitBounds(drawnItems.getBounds());
-                }
-                toggleMenu(); 
-            } catch (err) {
-                alert("Error al procesar el archivo. Asegúrate de que es un KML o GPX válido.");
-            }
+                if(drawnItems.getLayers().length > 0) map.fitBounds(drawnItems.getBounds());
+                updateLayerTree(); toggleMenu(); 
+            } catch (err) { alert("Error al procesar el archivo KML o GPX."); }
         };
         reader.readAsText(file);
         event.target.value = '';
@@ -1227,18 +1231,16 @@
     function addImportedLayer(layer, name, type) {
         const id = L.stamp(layer);
         layer.feature = { type: 'Feature', properties: { layerName: name } };
+        layer.isHidden = false;
         
-        let baseText = 'Elemento importado.';
+        let baseText = 'Importado';
         
         if (type === 'marker') {
             const color = '#3498db'; 
-            layer.feature.properties.color = color;
-            layer.feature.properties.iconType = 'punto';
+            layer.feature.properties.color = color; layer.feature.properties.iconType = 'punto'; layer.feature.properties.bufferRadius = 0;
             layer.setIcon(getMarkerIconObj(color, 'punto'));
-            
             const latlng = layer.getLatLng();
-            let coordText = `Lat: ${latlng.lat.toFixed(5)}<br>Lon: ${latlng.lng.toFixed(5)}`;
-            baseText = `<div style="font-size:12px;"><b>📍 ${name}</b><br>${coordText}</div>`;
+            baseText = `<div><b>📍 ${name}</b><br>Lat: ${latlng.lat.toFixed(5)}<br>Lon: ${latlng.lng.toFixed(5)}</div>`;
         } else {
             layer.feature.properties.color = layer.options.color;
             layer.feature.properties.weight = layer.options.weight;
@@ -1247,11 +1249,9 @@
             if (type === 'polyline') {
                 let distance = 0;
                 const latlngs = layer.getLatLngs();
-                for (let i = 0; i < latlngs.length - 1; i++) {
-                    distance += latlngs[i].distanceTo(latlngs[i+1]);
-                }
+                for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i+1]);
                 const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
-                baseText = `<div style="font-size:12px;"><b>📏 ${name}</b><br>Distancia: <b>${distText}</b><br><i>(Importado)</i></div>`;
+                baseText = `<div><b>📏 ${name}</b><br>Dist: <b>${distText}</b></div>`;
             } else if (type === 'polygon') {
                 let latlngs = layer.getLatLngs();
                 if (latlngs.length > 0 && Array.isArray(latlngs[0])) latlngs = latlngs[0];
@@ -1259,13 +1259,13 @@
                 let areaText = area.toFixed(2) + ' m²';
                 if (area > 1000000) areaText = (area / 1000000).toFixed(2) + ' km²';
                 else if (area > 10000) areaText = (area / 10000).toFixed(2) + ' ha';
-                baseText = `<div style="font-size:12px;"><b>🔲 ${name}</b><br>Superficie: <b>${areaText}</b><br><i>(Importado)</i></div>`;
+                baseText = `<div><b>🔲 ${name}</b><br>Área: <b>${areaText}</b></div>`;
             }
         }
         
         const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
-            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
-            <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
+            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
+            <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
         </div>`;
         
         layer.feature.properties.baseText = baseText;
@@ -1277,25 +1277,17 @@
         const q = document.getElementById('searchInput').value.trim();
         if (!q) return;
 
-        // Comprobar si el texto ingresado son coordenadas decimales (ej: 40.41, -3.70 o 40.41 -3.70)
         const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/);
         if (coordMatch) {
-            const lat = parseFloat(coordMatch[1]);
-            const lon = parseFloat(coordMatch[2]);
-            if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-                map.setView([lat, lon], 15);
-                return; // Coordenadas válidas, centramos y salimos
-            }
+            const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]);
+            if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { map.setView([lat, lon], 15); return; }
         }
 
-        // Si no son coordenadas, hacemos la búsqueda normal por texto (ciudad, calle...)
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
             const data = await res.json();
             if (data[0]) map.setView([data[0].lat, data[0].lon], 15);
-        } catch (error) {
-            console.error("Error en la búsqueda:", error);
-        }
+        } catch (error) { console.error("Error en la búsqueda"); }
     }
  
     function updateUI() { if(isGridVisible) updateGrid(); }
@@ -1304,48 +1296,36 @@
         const container = document.getElementById('grid-group-container');
         const icon = document.getElementById('toggleGridMenuIcon');
         const text = document.getElementById('toggleGridMenuText');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            text.innerText = '📐 Ocultar Sistema';
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
-            text.innerText = '📐 Mostrar Sistema';
-        }
+        if (container.style.display === 'none') { container.style.display = 'block'; icon.innerText = '▲'; text.innerText = '📐 Ocultar Sistema'; } 
+        else { container.style.display = 'none'; icon.innerText = '▼'; text.innerText = '📐 Mostrar Sistema'; }
     }
 
     function toggleEditGroup() {
         const container = document.getElementById('edit-group-container');
         const icon = document.getElementById('toggleEditIcon');
         const text = document.getElementById('toggleEditText');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            text.innerText = '🛠️ Ocultar Herramientas';
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
-            text.innerText = '🛠️ Mostrar Herramientas';
-        }
+        if (container.style.display === 'none') { container.style.display = 'block'; icon.innerText = '▲'; text.innerText = '🛠️ Ocultar Herramientas'; } 
+        else { container.style.display = 'none'; icon.innerText = '▼'; text.innerText = '🛠️ Mostrar Herramientas'; }
     }
 
     function toggleTransferGroup() {
         const container = document.getElementById('transfer-group-container');
         const icon = document.getElementById('toggleTransferIcon');
         const text = document.getElementById('toggleTransferText');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            text.innerText = '🔄 Ocultar (KML/GPX)';
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
-            text.innerText = '🔄 Importar / Exportar (KML/GPX)';
-        }
+        if (container.style.display === 'none') { container.style.display = 'block'; icon.innerText = '▲'; text.innerText = '🔄 Ocultar (KML/GPX)'; } 
+        else { container.style.display = 'none'; icon.innerText = '▼'; text.innerText = '🔄 Importar / Exportar'; }
+    }
+
+    function toggleMapMixerGroup() {
+        const container = document.getElementById('map-mixer-container');
+        const icon = document.getElementById('toggleMapMixerIcon');
+        const text = document.getElementById('toggleMapMixerText');
+        if (container.style.display === 'none') { container.style.display = 'block'; icon.innerText = '▲'; text.innerText = '🗺️ Ocultar Mezclador'; } 
+        else { container.style.display = 'none'; icon.innerText = '▼'; text.innerText = '🗺️ Mostrar Mezclador'; }
     }
  
     updateMtnInfo();
+    updateLayerTree(); 
 </script>
  
 </body>
