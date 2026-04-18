@@ -96,8 +96,9 @@
         .gallery-item { margin-bottom: 10px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 4px; }
         .gallery-item img { width: 100%; display: block; border-radius: 4px; }
  
-        /* La leyenda NO se oculta en el hide-controls para que salga en la captura */
-        .hide-controls .leaflet-control-container,
+        /* La leyenda y escala NO se ocultan en el hide-controls para que salgan en la captura */
+        .hide-controls .leaflet-top,
+        .hide-controls .leaflet-control-attribution,
         .hide-controls .fab-menu,
         .hide-controls .coord-display,
         .hide-controls .sidebar,
@@ -245,6 +246,14 @@
             <button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="closeEditModal()">Cancelar</button>
             <button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="confirmEditModal()">Guardar Cambios</button>
         </div>
+    </div>
+</div>
+
+<!-- Modal para ver imágenes de captura a tamaño completo -->
+<div id="image-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:4000; align-items:center; justify-content:center;">
+    <div style="position:relative; max-width:95%; max-height:95%; display:flex; flex-direction:column; align-items:center;">
+        <button onclick="closeImageModal()" style="position:absolute; top:-40px; right:0; background:none; border:none; color:white; font-size:32px; cursor:pointer; font-weight:bold;" title="Cerrar">✕</button>
+        <img id="image-modal-content" src="" style="max-width:100%; max-height:90vh; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
     </div>
 </div>
  
@@ -1008,21 +1017,35 @@
         document.getElementById('drawing-actions').style.display = 'none';
     }
 
+    // Funciones para el visor de imágenes
+    function openImageModal(src) {
+        document.getElementById('image-modal-content').src = src;
+        document.getElementById('image-modal').style.display = 'flex';
+    }
+
+    function closeImageModal() {
+        document.getElementById('image-modal').style.display = 'none';
+        document.getElementById('image-modal-content').src = '';
+    }
+
     async function captureMap() {
         const captureName = await askName("Introduce un nombre para la captura:", "Mapa_AirsoftMaps");
         toggleMenu();
         document.body.classList.add('hide-controls');
         setTimeout(async () => {
-            const canvas = await html2canvas(document.getElementById('map'), { 
-                useCORS: true, ignoreElements: (el) => el.classList.contains('leaflet-control-container')
+            const canvas = await html2canvas(document.getElementById('map-container'), { 
+                useCORS: true, ignoreElements: (el) => el.classList && (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution'))
             });
             const item = document.createElement('div');
             item.className = 'gallery-item';
-            item.innerHTML = `<img src="${canvas.toDataURL()}">
+            
+            const imgData = canvas.toDataURL();
+            item.innerHTML = `<img src="${imgData}" style="cursor: zoom-in;" onclick="openImageModal(this.src)" title="Clic para ampliar">
                 <div style="font-size:13px; font-weight:bold; color:var(--ign-blue); text-align:center; margin:5px 0;">${captureName}</div>
-                <div style="display:flex; justify-content:space-between; padding: 5px;">
-                    <a href="${canvas.toDataURL()}" download="${captureName}.png" style="color:var(--ign-blue); font-weight:bold;">⬇️ Descargar</a>
-                    <button onclick="this.closest('.gallery-item').remove()" style="border:none; background:none; color:var(--danger); cursor:pointer;">🗑️ Borrar</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px;">
+                    <button onclick="openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none; background:none; color:var(--success); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">👁️ Ver</button>
+                    <a href="${imgData}" download="${captureName}.png" style="color:var(--ign-blue); font-weight:bold; text-decoration:none; font-size: 12px;">⬇️ Descargar</a>
+                    <button onclick="this.closest('.gallery-item').remove()" style="border:none; background:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🗑️ Borrar</button>
                 </div>`;
             document.getElementById('gallery').prepend(item);
             document.body.classList.remove('hide-controls');
@@ -1447,14 +1470,58 @@
         drawnItems.addLayer(layer);
     }
 
+    function utmToLatLon(zone, x, y, isSouth) {
+        const a = 6378137.0, e2 = 0.006694380004260827, k0 = 0.9996;
+        const ep2 = e2 / (1 - e2);
+        x = x - 500000.0;
+        if (isSouth) y = y - 10000000.0;
+        const M = y / k0;
+        const mu = M / (a * (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256));
+        const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+        const phi1 = mu + (3*e1/2 - 27*e1*e1*e1/32)*Math.sin(2*mu) + (21*e1*e1/16 - 55*e1*e1*e1*e1/32)*Math.sin(4*mu) + (151*e1*e1*e1/96)*Math.sin(6*mu);
+        const N1 = a / Math.sqrt(1 - e2*Math.sin(phi1)*Math.sin(phi1));
+        const T1 = Math.tan(phi1)*Math.tan(phi1);
+        const C1 = ep2*Math.cos(phi1)*Math.cos(phi1);
+        const R1 = a*(1-e2) / Math.pow(1 - e2*Math.sin(phi1)*Math.sin(phi1), 1.5);
+        const D = x / (N1*k0);
+        let lat = phi1 - (N1*Math.tan(phi1)/R1) * (D*D/2 - (5 + 3*T1 + 10*C1 - 4*C1*C1 - 9*ep2)*Math.pow(D, 4)/24 + (61 + 90*T1 + 298*C1 + 45*T1*T1 - 252*ep2 - 3*C1*C1)*Math.pow(D, 6)/720);
+        let lon = (D - (1 + 2*T1 + C1)*Math.pow(D, 3)/6 + (5 - 2*C1 + 28*T1 - 3*C1*C1 + 8*ep2 + 24*T1*T1)*Math.pow(D, 5)/120) / Math.cos(phi1);
+        const lon0 = (zone - 1)*6 - 180 + 3;
+        return { lat: lat * 180 / Math.PI, lon: lon0 + lon * 180 / Math.PI };
+    }
+
     async function buscarLugar() {
         const q = document.getElementById('searchInput').value.trim();
         if (!q) return;
 
-        const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/);
-        if (coordMatch) {
-            const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]);
-            if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { map.setView([lat, lon], 15); return; }
+        const type = document.getElementById('gridType').value;
+        
+        if (type === 'decimal') {
+            const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/);
+            if (coordMatch) {
+                const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]);
+                if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { map.setView([lat, lon], 15); return; }
+            }
+        } else if (type === 'dms') {
+            const parts = q.match(/(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([NS])[,;\s]*(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([EWO])/i);
+            if (parts) {
+                let lat = parseFloat(parts[1]) + parseFloat(parts[2])/60 + parseFloat(parts[3])/3600;
+                if (parts[4].toUpperCase() === 'S') lat = -lat;
+                let lon = parseFloat(parts[5]) + parseFloat(parts[6])/60 + parseFloat(parts[7])/3600;
+                if (parts[8].toUpperCase() === 'W' || parts[8].toUpperCase() === 'O') lon = -lon;
+                map.setView([lat, lon], 15); return;
+            }
+        } else if (type === 'utm') {
+            const parts = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i);
+            if (parts) {
+                const zone = parseInt(parts[1]);
+                const band = parts[2] ? parts[2].toUpperCase() : 'N';
+                const x = parseFloat(parts[3]);
+                const y = parseFloat(parts[4]);
+                const isSouth = "CDEFGHJKLM".includes(band);
+                const ll = utmToLatLon(zone, x, y, isSouth);
+                if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { map.setView([ll.lat, ll.lon], 15); return; }
+            }
         }
 
         try {
@@ -1464,7 +1531,15 @@
         } catch (error) { console.error("Error en la búsqueda"); }
     }
  
-    function updateUI() { if(isGridVisible) updateGrid(); }
+    function updateUI() { 
+        if(isGridVisible) updateGrid(); 
+        
+        const type = document.getElementById('gridType').value;
+        const searchInput = document.getElementById('searchInput');
+        if(type === 'decimal') searchInput.placeholder = "Ciudad o 40.41, -3.70...";
+        else if(type === 'dms') searchInput.placeholder = "Ciudad o 40°25'0\"N 3°42'0\"W...";
+        else if(type === 'utm') searchInput.placeholder = "Ciudad o 30 T 440000 4450000...";
+    }
 
     function toggleGridGroup() {
         const container = document.getElementById('grid-group-container');
@@ -1507,6 +1582,7 @@
  
     updateMtnInfo();
     updateLayerTree(); 
+    updateUI();
 </script>
  
 </body>
