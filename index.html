@@ -107,6 +107,30 @@
             gap: 8px;
             margin-bottom: 10px;
         }
+
+        /* Estilo para la barra de escala cartográfica clásica (Blanco y Negro) */
+        .leaflet-control-scale-line {
+            border: 2px solid #222 !important; /* Cerrar el rectángulo completo */
+            background-color: rgba(255, 255, 255, 0.9) !important; /* Fondo claro para destacar el número */
+            background-image: 
+                linear-gradient(to bottom, #222, #222), /* Línea divisoria horizontal */
+                linear-gradient(to right, #ffffff 50%, #222222 50%) !important; /* Bloques B/N */
+            background-size: 
+                100% 2px, 
+                100% 6px !important; 
+            background-position: 
+                0 calc(100% - 6px), 
+                0 100% !important; 
+            background-repeat: no-repeat !important;
+            color: #000 !important;
+            font-weight: 900 !important;
+            font-size: 12px !important;
+            text-align: center !important; /* Centra el texto indicando que mide el TOTAL */
+            line-height: 1.2 !important;
+            padding: 4px 5px 12px 5px !important; /* El margen inferior de 12px aloja la regleta */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;
+            text-shadow: none !important; /* Quitamos la sombra porque ya hay fondo blanco */
+        }
     </style>
 </head>
 <body>
@@ -201,15 +225,30 @@
     </div>
     <div class="content">
        
-        <div style="display:flex; gap:8px; margin-bottom: 15px;">
+        <div style="display:flex; gap:8px; margin-bottom: 10px;">
             <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0;" onclick="nuevoProyecto()">📄 Nuevo</button>
             <button class="btn-outline" style="margin-bottom: 0;" onclick="renombrarProyecto()">✏️ Renombrar</button>
         </div>
        
-        <div style="display:flex; gap:8px; margin-bottom: 15px;">
-            <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar</button>
-            <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar</button>
+        <div style="display:flex; gap:8px; margin-bottom: 10px;">
+            <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar (JSON)</button>
+            <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar (JSON)</button>
             <input type="file" id="file-loader" style="display:none;" accept=".json" onchange="cargarProyecto(event)">
+        </div>
+
+        <button class="btn-outline" id="toggleTransferBtn" onclick="toggleTransferGroup()" style="margin-bottom: 15px; justify-content: space-between; background: #f8fafc;">
+            <span id="toggleTransferText">🔄 Importar / Exportar (KML/GPX)</span>
+            <span id="toggleTransferIcon">▼</span>
+        </button>
+
+        <div id="transfer-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportKML()">⬇️ Exportar KML</button>
+                <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportGPX()">⬇️ Exportar GPX</button>
+            </div>
+            <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="document.getElementById('kml-gpx-loader').click()">⬆️ Importar Archivo</button>
+            <input type="file" id="kml-gpx-loader" style="display:none;" accept=".kml,.gpx" onchange="importKMLGPX(event)">
+            <p style="font-size: 10px; color: #64748b; margin: 8px 0 0 0; text-align: center;">Formatos compatibles: Google Earth (.kml) y Garmin (.gpx)</p>
         </div>
        
         <div class="section-title" style="margin-top: 0;">🔍 Buscador</div>
@@ -282,7 +321,10 @@
                 <option value="1000000">1:1.000.000</option>
             </select>
  
-            <button id="gridToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleGrid()">Activar Cuadrícula</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button id="gridToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleGrid()">Activar Cuadrícula</button>
+                <button id="scaleToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleScale()">Mostrar Escala</button>
+            </div>
         </div>
  
         <div class="section-title">✏️ Edición de Mapa</div>
@@ -351,6 +393,7 @@
     let activeHandler = null, gridLayer = null, isGridVisible = false;
     let mtnGridLayer = null, isMtnGridVisible = false;
     let projectName = "Proyecto_AirsoftMaps";
+    let scaleControlObj = null;
  
     const layers = {
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
@@ -359,7 +402,8 @@
         osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' })
     };
  
-    const map = L.map('map', { center: [40.4167, -3.7037], zoom: 6, layers: [layers.mtn], zoomControl: false });
+    // Añadido preferCanvas: true para que html2canvas pueda capturar las líneas sin cortarlas
+    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [layers.mtn], zoomControl: false });
     L.control.zoom({ position: 'topleft' }).addTo(map);
  
     // Capa para elementos dibujados
@@ -509,7 +553,7 @@
                 coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lng, false)}`;
             } else if (type === 'utm') {
                 const u = latLonToUTM(lat, lng);
-                coordText = `Huso: ${u.huso}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`;
+                coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`;
             }
             
             baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>Calculando...</i></div>`;
@@ -835,6 +879,22 @@
         }
         updateGrid();
     }
+
+    function toggleScale() {
+        const btn = document.getElementById('scaleToggleBtn');
+        if (!scaleControlObj) {
+            scaleControlObj = L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+            btn.innerText = "Ocultar Escala";
+            btn.classList.add('active');
+            document.getElementById('liveCoords').style.bottom = '60px'; // Sube las coordenadas para que no se pisen
+        } else {
+            map.removeControl(scaleControlObj);
+            scaleControlObj = null;
+            btn.innerText = "Mostrar Escala";
+            btn.classList.remove('active');
+            document.getElementById('liveCoords').style.bottom = '20px'; // Restaura la posición original
+        }
+    }
  
     function updateGrid() {
         if (!isGridVisible) return;
@@ -884,7 +944,15 @@
         const x = k0 * N * (A + (1 - T + C) * A ** 3 / 6 + (5 - 18 * T + T ** 2 + 72 * C - 58 * ep2) * A ** 5 / 120) + 500000.0;
         let y = k0 * (M + N * Math.tan(phi) * (A ** 2 / 2 + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24 + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720));
         if (lat < 0) y += 10000000.0;
-        return { x, y, huso };
+        
+        // Cálculo de la Letra de Banda UTM
+        const letters = "CDEFGHJKLMNPQRSTUVWXX";
+        let index = Math.floor((lat + 80) / 8);
+        if (index < 0) index = 0;
+        if (index > 20) index = 20;
+        const banda = letters[index];
+        
+        return { x, y, huso, banda };
     }
  
     function formatDMS(deg, isLat) {
@@ -901,7 +969,7 @@
         if (type === 'dms') coords = `${formatDMS(e.latlng.lat, true)} | ${formatDMS(e.latlng.lng, false)}`;
         if (type === 'utm') {
             const u = latLonToUTM(e.latlng.lat, e.latlng.lng);
-            coords = `Huso ${u.huso} | X: ${u.x.toFixed(0)} Y: ${u.y.toFixed(0)}`;
+            coords = `Huso ${u.huso}${u.banda} | X: ${u.x.toFixed(0)} Y: ${u.y.toFixed(0)}`;
         }
         document.getElementById('liveCoords').innerText = coords;
     });
@@ -1013,6 +1081,198 @@
         event.target.value = ''; // Resetea el input por si se carga el mismo archivo 2 veces
     }
 
+    // --- Importación y Exportación KML/GPX ---
+    
+    function escapeXML(str) {
+        return (str || '').replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&apos;');
+    }
+
+    function downloadFile(content, fileName, mimeType) {
+        const blob = new Blob([content], {type: mimeType});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function exportKML() {
+        let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n<name>' + escapeXML(projectName) + '</name>\n';
+        drawnItems.eachLayer(layer => {
+            const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
+            kml += `<Placemark><name>${name}</name>`;
+            if (layer instanceof L.Marker) {
+                const ll = layer.getLatLng();
+                kml += `<Point><coordinates>${ll.lng},${ll.lat},0</coordinates></Point>`;
+            } else if (layer instanceof L.Polygon) {
+                const lls = layer.getLatLngs()[0];
+                let coords = lls.map(ll => `${ll.lng},${ll.lat},0`).join(' ');
+                coords += ` ${lls[0].lng},${lls[0].lat},0`;
+                kml += `<Polygon><outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs></Polygon>`;
+            } else if (layer instanceof L.Polyline) {
+                const lls = layer.getLatLngs();
+                let coords = lls.map(ll => `${ll.lng},${ll.lat},0`).join(' ');
+                kml += `<LineString><coordinates>${coords}</coordinates></LineString>`;
+            }
+            kml += `</Placemark>\n`;
+        });
+        kml += '</Document>\n</kml>';
+        downloadFile(kml, projectName.replace(/[^a-z0-9_-]/gi, '_') + '.kml', 'application/vnd.google-earth.kml+xml');
+    }
+
+    function exportGPX() {
+        let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps">\n';
+        gpx += `<metadata><name>${escapeXML(projectName)}</name></metadata>\n`;
+        drawnItems.eachLayer(layer => {
+            const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
+            if (layer instanceof L.Marker) {
+                const ll = layer.getLatLng();
+                gpx += `<wpt lat="${ll.lat}" lon="${ll.lng}"><name>${name}</name></wpt>\n`;
+            } else if (layer instanceof L.Polyline) {
+                const lls = (layer instanceof L.Polygon) ? layer.getLatLngs()[0] : layer.getLatLngs();
+                gpx += `<trk><name>${name}</name><trkseg>\n`;
+                lls.forEach(ll => {
+                    gpx += `<trkpt lat="${ll.lat}" lon="${ll.lng}"></trkpt>\n`;
+                });
+                if (layer instanceof L.Polygon) {
+                    gpx += `<trkpt lat="${lls[0].lat}" lon="${lls[0].lng}"></trkpt>\n`;
+                }
+                gpx += `</trkseg></trk>\n`;
+            }
+        });
+        gpx += '</gpx>';
+        downloadFile(gpx, projectName.replace(/[^a-z0-9_-]/gi, '_') + '.gpx', 'application/gpx+xml');
+    }
+
+    function importKMLGPX(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const text = e.target.result;
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, "text/xml");
+                
+                if (file.name.toLowerCase().endsWith('.kml')) {
+                    const placemarks = xmlDoc.getElementsByTagName('Placemark');
+                    Array.from(placemarks).forEach(p => {
+                        const name = p.getElementsByTagName('name')[0]?.textContent || 'Punto KML';
+                        const points = p.getElementsByTagName('Point');
+                        if (points.length > 0) {
+                            let coordsText = points[0].getElementsByTagName('coordinates')[0]?.textContent.trim();
+                            if (coordsText) {
+                                let coords = coordsText.split(',');
+                                addImportedLayer(L.marker([parseFloat(coords[1]), parseFloat(coords[0])]), name, 'marker');
+                            }
+                        }
+                        const lines = p.getElementsByTagName('LineString');
+                        if (lines.length > 0) {
+                            let coordsText = lines[0].getElementsByTagName('coordinates')[0]?.textContent.trim();
+                            if (coordsText) {
+                                let coords = coordsText.split(/\s+/);
+                                let latlngs = coords.map(c => { let pts = c.split(','); return [parseFloat(pts[1]), parseFloat(pts[0])]; }).filter(ll => !isNaN(ll[0]) && !isNaN(ll[1]));
+                                if (latlngs.length > 0) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline');
+                            }
+                        }
+                        const polys = p.getElementsByTagName('Polygon');
+                        if (polys.length > 0) {
+                            let coordsText = polys[0].getElementsByTagName('coordinates')[0]?.textContent.trim();
+                            if (coordsText) {
+                                let coords = coordsText.split(/\s+/);
+                                let latlngs = coords.map(c => { let pts = c.split(','); return [parseFloat(pts[1]), parseFloat(pts[0])]; }).filter(ll => !isNaN(ll[0]) && !isNaN(ll[1]));
+                                if (latlngs.length > 0) addImportedLayer(L.polygon(latlngs, drawOptions.polygon.shapeOptions), name, 'polygon');
+                            }
+                        }
+                    });
+                } else if (file.name.toLowerCase().endsWith('.gpx')) {
+                    const wpts = xmlDoc.getElementsByTagName('wpt');
+                    Array.from(wpts).forEach(w => {
+                        const name = w.getElementsByTagName('name')[0]?.textContent || 'Punto GPX';
+                        const lat = parseFloat(w.getAttribute('lat'));
+                        const lon = parseFloat(w.getAttribute('lon'));
+                        addImportedLayer(L.marker([lat, lon]), name, 'marker');
+                    });
+                    const trks = xmlDoc.getElementsByTagName('trk');
+                    Array.from(trks).forEach(t => {
+                        const name = t.getElementsByTagName('name')[0]?.textContent || 'Ruta GPX';
+                        const trkpts = t.getElementsByTagName('trkpt');
+                        const latlngs = [];
+                        Array.from(trkpts).forEach(pt => {
+                            latlngs.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]);
+                        });
+                        if (latlngs.length > 0) {
+                            addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline');
+                        }
+                    });
+                }
+                
+                if(drawnItems.getLayers().length > 0) {
+                    map.fitBounds(drawnItems.getBounds());
+                }
+                toggleMenu(); 
+            } catch (err) {
+                alert("Error al procesar el archivo. Asegúrate de que es un KML o GPX válido.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function addImportedLayer(layer, name, type) {
+        const id = L.stamp(layer);
+        layer.feature = { type: 'Feature', properties: { layerName: name } };
+        
+        let baseText = 'Elemento importado.';
+        
+        if (type === 'marker') {
+            const color = '#3498db'; 
+            layer.feature.properties.color = color;
+            layer.feature.properties.iconType = 'punto';
+            layer.setIcon(getMarkerIconObj(color, 'punto'));
+            
+            const latlng = layer.getLatLng();
+            let coordText = `Lat: ${latlng.lat.toFixed(5)}<br>Lon: ${latlng.lng.toFixed(5)}`;
+            baseText = `<div style="font-size:12px;"><b>📍 ${name}</b><br>${coordText}</div>`;
+        } else {
+            layer.feature.properties.color = layer.options.color;
+            layer.feature.properties.weight = layer.options.weight;
+            layer.feature.properties.fillOpacity = layer.options.fillOpacity || 0.3;
+            
+            if (type === 'polyline') {
+                let distance = 0;
+                const latlngs = layer.getLatLngs();
+                for (let i = 0; i < latlngs.length - 1; i++) {
+                    distance += latlngs[i].distanceTo(latlngs[i+1]);
+                }
+                const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                baseText = `<div style="font-size:12px;"><b>📏 ${name}</b><br>Distancia: <b>${distText}</b><br><i>(Importado)</i></div>`;
+            } else if (type === 'polygon') {
+                let latlngs = layer.getLatLngs();
+                if (latlngs.length > 0 && Array.isArray(latlngs[0])) latlngs = latlngs[0];
+                const area = L.GeometryUtil.geodesicArea(latlngs);
+                let areaText = area.toFixed(2) + ' m²';
+                if (area > 1000000) areaText = (area / 1000000).toFixed(2) + ' km²';
+                else if (area > 10000) areaText = (area / 10000).toFixed(2) + ' ha';
+                baseText = `<div style="font-size:12px;"><b>🔲 ${name}</b><br>Superficie: <b>${areaText}</b><br><i>(Importado)</i></div>`;
+            }
+        }
+        
+        const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
+            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
+            <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
+        </div>`;
+        
+        layer.feature.properties.baseText = baseText;
+        layer.bindPopup(baseText + actionBtns);
+        drawnItems.addLayer(layer);
+    }
+
     async function buscarLugar() {
         const q = document.getElementById('searchInput').value.trim();
         if (!q) return;
@@ -1067,6 +1327,21 @@
             container.style.display = 'none';
             icon.innerText = '▼';
             text.innerText = '🛠️ Mostrar Herramientas';
+        }
+    }
+
+    function toggleTransferGroup() {
+        const container = document.getElementById('transfer-group-container');
+        const icon = document.getElementById('toggleTransferIcon');
+        const text = document.getElementById('toggleTransferText');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            icon.innerText = '▲';
+            text.innerText = '🔄 Ocultar (KML/GPX)';
+        } else {
+            container.style.display = 'none';
+            icon.innerText = '▼';
+            text.innerText = '🔄 Importar / Exportar (KML/GPX)';
         }
     }
  
