@@ -1495,12 +1495,13 @@
         if (!q) return;
 
         const type = document.getElementById('gridType').value;
+        let foundLat = null, foundLon = null, popupText = "Búsqueda: " + q;
         
         if (type === 'decimal') {
             const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/);
             if (coordMatch) {
                 const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]);
-                if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { map.setView([lat, lon], 15); return; }
+                if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { foundLat = lat; foundLon = lon; }
             }
         } else if (type === 'dms') {
             const parts = q.match(/(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([NS])[,;\s]*(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([EWO])/i);
@@ -1509,7 +1510,7 @@
                 if (parts[4].toUpperCase() === 'S') lat = -lat;
                 let lon = parseFloat(parts[5]) + parseFloat(parts[6])/60 + parseFloat(parts[7])/3600;
                 if (parts[8].toUpperCase() === 'W' || parts[8].toUpperCase() === 'O') lon = -lon;
-                map.setView([lat, lon], 15); return;
+                foundLat = lat; foundLon = lon;
             }
         } else if (type === 'utm') {
             const parts = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i);
@@ -1520,15 +1521,75 @@
                 const y = parseFloat(parts[4]);
                 const isSouth = "CDEFGHJKLM".includes(band);
                 const ll = utmToLatLon(zone, x, y, isSouth);
-                if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { map.setView([ll.lat, ll.lon], 15); return; }
+                if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; }
             }
+        }
+
+        if (foundLat !== null && foundLon !== null) {
+            addEditableMarkerFromSearch(foundLat, foundLon, popupText);
+            return;
         }
 
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
             const data = await res.json();
-            if (data[0]) map.setView([data[0].lat, data[0].lon], 15);
+            if (data[0]) {
+                foundLat = parseFloat(data[0].lat);
+                foundLon = parseFloat(data[0].lon);
+                // Usamos la primera parte del nombre para que no sea excesivamente largo en el menú de edición
+                popupText = data[0].display_name.split(',')[0];
+                addEditableMarkerFromSearch(foundLat, foundLon, popupText);
+            }
         } catch (error) { console.error("Error en la búsqueda"); }
+    }
+
+    async function addEditableMarkerFromSearch(lat, lon, name) {
+        map.setView([lat, lon], 15);
+        
+        // Lo creamos azul por defecto para distinguirlo de los dibujados a mano
+        const color = '#3498db'; 
+        const newMarker = L.marker([lat, lon], { icon: getMarkerIconObj(color, 'punto') });
+        const id = L.stamp(newMarker);
+        
+        newMarker.feature = { type: 'Feature', properties: {} };
+        newMarker.feature.properties.layerName = name;
+        newMarker.isHidden = false;
+        newMarker.feature.properties.color = color;
+        newMarker.feature.properties.iconType = 'punto';
+        newMarker.feature.properties.bufferRadius = 0;
+        newMarker.feature.properties.showLabel = false;
+        
+        const type = document.getElementById('gridType').value;
+        let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}`;
+        if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`;
+        else if (type === 'utm') {
+            const u = latLonToUTM(lat, lon);
+            coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`;
+        }
+        
+        let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
+            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
+            <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
+        </div>`;
+        
+        let baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
+        newMarker.bindPopup(baseText + actionBtns).openPopup();
+        newMarker.feature.properties.baseText = baseText;
+        
+        drawnItems.addLayer(newMarker);
+        updateLayerTree();
+
+        try {
+            const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lon.toFixed(5)}`);
+            const data = await res.json();
+            baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Alt: <b>${data.elevation[0]} m</b></div>`;
+            newMarker.feature.properties.baseText = baseText;
+            newMarker.setPopupContent(baseText + actionBtns);
+        } catch (error) {
+            baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Alt: Error</div>`;
+            newMarker.feature.properties.baseText = baseText;
+            newMarker.setPopupContent(baseText + actionBtns);
+        }
     }
  
     function updateUI() { 
