@@ -514,6 +514,19 @@
                     <button style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:12px; padding:0 5px;" onclick="removeLayerById(${id})">🗑️</button>
                 </div>
             </div>`;
+
+            if (layer instanceof L.Marker && layer.feature?.properties?.bufferRadius > 0 && layer.bufferCircle) {
+                const bufferHidden = layer.bufferCircle.isHidden || false;
+                const bufferEye = bufferHidden ? '👁️‍🗨️' : '👁️';
+                const bufferEyeClass = bufferHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
+                
+                html += `<div class="layer-item" style="padding-left: 20px; background: #f8fafc; border-top: none;">
+                    <span class="layer-name-text" style="font-size: 11px; color: #64748b;" title="Radio de ${name}">└ ⭕ Radio (${layer.feature.properties.bufferRadius}m)</span>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <button class="${bufferEyeClass}" onclick="toggleBufferVisibility(${id})" title="Ver/Ocultar Radio">${bufferEye}</button>
+                    </div>
+                </div>`;
+            }
         });
         list.innerHTML = html;
     }
@@ -527,7 +540,6 @@
         if (layer.isHidden) {
             if (layer instanceof L.Marker) layer.setOpacity(0);
             else layer.setStyle({ opacity: 0, fillOpacity: 0 });
-            if (layer.bufferCircle) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
             layer.closePopup();
         } else {
             if (layer instanceof L.Marker) layer.setOpacity(1);
@@ -535,7 +547,20 @@
                 opacity: 1, 
                 fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) 
             });
-            if (layer.bufferCircle) layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
+        }
+        updateLayerTree();
+    }
+
+    function toggleBufferVisibility(id) {
+        const layer = drawnItems.getLayer(id);
+        if (!layer || !layer.bufferCircle) return;
+        
+        layer.bufferCircle.isHidden = !layer.bufferCircle.isHidden;
+        
+        if (layer.bufferCircle.isHidden) {
+            layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
+        } else {
+            layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
         }
         updateLayerTree();
     }
@@ -558,8 +583,9 @@
                     dashArray: '5, 5',
                     interactive: false 
                 }).addTo(map);
+                layer.bufferCircle.isHidden = false;
             }
-            if (layer.isHidden) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
+            if (layer.bufferCircle.isHidden) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
             else layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
         } else if (layer.bufferCircle) {
             map.removeLayer(layer.bufferCircle);
