@@ -192,7 +192,19 @@
                     <option value="combate">⚔️ Zona de Combate</option>
                     <option value="defensa">🛡️ Punto Defensivo</option>
                     <option value="vehiculo">🚁 Vehículo / Extracción</option>
+                    <option value="medico">🏥 Médico / Hospital</option>
+                    <option value="radio">📡 Comunicaciones / HQ</option>
+                    <option value="suministros">📦 Suministros / Munición</option>
+                    <option value="sniper">🔭 Francotirador / Observación</option>
+                    <option value="peligro">⚠️ Peligro / Minas</option>
+                    <option value="encuentro">🤝 Punto de Encuentro</option>
+                    <option value="obstaculo">🧱 Obstáculo / Muro</option>
+                    <option value="agua">💧 Punto de Agua</option>
                 </select>
+
+                <label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
+                    <input type="checkbox" id="edit-show-label-input" style="width:16px; height:16px;"> Mostrar nombre en el mapa
+                </label>
 
                 <label style="font-size: 12px; font-weight: bold; color: var(--ign-gold); display:block; margin-bottom:4px;">⭕ Radio de Acción (metros)</label>
                 <input type="number" id="edit-buffer-input" min="0" step="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: 50 o vacío para ninguno">
@@ -394,7 +406,7 @@
             <div class="edit-tools-grid" style="margin-bottom: 0;">
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('marker')">📍 Marcador</button>
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
-                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polygon')">polygon; Área</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polygon')">🔲 Área</button>
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="captureMap()">📸 Capturar</button>
             </div>
         </div>
@@ -538,11 +550,17 @@
         layer.isHidden = !layer.isHidden;
         
         if (layer.isHidden) {
-            if (layer instanceof L.Marker) layer.setOpacity(0);
+            if (layer instanceof L.Marker) {
+                layer.setOpacity(0);
+                if (layer.getTooltip()) layer.getTooltip().setOpacity(0);
+            }
             else layer.setStyle({ opacity: 0, fillOpacity: 0 });
             layer.closePopup();
         } else {
-            if (layer instanceof L.Marker) layer.setOpacity(1);
+            if (layer instanceof L.Marker) {
+                layer.setOpacity(1);
+                if (layer.getTooltip()) layer.getTooltip().setOpacity(1);
+            }
             else layer.setStyle({ 
                 opacity: 1, 
                 fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) 
@@ -593,12 +611,34 @@
         }
     }
 
+    function updateMarkerLabel(layer) {
+        if (!(layer instanceof L.Marker)) return;
+        const show = layer.feature.properties.showLabel;
+        const name = layer.feature.properties.layerName;
+        
+        if (show) {
+            layer.bindTooltip(name, { 
+                permanent: true, 
+                direction: 'top', 
+                offset: [0, -10], 
+                className: 'grid-label' 
+            }).openTooltip();
+            if (layer.isHidden) layer.getTooltip().setOpacity(0);
+        } else {
+            layer.unbindTooltip();
+        }
+    }
+
     const deleteClickHandler = function(e) {
         removeLayerById(L.stamp(e.target));
     };
 
     function getMarkerIconObj(color, type) {
-        const icons = { 'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁' };
+        const icons = { 
+            'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁',
+            'medico': '🏥', 'radio': '📡', 'suministros': '📦', 'sniper': '🔭', 'peligro': '⚠️', 'encuentro': '🤝',
+            'obstaculo': '🧱', 'agua': '💧'
+        };
         if (!type || type === 'punto') {
             return L.divIcon({
                 className: 'custom-colored-marker',
@@ -608,7 +648,7 @@
         }
         return L.divIcon({
             className: 'custom-colored-marker',
-            html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${icons[type]}</div>`,
+            html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${icons[type] || '📍'}</div>`,
             iconSize: [28, 28], iconAnchor: [14, 14]
         });
     }
@@ -674,6 +714,7 @@
             layer.feature.properties.color = document.getElementById('markerColor').value || '#e74c3c';
             layer.feature.properties.iconType = 'punto';
             layer.feature.properties.bufferRadius = 0;
+            layer.feature.properties.showLabel = false;
         } else if (layer.options) {
             layer.feature.properties.color = layer.options.color;
             layer.feature.properties.weight = layer.options.weight;
@@ -803,6 +844,7 @@
             if (isMarker) {
                 document.getElementById('edit-icon-input').value = layer.feature.properties.iconType || 'punto';
                 document.getElementById('edit-buffer-input').value = layer.feature.properties.bufferRadius || '';
+                document.getElementById('edit-show-label-input').checked = layer.feature.properties.showLabel || false;
             } else {
                 document.getElementById('edit-weight-input').value = layer.options.weight || 4;
             }
@@ -834,7 +876,9 @@
                 layer.setIcon(getMarkerIconObj(newColor, newIconType));
                 layer.feature.properties.color = newColor; layer.feature.properties.iconType = newIconType;
                 layer.feature.properties.bufferRadius = parseFloat(document.getElementById('edit-buffer-input').value) || 0;
+                layer.feature.properties.showLabel = document.getElementById('edit-show-label-input').checked;
                 updateMarkerBuffer(layer);
+                updateMarkerLabel(layer);
             }
 
             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
@@ -1130,7 +1174,10 @@
                                 <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
                             </div>`;
                             layer.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
-                            if (layer instanceof L.Marker) updateMarkerBuffer(layer);
+                            if (layer instanceof L.Marker) {
+                                updateMarkerBuffer(layer);
+                                updateMarkerLabel(layer);
+                            }
                             if (feature.properties.chartData) attachChartListener(layer, id);
                         }
                     });
@@ -1263,7 +1310,8 @@
         
         if (type === 'marker') {
             const color = '#3498db'; 
-            layer.feature.properties.color = color; layer.feature.properties.iconType = 'punto'; layer.feature.properties.bufferRadius = 0;
+            layer.feature.properties.color = color; layer.feature.properties.iconType = 'punto'; 
+            layer.feature.properties.bufferRadius = 0; layer.feature.properties.showLabel = false;
             layer.setIcon(getMarkerIconObj(color, 'punto'));
             const latlng = layer.getLatLng();
             baseText = `<div><b>📍 ${name}</b><br>Lat: ${latlng.lat.toFixed(5)}<br>Lon: ${latlng.lng.toFixed(5)}</div>`;
