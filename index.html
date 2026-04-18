@@ -83,8 +83,8 @@
         }
  
         .fab-menu {
-            position: absolute; bottom: 25px; right: 20px; z-index: 1000; background: var(--ign-blue); color: white;
-            border: none; border-radius: 50px; padding: 14px 28px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px;
+            position: absolute; top: 15px; right: 15px; z-index: 1000; background: var(--ign-blue); color: white;
+            border: none; border-radius: 8px; width: 42px; height: 42px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; padding: 0;
         }
  
         .grid-label {
@@ -96,6 +96,7 @@
         .gallery-item { margin-bottom: 10px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 4px; }
         .gallery-item img { width: 100%; display: block; border-radius: 4px; }
  
+        /* La leyenda NO se oculta en el hide-controls para que salga en la captura */
         .hide-controls .leaflet-control-container,
         .hide-controls .fab-menu,
         .hide-controls .coord-display,
@@ -133,6 +134,16 @@
         .layer-vis-btn { background: none; border: none; cursor: pointer; color: #475569; font-size: 14px; padding: 0 5px;}
         .layer-vis-btn.hidden { opacity: 0.3; }
         .layer-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; font-weight: 600; color: var(--ign-blue);}
+
+        .map-legend {
+            position: absolute; bottom: 85px; right: 20px; z-index: 998;
+            background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px;
+            box-shadow: var(--shadow); border: 1px solid #cbd5e0;
+            font-size: 12px; min-width: 150px; display: none; pointer-events: none;
+        }
+        .legend-title { font-weight: 800; color: var(--ign-blue); margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; font-size: 13px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 600; color: #475569;}
+        .legend-color-box { width: 14px; height: 14px; border-radius: 3px; border: 2px solid #333;}
     </style>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -141,6 +152,10 @@
  
 <div id="map-container">
     <div id="map"></div>
+    <div class="map-legend" id="map-legend">
+        <div class="legend-title">📋 Leyenda Táctica</div>
+        <div id="legend-content">No hay elementos</div>
+    </div>
 </div>
 
 <div id="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
@@ -193,7 +208,8 @@
                     <option value="defensa">🛡️ Punto Defensivo</option>
                     <option value="vehiculo">🚁 Vehículo / Extracción</option>
                     <option value="medico">🏥 Médico / Hospital</option>
-                    <option value="radio">📡 Comunicaciones / HQ</option>
+                    <option value="radio">📡 Comunicaciones</option>
+                    <option value="hq">🌟 HQ / Mando</option>
                     <option value="suministros">📦 Suministros / Munición</option>
                     <option value="sniper">🔭 Francotirador / Observación</option>
                     <option value="peligro">⚠️ Peligro / Minas</option>
@@ -236,7 +252,7 @@
 
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
  
-<button class="fab-menu" id="fabBtn" onclick="toggleMenu()">🛠️ Herramientas</button>
+<button class="fab-menu" id="fabBtn" onclick="toggleMenu()" title="Herramientas">🛠️</button>
  
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
@@ -418,6 +434,9 @@
             <div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">No hay elementos dibujados</div>
         </div>
 
+        <div class="section-title" style="margin-top:0;">📋 Leyenda Táctica</div>
+        <button class="btn-outline" id="toggleLegendBtn" onclick="toggleMapLegend()" style="background: #f8fafc; border-style: dashed;">👁️ Mostrar Leyenda en Mapa</button>
+
         <div class="section-title" style="margin-top:0;">📸 Galería de Capturas</div>
         <div id="gallery"></div>
     </div>
@@ -432,6 +451,19 @@
     let mtnGridLayer = null, isMtnGridVisible = false;
     let projectName = "Proyecto_AirsoftMaps";
     let scaleControlObj = null;
+    let isLegendVisible = false;
+
+    const tacticalIcons = { 
+        'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁',
+        'medico': '🏥', 'radio': '📡', 'hq': '🌟', 'suministros': '📦', 'sniper': '🔭', 'peligro': '⚠️', 'encuentro': '🤝',
+        'obstaculo': '🧱', 'agua': '💧'
+    };
+    const tacticalNames = {
+        'punto': 'Punto', 'base': 'Base / Camp.', 'objetivo': 'Objetivo', 'bandera': 'Respawn', 
+        'combate': 'Combate', 'defensa': 'Defensa', 'vehiculo': 'Extracción', 'medico': 'Hospital', 
+        'radio': 'Comunicaciones', 'hq': 'HQ / Mando', 'suministros': 'Suministros', 'sniper': 'Observación', 'peligro': 'Peligro', 
+        'encuentro': 'Encuentro', 'obstaculo': 'Obstáculo', 'agua': 'Agua'
+    };
  
     const createLayers = () => ({
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
@@ -500,11 +532,80 @@
         });
     }
 
+    function toggleMapLegend() {
+        isLegendVisible = !isLegendVisible;
+        document.getElementById('map-legend').style.display = isLegendVisible ? 'block' : 'none';
+        document.getElementById('toggleLegendBtn').innerText = isLegendVisible ? '👁️‍🗨️ Ocultar Leyenda' : '👁️ Mostrar Leyenda en Mapa';
+        document.getElementById('toggleLegendBtn').style.borderStyle = isLegendVisible ? 'solid' : 'dashed';
+        if (isLegendVisible) updateLegend();
+    }
+
+    function updateLegend() {
+        if (!isLegendVisible) return;
+        const content = document.getElementById('legend-content');
+        const layers = drawnItems.getLayers();
+        
+        if (layers.length === 0) {
+            content.innerHTML = '<div style="color:#64748b; font-style:italic;">Mapa vacío</div>';
+            return;
+        }
+
+        const uniqueTypes = new Map();
+
+        layers.forEach(layer => {
+            if (layer.isHidden) return; 
+            
+            const props = layer.feature?.properties || {};
+            const color = props.color || (layer.options && layer.options.color) || '#e74c3c';
+            
+            if (layer instanceof L.Marker) {
+                const type = props.iconType || 'punto';
+                const key = `marker_${type}_${color}`;
+                if (!uniqueTypes.has(key)) uniqueTypes.set(key, { category: 'marker', color, type });
+            } else if (layer instanceof L.Polygon) {
+                const key = `polygon_${color}`;
+                if (!uniqueTypes.has(key)) uniqueTypes.set(key, { category: 'polygon', color });
+            } else if (layer instanceof L.Polyline) {
+                const key = `polyline_${color}`;
+                if (!uniqueTypes.has(key)) uniqueTypes.set(key, { category: 'polyline', color });
+            }
+        });
+
+        if (uniqueTypes.size === 0) {
+            content.innerHTML = '<div style="color:#64748b; font-style:italic;">Sin elementos visibles</div>';
+            return;
+        }
+
+        let html = '';
+        uniqueTypes.forEach(info => {
+            if (info.category === 'marker') {
+                const icon = tacticalIcons[info.type] || '📍';
+                const name = tacticalNames[info.type] || 'Punto';
+                html += `<div class="legend-item">
+                    <div style="background-color: ${info.color}; width: 20px; height: 20px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:12px; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.4);">${info.type==='punto'?'':icon}</div>
+                    <span>${name}</span>
+                </div>`;
+            } else if (info.category === 'polygon') {
+                html += `<div class="legend-item">
+                    <div class="legend-color-box" style="background-color: ${info.color}; opacity:0.5; border-color: ${info.color};"></div>
+                    <span>Área delimitada</span>
+                </div>`;
+            } else if (info.category === 'polyline') {
+                html += `<div class="legend-item">
+                    <div style="width: 18px; height: 4px; background-color: ${info.color}; border-radius: 2px;"></div>
+                    <span>Ruta / Medición</span>
+                </div>`;
+            }
+        });
+        content.innerHTML = html;
+    }
+
     function updateLayerTree() {
         const list = document.getElementById('layer-list');
         const layers = drawnItems.getLayers();
         if (layers.length === 0) {
             list.innerHTML = '<div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">Vacio</div>';
+            updateLegend();
             return;
         }
         let html = '';
@@ -541,6 +642,7 @@
             }
         });
         list.innerHTML = html;
+        updateLegend(); 
     }
 
     function toggleLayerVisibility(id) {
@@ -634,11 +736,6 @@
     };
 
     function getMarkerIconObj(color, type) {
-        const icons = { 
-            'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁',
-            'medico': '🏥', 'radio': '📡', 'suministros': '📦', 'sniper': '🔭', 'peligro': '⚠️', 'encuentro': '🤝',
-            'obstaculo': '🧱', 'agua': '💧'
-        };
         if (!type || type === 'punto') {
             return L.divIcon({
                 className: 'custom-colored-marker',
@@ -648,7 +745,7 @@
         }
         return L.divIcon({
             className: 'custom-colored-marker',
-            html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${icons[type] || '📍'}</div>`,
+            html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${tacticalIcons[type] || '📍'}</div>`,
             iconSize: [28, 28], iconAnchor: [14, 14]
         });
     }
