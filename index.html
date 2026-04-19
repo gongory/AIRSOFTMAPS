@@ -31,8 +31,31 @@
             background: #f0f0f0;
         }
  
-        #map-container { position: relative; height: 100vh; width: 100%; }
-        #map { height: 100%; width: 100%; background: #eee; }
+        /* Contenedor Flex para separar mapa y marco inferior */
+        #map-container { display: flex; flex-direction: column; position: relative; height: 100vh; width: 100%; }
+        #map { flex: 1; width: 100%; background: #eee; }
+        
+        /* Marco inferior en blanco */
+        .bottom-frame {
+            height: 90px;
+            width: 100%;
+            background: #ffffff;
+            border-top: 2px solid #cbd5e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 997;
+        }
+        .bottom-frame-text {
+            color: #cbd5e0;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            user-select: none;
+            pointer-events: none;
+        }
  
         .sidebar {
             position: absolute; top: 10px; right: 10px; z-index: 1001;
@@ -80,7 +103,7 @@
         .mtn-title { font-weight: bold; font-size: 14px; color: var(--ign-blue); margin-bottom: 5px; }
  
         .coord-display {
-            position: absolute; bottom: 20px; left: 10px; z-index: 999; background: rgba(255,255,255,0.95);
+            position: absolute; bottom: 110px; left: 10px; z-index: 999; background: rgba(255,255,255,0.95);
             padding: 8px 16px; border-radius: 30px; font-size: 12px; font-family: 'Consolas', monospace;
             border: 1px solid #e2e8f0; font-weight: 600; box-shadow: var(--shadow); pointer-events: none; min-width: 260px; text-align: center;
             transition: bottom 0.3s ease;
@@ -111,12 +134,12 @@
         .gallery-item { margin-bottom: 10px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 4px; }
         .gallery-item img { width: 100%; display: block; border-radius: 4px; }
  
-        /* La leyenda y escala NO se ocultan en el hide-controls para que salgan en la captura */
         .hide-controls .leaflet-top,
         .hide-controls .leaflet-control-attribution,
         .hide-controls .fab-menu,
         .hide-controls .coord-display,
         .hide-controls .sidebar,
+        .hide-controls .bottom-frame-text,
         .hide-controls #drawing-actions { visibility: hidden !important; }
 
         .edit-tools-grid {
@@ -160,7 +183,6 @@
         .layer-vis-btn.hidden { opacity: 0.3; }
         .layer-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; font-weight: 600; color: var(--ign-blue);}
 
-        /* Estilos para los bandos (Carpetas) */
         .faction-header {
             background: #f1f5f9; padding: 8px; font-weight: bold; font-size: 12px; color: var(--ign-blue);
             display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e0;
@@ -170,7 +192,7 @@
         }
 
         .map-legend {
-            position: absolute; bottom: 85px; right: 20px; z-index: 998;
+            position: absolute; bottom: 110px; right: 20px; z-index: 998;
             background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px;
             box-shadow: var(--shadow); border: 1px solid #cbd5e0;
             font-size: 12px; min-width: 150px; display: none; pointer-events: auto;
@@ -179,6 +201,7 @@
         .map-legend:active { cursor: grabbing; }
 
         #compass-rose:active { cursor: grabbing; }
+        #numeric-scale-widget:active { cursor: grabbing; }
         
         .legend-title { font-weight: 800; color: var(--ign-blue); margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; font-size: 13px; }
         .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 600; color: #475569;}
@@ -191,33 +214,37 @@
  
 <div id="map-container">
     <div id="map"></div>
+    <div class="bottom-frame">
+        <span class="bottom-frame-text">⇊ Zona de arrastre (Leyenda, Escala, Brújula) ⇊</span>
+    </div>
+    
     <div class="map-legend" id="map-legend">
         <div class="legend-title">📋 Leyenda Táctica</div>
         <div id="legend-content">No hay elementos</div>
     </div>
     
-    <!-- Rosa de los vientos arrastrable -->
     <div id="compass-rose" style="display: none; position: absolute; top: 40px; left: 40px; z-index: 998; cursor: grab; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); pointer-events: auto;">
         <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
             <g transform="translate(50,50)">
-                <!-- Puntos secundarios -->
                 <g transform="rotate(45)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
                 <g transform="rotate(135)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
                 <g transform="rotate(225)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
                 <g transform="rotate(315)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
 
-                <!-- Puntos principales -->
                 <g transform="rotate(0)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#e74c3c"/><polygon points="0,-48 0,0 -10,-10" fill="#c0392b"/></g>
                 <g transform="rotate(90)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
                 <g transform="rotate(180)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
                 <g transform="rotate(270)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
 
-                <!-- Centro y Letra -->
                 <circle cx="0" cy="0" r="4" fill="#1e293b"/>
                 <circle cx="0" cy="0" r="1.5" fill="#fff"/>
                 <text x="0" y="-31" font-family="sans-serif" font-weight="900" font-size="14" fill="#fff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">N</text>
             </g>
         </svg>
+    </div>
+
+    <div id="numeric-scale-widget" style="position: absolute; bottom: 25px; left: 200px; z-index: 998; cursor: grab; background: rgba(255, 255, 255, 0.95); padding: 6px 12px; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid #222; font-weight: 900; color: #000; font-size: 13px; pointer-events: auto; user-select: none;">
+        Escala <span id="numeric-scale-val">1:0</span>
     </div>
 </div>
 
@@ -297,7 +324,6 @@
                 <label style="font-size: 12px; font-weight: bold; color: var(--ign-gold); display:block; margin-bottom:4px;">⭕ Radio de Acción (metros)</label>
                 <input type="number" id="edit-buffer-input" min="0" step="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: 50 o vacío para ninguno">
                 
-                <!-- SECCIÓN DE CONO DE VISIÓN -->
                 <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #cbd5e0;">
                     <label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer;">
                         <input type="checkbox" id="edit-cone-enable" style="width:16px; height:16px;" onchange="document.getElementById('edit-cone-options').style.display = this.checked ? 'block' : 'none';"> 🔦 Mostrar Cono de Visión
@@ -349,7 +375,6 @@
     </div>
 </div>
 
-<!-- Modal para ver imágenes de captura a tamaño completo -->
 <div id="image-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:4000; align-items:center; justify-content:center;">
     <div style="position:relative; max-width:95%; max-height:95%; display:flex; flex-direction:column; align-items:center;">
         <button onclick="closeImageModal()" style="position:absolute; top:-40px; right:0; background:none; border:none; color:white; font-size:32px; cursor:pointer; font-weight:bold;" title="Cerrar">✕</button>
@@ -357,7 +382,6 @@
     </div>
 </div>
 
-<!-- Modal del Manual de Usuario -->
 <div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:4000; align-items:center; justify-content:center;">
     <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:650px; max-height:85vh; overflow-y:auto; box-shadow:0 4px 20px rgba(0,0,0,0.4); position:relative;">
         <button onclick="closeManual()" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; font-weight:bold;">✕</button>
@@ -523,16 +547,23 @@
                 </div>
             </div>
             
-            <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Numérica</label>
-            <select id="gridScale" class="form-select" style="font-size:12px; margin-bottom: 12px;" onchange="updateGridByScale()">
-                <option value="auto" selected>Automática</option>
-                <option value="2000">1:2.000</option>
-                <option value="5000">1:5.000</option>
-                <option value="10000">1:10.000</option>
-                <option value="25000">1:25.000</option>
-                <option value="50000">1:50.000</option>
-                <option value="100000">1:100.000</option>
-            </select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Exacta</label>
+                    <select id="gridScale" class="form-select" style="font-size:12px; margin-bottom: 0;" onchange="updateGridByScale()">
+                        <option value="auto" selected>Libre (Auto)</option>
+                        <option value="2000">1:2.000</option>
+                        <option value="5000">1:5.000</option>
+                        <option value="10000">1:10.000</option>
+                        <option value="25000">1:25.000</option>
+                        <option value="50000">1:50.000</option>
+                        <option value="100000">1:100.000</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button id="lockZoomBtn" class="btn-outline" style="margin-bottom:0; font-size:11px;" onclick="toggleZoomLock()">🔓 Bloquear Zoom</button>
+                </div>
+            </div>
  
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <button id="gridToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleGrid()">Activar Cuadrícula</button>
@@ -612,6 +643,7 @@
     let projectName = "Proyecto_AirsoftMaps";
     let scaleControlObj = null;
     let isLegendVisible = false;
+    let isZoomLocked = false;
 
     const tacticalIcons = { 
         'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁',
@@ -639,7 +671,8 @@
     let currentOverlay = overLayers.pnoa;
     currentOverlay.setOpacity(0.4);
  
-    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false });
+    // zoomSnap: 0 permite que el zoom tenga decimales y sea 100% perfecto matemáticamente
+    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false, zoomSnap: 0 });
     L.control.zoom({ position: 'topleft' }).addTo(map);
  
     const drawnItems = new L.FeatureGroup().addTo(map);
@@ -712,6 +745,85 @@
         }
     }
 
+    // Funcionalidad de bloqueo de Zoom para mantener la escala real
+    function toggleZoomLock() {
+        isZoomLocked = !isZoomLocked;
+        const btn = document.getElementById('lockZoomBtn');
+        const zoomCtrl = document.querySelector('.leaflet-control-zoom');
+        
+        if (isZoomLocked) {
+            map.touchZoom.disable();
+            map.doubleClickZoom.disable();
+            map.scrollWheelZoom.disable();
+            map.boxZoom.disable();
+            map.keyboard.disable();
+            if (zoomCtrl) zoomCtrl.style.display = 'none';
+            
+            btn.innerHTML = "🔒 Desbloquear Zoom";
+            btn.style.borderColor = "var(--danger)";
+            btn.style.color = "var(--danger)";
+        } else {
+            map.touchZoom.enable();
+            map.doubleClickZoom.enable();
+            map.scrollWheelZoom.enable();
+            map.boxZoom.enable();
+            map.keyboard.enable();
+            if (zoomCtrl) zoomCtrl.style.display = 'block';
+            
+            btn.innerHTML = "🔓 Bloquear Zoom";
+            btn.style.borderColor = "var(--ign-blue)";
+            btn.style.color = "var(--ign-blue)";
+            
+            // Al desbloquear dejamos en auto para que el usuario sea consciente de que es libre
+            document.getElementById('gridScale').value = 'auto';
+        }
+        updateNumericScaleDisplay();
+    }
+
+    // Funcionalidad para actualizar en vivo la Escala Numérica
+    function updateNumericScaleDisplay() {
+        const scaleDropdown = document.getElementById('gridScale').value;
+        
+        // Si el zoom está bloqueado y el usuario eligió una escala exacta, mostramos textualmente esa escala.
+        if (isZoomLocked && scaleDropdown !== 'auto') {
+            document.getElementById('numeric-scale-val').innerText = "1:" + parseInt(scaleDropdown).toLocaleString('es-ES');
+            return;
+        }
+
+        const lat = map.getCenter().lat;
+        const zoom = map.getZoom();
+        
+        // Cálculo matemático de los metros por píxel en base a la latitud y el zoom de Leaflet
+        const mpp = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+        // Conversión asumiendo la resolución típica de pantalla (96dpi = 0.0002645833 metros/píxel)
+        let scale = mpp / 0.0002645833;
+        
+        // Redondeo inteligente para que la escala muestre valores cerrados y elegantes
+        const standardScales = [2000, 5000, 10000, 25000, 50000, 100000];
+        let snapped = false;
+        for (let s of standardScales) {
+            if (Math.abs(scale - s) / s < 0.03) { // Tolerancia del 3%
+                scale = s;
+                snapped = true;
+                break;
+            }
+        }
+
+        if (!snapped) {
+            if (scale > 1000000) scale = Math.round(scale / 10000) * 10000;
+            else if (scale > 100000) scale = Math.round(scale / 1000) * 1000;
+            else if (scale > 10000) scale = Math.round(scale / 500) * 500;
+            else if (scale > 1000) scale = Math.round(scale / 100) * 100;
+            else scale = Math.round(scale / 10) * 10;
+        }
+        
+        document.getElementById('numeric-scale-val').innerText = "1:" + scale.toLocaleString('es-ES');
+    }
+    
+    map.on('move', updateNumericScaleDisplay);
+    map.on('zoomend', updateNumericScaleDisplay);
+    updateNumericScaleDisplay(); // Inicializar
+
     function updateLegend() {
         if (!isLegendVisible) return;
         const content = document.getElementById('legend-content');
@@ -735,7 +847,6 @@
                 const key = `marker_${type}_${color}`;
                 if (!uniqueTypes.has(key)) uniqueTypes.set(key, { category: 'marker', color, type });
 
-                // Detectamos si tiene el cono de visión activo para añadirlo a la leyenda
                 if (props.coneEnabled) {
                     const coneColor = props.coneColor || color;
                     const coneKey = `cone_${coneColor}`;
@@ -794,7 +905,6 @@
             return;
         }
         
-        // Agrupar capas por bando
         const factions = {};
         layers.forEach(layer => {
             const faction = layer.feature?.properties?.faction || 'General';
@@ -893,7 +1003,6 @@
             });
         }
         
-        // También ocultamos/mostramos sus elementos dependientes al instante
         if (layer.conePolygon) {
             layer.conePolygon.isHidden = layer.isHidden;
             if (layer.isHidden) layer.conePolygon.setStyle({ opacity: 0, fillOpacity: 0 });
@@ -1014,9 +1123,8 @@
         }
     }
     
-    // Funciones matemáticas para crear el polígono del cono de visión
     function getDestination(latlng, heading, dist) {
-        const R = 6378137; // Radio de la Tierra en metros
+        const R = 6378137;
         const brng = heading * Math.PI / 180;
         const lat1 = latlng.lat * Math.PI / 180;
         const lon1 = latlng.lng * Math.PI / 180;
@@ -1175,7 +1283,6 @@
             layer.feature.properties.bufferRadius = 0;
             layer.feature.properties.showLabel = false;
             
-            // Valores por defecto del cono
             layer.feature.properties.coneEnabled = false;
             layer.feature.properties.coneAngle = 0;
             layer.feature.properties.coneSpread = 60;
@@ -1269,7 +1376,6 @@
                         if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff);
                     }
                     
-                    // Cálculo de tiempo estimado (Regla de Naismith: 5km/h plano + 1min/10m ascenso)
                     let timeMinutes = (distance * 0.012) + (elevGain * 0.1);
                     let timeHours = Math.floor(timeMinutes / 60);
                     let remainMinutes = Math.round(timeMinutes % 60);
@@ -1326,7 +1432,6 @@
                 document.getElementById('edit-buffer-input').value = layer.feature.properties.bufferRadius || '';
                 document.getElementById('edit-show-label-input').checked = layer.feature.properties.showLabel || false;
                 
-                // Cargar valores del cono
                 document.getElementById('edit-cone-enable').checked = layer.feature.properties.coneEnabled || false;
                 document.getElementById('edit-cone-color-input').value = layer.feature.properties.coneColor || layer.feature.properties.color || '#f1c40f';
                 document.getElementById('edit-cone-angle-range').value = layer.feature.properties.coneAngle || 0;
@@ -1370,7 +1475,6 @@
                 layer.feature.properties.bufferRadius = parseFloat(document.getElementById('edit-buffer-input').value) || 0;
                 layer.feature.properties.showLabel = document.getElementById('edit-show-label-input').checked;
                 
-                // Guardar valores del cono
                 layer.feature.properties.coneEnabled = document.getElementById('edit-cone-enable').checked;
                 layer.feature.properties.coneColor = document.getElementById('edit-cone-color-input').value;
                 layer.feature.properties.coneAngle = parseFloat(document.getElementById('edit-cone-angle-range').value);
@@ -1410,7 +1514,6 @@
         document.getElementById('drawing-actions').style.display = 'none';
     }
 
-    // Funciones para el visor de imágenes
     function openImageModal(src) {
         document.getElementById('image-modal-content').src = src;
         document.getElementById('image-modal').style.display = 'flex';
@@ -1421,7 +1524,6 @@
         document.getElementById('image-modal-content').src = '';
     }
 
-    // Función para imprimir imagen
     function printImage(src, title) {
         const printWin = window.open('', '_blank');
         if (!printWin) {
@@ -1530,10 +1632,24 @@
     }
 
     function updateGridByScale() {
-        const scale = document.getElementById('gridScale').value;
-        if (scale !== 'auto') {
-            const zoomLevels = { "2000": 18, "5000": 16, "10000": 15, "25000": 14, "50000": 13, "100000": 12 };
-            if (zoomLevels[scale]) map.setZoom(zoomLevels[scale]);
+        const scaleStr = document.getElementById('gridScale').value;
+        if (scaleStr !== 'auto') {
+            const targetScale = parseInt(scaleStr);
+            const lat = map.getCenter().lat;
+            
+            // Cálculo del zoom fraccional exacto basado en la fórmula del Web Mercator
+            const targetZoom = Math.log2((156543.03392 * Math.cos(lat * Math.PI / 180)) / (targetScale * 0.0002645833));
+            map.setZoom(targetZoom);
+            
+            // Si elige una escala exacta, se la bloqueamos automáticamente para que no la arruine moviendo el ratón
+            if (!isZoomLocked) {
+                toggleZoomLock();
+            }
+        } else {
+            // Si vuelve a modo Auto y estaba bloqueada, se la desbloqueamos
+            if (isZoomLocked) {
+                toggleZoomLock();
+            }
         }
         updateGrid();
     }
@@ -1544,13 +1660,11 @@
             scaleControlObj = L.control.scale({ imperial: false }).addTo(map);
             btn.innerText = "Ocultar Escala";
             btn.classList.add('active');
-            document.getElementById('liveCoords').style.bottom = '60px'; 
             
-            // Hacer la escala arrastrable sacándola del contenedor restrictivo de Leaflet
             let scaleEl = scaleControlObj.getContainer();
             document.getElementById('map-container').appendChild(scaleEl);
             scaleEl.style.position = 'absolute';
-            scaleEl.style.bottom = '20px';
+            scaleEl.style.bottom = '25px';
             scaleEl.style.left = '15px';
             scaleEl.style.zIndex = '998';
             
@@ -1560,12 +1674,10 @@
             scaleControlObj = null;
             btn.innerText = "Mostrar Escala";
             btn.classList.remove('active');
-            document.getElementById('liveCoords').style.bottom = '20px'; 
         }
     }
  
     function getGridStep(z) {
-        // Ajustamos los saltos dinámicos para que no desaparezca de repente al alejar el mapa
         return (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : z > 5 ? 1.0 : 5.0);
     }
 
@@ -1579,13 +1691,11 @@
     }
 
     function onGridTypeChange() {
-        // Enciende la cuadrícula automáticamente si estaba apagada para que el usuario no se confunda
         if (!isGridVisible) {
             toggleGrid();
         } else {
             updateGrid();
         }
-        updateUI();
     }
 
     function updateGrid() {
@@ -1605,7 +1715,6 @@
         let sLng = Math.floor(b.getWest() / step) * step;
         let eLng = Math.ceil(b.getEast() / step) * step;
 
-        // Auto-protección: Si hay demasiadas celdas en la pantalla, hacemos los cuadros más grandes en vez de ocultar todo
         while (((eLat - sLat) / step) * ((eLng - sLng) / step) > 3000) {
             step *= 2;
             sLat = Math.floor(b.getSouth() / step) * step;
@@ -1616,7 +1725,6 @@
  
         const lineStyle = { color: color, weight: weight, opacity: 0.6 };
  
-        // Dibujar Líneas
         for (let lat = sLat; lat <= eLat; lat += step) {
             L.polyline([[lat, b.getWest()], [lat, b.getEast()]], lineStyle).addTo(gridLayer);
             if (type !== 'alpha') {
@@ -1632,12 +1740,10 @@
             }
         }
 
-        // Dibujar Cabeceras de Cuadrícula Táctica (Hundir la Flota)
         if (type === 'alpha') {
             const topEdgeLat = b.getNorth();
             const leftEdgeLng = b.getWest();
 
-            // Columnas (Letras en el borde superior)
             for (let lng = sLng; lng < eLng; lng += step) {
                 let lngIndex = Math.floor((lng + 180) / step);
                 let letter = getAlphaFromNumber(lngIndex);
@@ -1649,13 +1755,12 @@
                         className: 'alpha-grid-header', 
                         html: htmlContent, 
                         iconSize: [32, 32], 
-                        iconAnchor: [16, -10] // Anclado debajo del borde superior de la pantalla
+                        iconAnchor: [16, -10]
                     }),
                     interactive: false
                 }).addTo(gridLayer);
             }
 
-            // Filas (Números en el borde izquierdo)
             for (let lat = sLat; lat < eLat; lat += step) {
                 let latIndex = Math.floor((lat + 90) / step);
                 
@@ -1666,7 +1771,7 @@
                         className: 'alpha-grid-header', 
                         html: htmlContent, 
                         iconSize: [32, 32], 
-                        iconAnchor: [-10, 16] // Anclado a la derecha del borde izquierdo de la pantalla
+                        iconAnchor: [-10, 16]
                     }),
                     interactive: false
                 }).addTo(gridLayer);
@@ -1820,7 +1925,6 @@
                             const id = L.stamp(layer);
                             layer.isHidden = false;
                             
-                            // Mantenemos la compatibilidad con proyectos antiguos sin bando
                             if(!feature.properties.faction) layer.feature.properties.faction = 'General';
 
                             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
@@ -1949,6 +2053,8 @@
                     });
                 }
                 
+                // Si la pantalla se mueve y está bloqueada, desbloqueamos automáticamente
+                if (isZoomLocked) toggleZoomLock();
                 if(drawnItems.getLayers().length > 0) map.fitBounds(drawnItems.getBounds());
                 updateLayerTree(); toggleMenu(); 
             } catch (err) { alert("Error al procesar el archivo KML o GPX."); }
@@ -2072,7 +2178,6 @@
             if (data[0]) {
                 foundLat = parseFloat(data[0].lat);
                 foundLon = parseFloat(data[0].lon);
-                // Usamos la primera parte del nombre para que no sea excesivamente largo en el menú de edición
                 popupText = data[0].display_name.split(',')[0];
                 addEditableMarkerFromSearch(foundLat, foundLon, popupText);
             }
@@ -2080,9 +2185,11 @@
     }
 
     async function addEditableMarkerFromSearch(lat, lon, name) {
+        // Al moverse forzosamente a una nueva posición, desbloqueamos el zoom automático
+        if (isZoomLocked) toggleZoomLock();
+        
         map.setView([lat, lon], 15);
         
-        // Lo creamos azul por defecto para distinguirlo de los dibujados a mano
         const color = '#3498db'; 
         const newMarker = L.marker([lat, lon], { icon: getMarkerIconObj(color, 'punto') });
         const id = L.stamp(newMarker);
@@ -2142,7 +2249,6 @@
         }
     }
 
-    // Funciones para colapsar los menús del panel lateral
     function toggleMapMixerGroup() {
         const container = document.getElementById('map-mixer-container');
         const icon = document.getElementById('toggleMapMixerIcon');
@@ -2267,6 +2373,7 @@
     // Inicializar arrastre
     dragElement(document.getElementById("map-legend"));
     dragElement(document.getElementById("compass-rose"));
+    dragElement(document.getElementById("numeric-scale-widget"));
 
 </script>
 </body>
