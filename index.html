@@ -395,9 +395,11 @@
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🌍 2. Capas y Mezclador de Mapas</h4>
             <p style="margin-top:0;"><b>Mezclador:</b> Te permite superponer dos mapas a la vez. Por ejemplo, pon el <b>Mapa Topográfico (MTN)</b> de fondo y el <b>Satélite (PNOA)</b> encima con una opacidad al 40%. Así verás los árboles reales fundidos con las curvas de nivel topográficas.</p>
 
-            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📐 3. Sistema y Cuadrícula</h4>
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📐 3. Sistema, Cuadrícula y Escala</h4>
             <p style="margin-top:0;">El marcador flotante de la esquina inferior izquierda indica donde está tu ratón. Puedes cambiar su formato en esta sección.<br>
-            <b>Cuadrícula Táctica (Alfa):</b> Dibuja un sistema tipo "Hundir la Flota" (ej. D4, F7), ideal y rápido para dar coordenadas por radio sin tener que dictar números largos.</p>
+            <b>Cuadrícula Táctica (Alfa):</b> Dibuja un sistema tipo "Hundir la Flota" (ej. D4, F7), ideal y rápido para dar coordenadas por radio sin tener que dictar números largos.<br>
+            <b>Escala Exacta y Numérica:</b> Muestra una escala arrastrable calculada en vivo (ej. 1:25.000). Si eliges una "Escala Exacta" del menú, la vista se ajusta milimétricamente para que coincida con la realidad al imprimir.<br>
+            <b>🔒 Bloquear Zoom:</b> Al usar una escala exacta, el mapa se bloquea (rueda del ratón, doble clic, etc.) para que no la estropees por accidente antes de hacer una captura. Puedes bloquearlo/desbloquearlo manualmente con el botón.</p>
 
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">✏️ 4. Herramientas de Edición</h4>
             <ul style="padding-left:20px; margin-top:0;">
@@ -671,7 +673,6 @@
     let currentOverlay = overLayers.pnoa;
     currentOverlay.setOpacity(0.4);
  
-    // zoomSnap: 0 permite que el zoom tenga decimales y sea 100% perfecto matemáticamente
     const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false, zoomSnap: 0 });
     L.control.zoom({ position: 'topleft' }).addTo(map);
  
@@ -745,7 +746,6 @@
         }
     }
 
-    // Funcionalidad de bloqueo de Zoom para mantener la escala real
     function toggleZoomLock() {
         isZoomLocked = !isZoomLocked;
         const btn = document.getElementById('lockZoomBtn');
@@ -774,17 +774,14 @@
             btn.style.borderColor = "var(--ign-blue)";
             btn.style.color = "var(--ign-blue)";
             
-            // Al desbloquear dejamos en auto para que el usuario sea consciente de que es libre
             document.getElementById('gridScale').value = 'auto';
         }
         updateNumericScaleDisplay();
     }
 
-    // Funcionalidad para actualizar en vivo la Escala Numérica
     function updateNumericScaleDisplay() {
         const scaleDropdown = document.getElementById('gridScale').value;
         
-        // Si el zoom está bloqueado y el usuario eligió una escala exacta, mostramos textualmente esa escala.
         if (isZoomLocked && scaleDropdown !== 'auto') {
             document.getElementById('numeric-scale-val').innerText = "1:" + parseInt(scaleDropdown).toLocaleString('es-ES');
             return;
@@ -793,16 +790,13 @@
         const lat = map.getCenter().lat;
         const zoom = map.getZoom();
         
-        // Cálculo matemático de los metros por píxel en base a la latitud y el zoom de Leaflet
         const mpp = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
-        // Conversión asumiendo la resolución típica de pantalla (96dpi = 0.0002645833 metros/píxel)
         let scale = mpp / 0.0002645833;
         
-        // Redondeo inteligente para que la escala muestre valores cerrados y elegantes
         const standardScales = [2000, 5000, 10000, 25000, 50000, 100000];
         let snapped = false;
         for (let s of standardScales) {
-            if (Math.abs(scale - s) / s < 0.03) { // Tolerancia del 3%
+            if (Math.abs(scale - s) / s < 0.03) {
                 scale = s;
                 snapped = true;
                 break;
@@ -822,7 +816,7 @@
     
     map.on('move', updateNumericScaleDisplay);
     map.on('zoomend', updateNumericScaleDisplay);
-    updateNumericScaleDisplay(); // Inicializar
+    updateNumericScaleDisplay(); 
 
     function updateLegend() {
         if (!isLegendVisible) return;
@@ -1637,16 +1631,13 @@
             const targetScale = parseInt(scaleStr);
             const lat = map.getCenter().lat;
             
-            // Cálculo del zoom fraccional exacto basado en la fórmula del Web Mercator
             const targetZoom = Math.log2((156543.03392 * Math.cos(lat * Math.PI / 180)) / (targetScale * 0.0002645833));
             map.setZoom(targetZoom);
             
-            // Si elige una escala exacta, se la bloqueamos automáticamente para que no la arruine moviendo el ratón
             if (!isZoomLocked) {
                 toggleZoomLock();
             }
         } else {
-            // Si vuelve a modo Auto y estaba bloqueada, se la desbloqueamos
             if (isZoomLocked) {
                 toggleZoomLock();
             }
@@ -2053,7 +2044,6 @@
                     });
                 }
                 
-                // Si la pantalla se mueve y está bloqueada, desbloqueamos automáticamente
                 if (isZoomLocked) toggleZoomLock();
                 if(drawnItems.getLayers().length > 0) map.fitBounds(drawnItems.getBounds());
                 updateLayerTree(); toggleMenu(); 
@@ -2185,7 +2175,6 @@
     }
 
     async function addEditableMarkerFromSearch(lat, lon, name) {
-        // Al moverse forzosamente a una nueva posición, desbloqueamos el zoom automático
         if (isZoomLocked) toggleZoomLock();
         
         map.setView([lat, lon], 15);
@@ -2305,7 +2294,6 @@
         document.getElementById('manual-modal').style.display = 'none';
     }
 
-    // --- Funciones para hacer arrastrables los elementos ---
     function dragElement(elmnt) {
         var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
         elmnt.onmousedown = dragMouseDown;
@@ -2370,7 +2358,6 @@
         }
     }
 
-    // Inicializar arrastre
     dragElement(document.getElementById("map-legend"));
     dragElement(document.getElementById("compass-rose"));
     dragElement(document.getElementById("numeric-scale-widget"));
