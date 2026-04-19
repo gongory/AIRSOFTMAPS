@@ -347,6 +347,51 @@
         <img id="image-modal-content" src="" style="max-width:100%; max-height:90vh; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
     </div>
 </div>
+
+<!-- Modal del Manual de Usuario -->
+<div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:4000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:650px; max-height:85vh; overflow-y:auto; box-shadow:0 4px 20px rgba(0,0,0,0.4); position:relative;">
+        <button onclick="closeManual()" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; font-weight:bold;">✕</button>
+        <h2 style="margin-top:0; color:var(--ign-blue); border-bottom:2px solid #f1f5f9; padding-bottom:10px; font-size:20px;">📖 Manual de Usuario - AirsoftMaps</h2>
+        
+        <div style="font-size:13px; color:#475569; line-height:1.6;">
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📁 1. Gestión de Proyectos y Archivos</h4>
+            <p style="margin-top:0;"><b>Nuevo / Guardar / Cargar:</b> Permite limpiar el mapa o guardar tu progreso en un archivo <code>.json</code> para retomarlo otro día.<br>
+            <b>Importar / Exportar:</b> Compatible con formatos estándar de GPS (Garmin) y Google Earth (<code>.kml</code> y <code>.gpx</code>). Útil para extraer las coordenadas o cargar mapas de la organización.</p>
+
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🌍 2. Capas y Mezclador de Mapas</h4>
+            <p style="margin-top:0;"><b>Mezclador:</b> Te permite superponer dos mapas a la vez. Por ejemplo, pon el <b>Mapa Topográfico (MTN)</b> de fondo y el <b>Satélite (PNOA)</b> encima con una opacidad al 40%. Así verás los árboles reales fundidos con las curvas de nivel topográficas.</p>
+
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📐 3. Sistema y Cuadrícula</h4>
+            <p style="margin-top:0;">El marcador flotante de la esquina inferior izquierda indica donde está tu ratón. Puedes cambiar su formato en esta sección.<br>
+            <b>Cuadrícula Táctica (Alfa):</b> Dibuja un sistema tipo "Hundir la Flota" (ej. D4, F7), ideal y rápido para dar coordenadas por radio sin tener que dictar números largos.</p>
+
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">✏️ 4. Herramientas de Edición</h4>
+            <ul style="padding-left:20px; margin-top:0;">
+                <li><b>📍 Marcador:</b> Coloca puntos estratégicos. Al editarlo, puedes asignarle iconos tácticos (Respawn, Médico... o tu <b>Radar personalizado</b>). 
+                    <br><i>Avanzado:</i> Puedes añadirle un <b>⭕ Radio de Acción</b> (ej. 50m de alcance) o un <b>🔦 Cono de Visión</b> que puedes rotar para indicar la zona que vigila un vigía.
+                </li>
+                <li><b>📏 Ruta/Medir:</b> Traza líneas. Si haces clic sobre una ruta ya dibujada, la app conectará con el satélite para calcular la distancia, el <b>desnivel positivo/negativo</b> y te mostrará una gráfica de elevación. Además, estimará el <b>⏱️ tiempo a pie</b> teniendo en cuenta las cuestas (Regla de Naismith).</li>
+                <li><b>🔲 Área:</b> Dibuja polígonos para medir hectáreas o delimitar zonas de juego seguras.</li>
+                <li><b>🧭 Rosa Vientos:</b> Muestra una brújula en pantalla que puedes arrastrar a donde quieras.</li>
+                <li><b>📸 Capturar:</b> Toma una "foto" limpia del mapa (escondiendo todos los menús laterales) y la guarda en la galería inferior lista para descargar.</li>
+            </ul>
+
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🗂️ 5. Gestor de Capas y Bandos</h4>
+            <p style="margin-top:0;">Cada elemento que dibujas aparece aquí en forma de lista. Puedes asignarle un "Bando" (Rojo, Azul, Neutral) editando cada marcador. El gestor crea carpetas automáticas y te permite ocultar (👁️) tropas enteras de un solo clic para ver tu estrategia más clara.</p>
+
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📋 6. Leyenda Táctica</h4>
+            <p style="margin-top:0;">Un recuadro flotante que resume los iconos, colores, líneas y áreas que hay dibujados en el mapa. Puedes arrastrarla libremente por la pantalla para que no moleste o activarla/desactivarla usando el botón en la parte inferior del menú lateral.</p>
+
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📸 7. Galería de Capturas</h4>
+            <p style="margin-top:0;">Cuando usas la herramienta "Capturar", la imagen "limpia" del mapa (sin botones ni menús) aparece al final del panel lateral. Desde ahí puedes ampliarla para verla en detalle, descargarla como imagen (.png) a tu dispositivo o borrarla.</p>
+        </div>
+        
+        <div style="text-align:right; margin-top:20px; border-top:1px solid #e2e8f0; padding-top:15px;">
+            <button style="padding:10px 20px; border-radius:8px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold; font-size:14px;" onclick="closeManual()">Entendido</button>
+        </div>
+    </div>
+</div>
  
 <div id="drawing-actions" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; gap: 10px; width: max-content; justify-content: center;">
     <button id="undo-point-btn" onclick="undoLastPoint()" style="background: var(--ign-gold); color: var(--ign-blue); border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">↩️ Deshacer Punto</button>
@@ -365,8 +410,9 @@
     <div class="content">
         
         <div style="display:flex; gap:8px; margin-bottom: 10px;">
-            <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0;" onclick="nuevoProyecto()">📄 Nuevo</button>
-            <button class="btn-outline" style="margin-bottom: 0;" onclick="renombrarProyecto()">✏️ Renombrar</button>
+            <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0; padding: 10px 5px;" onclick="nuevoProyecto()">📄 Nuevo</button>
+            <button class="btn-outline" style="margin-bottom: 0; padding: 10px 5px;" onclick="renombrarProyecto()">✏️ Renombrar</button>
+            <button class="btn-outline" style="border-color: var(--success); color: var(--success); margin-bottom: 0; padding: 10px 5px;" onclick="openManual()">📖 Manual</button>
         </div>
         
         <div style="display:flex; gap:8px; margin-bottom: 10px;">
@@ -1214,7 +1260,13 @@
                         if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff);
                     }
                     
-                    baseText = `<div style="min-width: 260px;"><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span>
+                    // Cálculo de tiempo estimado (Regla de Naismith: 5km/h plano + 1min/10m ascenso)
+                    let timeMinutes = (distance * 0.012) + (elevGain * 0.1);
+                    let timeHours = Math.floor(timeMinutes / 60);
+                    let remainMinutes = Math.round(timeMinutes % 60);
+                    let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`;
+                    
+                    baseText = `<div style="min-width: 260px;"><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b> | ⏱️ <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span>
                     <div style="height: 120px; width: 100%; margin-top: 8px;"><canvas id="chart-${id}"></canvas></div></div>`;
                     
                     layer.feature.properties.baseText = baseText;
@@ -2091,6 +2143,14 @@
             container.style.display = 'none';
             icon.innerText = '▼';
         }
+    }
+
+    function openManual() {
+        document.getElementById('manual-modal').style.display = 'flex';
+    }
+
+    function closeManual() {
+        document.getElementById('manual-modal').style.display = 'none';
     }
 
 </script>
