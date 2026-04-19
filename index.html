@@ -99,6 +99,10 @@
             justify-content: center;
             pointer-events: none;
         }
+        
+        .alpha-grid-header {
+            pointer-events: none;
+        }
  
         .gallery-item { margin-bottom: 10px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 4px; }
         .gallery-item img { width: 100%; display: block; border-radius: 4px; }
@@ -192,7 +196,7 @@
 </div>
 
 <div id="edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
-    <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+    <div style="background:white; padding:20px; border-radius:12px; width:340px; box-shadow:0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
         <h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Editar Elemento</h3>
         <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nombre</label>
         <input type="text" id="edit-name-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;">
@@ -235,6 +239,38 @@
 
                 <label style="font-size: 12px; font-weight: bold; color: var(--ign-gold); display:block; margin-bottom:4px;">⭕ Radio de Acción (metros)</label>
                 <input type="number" id="edit-buffer-input" min="0" step="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: 50 o vacío para ninguno">
+                
+                <!-- SECCIÓN DE CONO DE VISIÓN -->
+                <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #cbd5e0;">
+                    <label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer;">
+                        <input type="checkbox" id="edit-cone-enable" style="width:16px; height:16px;" onchange="document.getElementById('edit-cone-options').style.display = this.checked ? 'block' : 'none';"> 🔦 Mostrar Cono de Visión
+                    </label>
+                    <div id="edit-cone-options" style="display:none; margin-left: 24px;">
+                        <label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Color del Cono</label>
+                        <select id="edit-cone-color-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e0; margin-bottom:8px; box-sizing:border-box; font-size:13px;">
+                            <option value="#f1c40f">Amarillo</option>
+                            <option value="#e74c3c">Rojo</option>
+                            <option value="#3498db">Azul</option>
+                            <option value="#2ecc71">Verde</option>
+                            <option value="#9b59b6">Morado</option>
+                            <option value="#ffffff">Blanco</option>
+                            <option value="#34495e">Oscuro</option>
+                        </select>
+
+                        <label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Orientación (0° N - 180° S)</label>
+                        <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+                            <input type="range" id="edit-cone-angle-range" min="0" max="360" value="0" style="flex:1;" oninput="document.getElementById('edit-cone-angle-val').innerText = this.value + '°'">
+                            <span id="edit-cone-angle-val" style="font-size:11px; width:30px; font-weight:bold; color:var(--ign-blue);">0°</span>
+                        </div>
+                        <label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Apertura</label>
+                        <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+                            <input type="range" id="edit-cone-spread-range" min="10" max="180" value="60" style="flex:1;" oninput="document.getElementById('edit-cone-spread-val').innerText = this.value + '°'">
+                            <span id="edit-cone-spread-val" style="font-size:11px; width:30px; font-weight:bold; color:var(--ign-blue);">60°</span>
+                        </div>
+                        <label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Alcance Visual (metros)</label>
+                        <input type="number" id="edit-cone-dist" min="10" step="10" value="100" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e0; box-sizing:border-box; font-size:13px;">
+                    </div>
+                </div>
             </div>
 
             <div id="edit-shape-specifics" style="display:none;">
@@ -249,7 +285,7 @@
             </div>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 10px;">
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;">
             <button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="closeEditModal()">Cancelar</button>
             <button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="confirmEditModal()">Guardar Cambios</button>
         </div>
@@ -582,6 +618,13 @@
                 const type = props.iconType || 'punto';
                 const key = `marker_${type}_${color}`;
                 if (!uniqueTypes.has(key)) uniqueTypes.set(key, { category: 'marker', color, type });
+
+                // Detectamos si tiene el cono de visión activo para añadirlo a la leyenda
+                if (props.coneEnabled) {
+                    const coneColor = props.coneColor || color;
+                    const coneKey = `cone_${coneColor}`;
+                    if (!uniqueTypes.has(coneKey)) uniqueTypes.set(coneKey, { category: 'cone', color: coneColor });
+                }
             } else if (layer instanceof L.Polygon) {
                 const key = `polygon_${color}`;
                 if (!uniqueTypes.has(key)) uniqueTypes.set(key, { category: 'polygon', color });
@@ -604,6 +647,12 @@
                 html += `<div class="legend-item">
                     <div style="background-color: ${info.color}; width: 20px; height: 20px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:12px; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.4);">${info.type==='punto'?'':icon}</div>
                     <span>${name}</span>
+                </div>`;
+            } else if (info.category === 'cone') {
+                html += `<div class="legend-item">
+                    <div style="font-size:12px; width:20px; text-align:center;">🔦</div>
+                    <div style="width: 14px; height: 14px; background-color: ${info.color}; opacity:0.4; border: 1px dashed #333; border-radius: 50% 50% 0 0; transform: rotate(45deg);"></div>
+                    <span>Cono de Visión</span>
                 </div>`;
             } else if (info.category === 'polygon') {
                 html += `<div class="legend-item">
@@ -660,6 +709,20 @@
                     </div>
                 </div>`;
             }
+            
+            if (layer instanceof L.Marker && layer.feature?.properties?.coneEnabled && layer.conePolygon) {
+                const coneHidden = layer.conePolygon.isHidden || false;
+                const coneEye = coneHidden ? '👁️‍🗨️' : '👁️';
+                const coneEyeClass = coneHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
+                
+                html += `<div class="layer-item" style="padding-left: 20px; background: #f8fafc; border-top: none;">
+                    <span class="layer-name-text" style="font-size: 11px; color: #64748b;" title="Visión de ${name}">└ 🔦 Visión (${layer.feature.properties.coneDist}m)</span>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <button class="${coneEyeClass}" onclick="toggleConeVisibility(${id})" title="Ver/Ocultar Visión">${coneEye}</button>
+                        <button style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:12px; padding:0 5px;" onclick="removeConeById(${id})" title="Eliminar Cono">🗑️</button>
+                    </div>
+                </div>`;
+            }
         });
         list.innerHTML = html;
         updateLegend(); 
@@ -688,6 +751,14 @@
                 fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) 
             });
         }
+        
+        // También ocultamos/mostramos sus elementos dependientes al instante
+        if (layer.conePolygon) {
+            layer.conePolygon.isHidden = layer.isHidden;
+            if (layer.isHidden) layer.conePolygon.setStyle({ opacity: 0, fillOpacity: 0 });
+            else layer.conePolygon.setStyle({ opacity: 1, fillOpacity: 0.2 });
+        }
+        
         updateLayerTree();
     }
 
@@ -703,6 +774,30 @@
             layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
         }
         updateLayerTree();
+    }
+    
+    function toggleConeVisibility(id) {
+        const layer = drawnItems.getLayer(id);
+        if (!layer || !layer.conePolygon) return;
+        
+        layer.conePolygon.isHidden = !layer.conePolygon.isHidden;
+        
+        if (layer.conePolygon.isHidden) {
+            layer.conePolygon.setStyle({ opacity: 0, fillOpacity: 0 });
+        } else {
+            layer.conePolygon.setStyle({ opacity: 1, fillOpacity: 0.2 });
+        }
+        updateLayerTree();
+    }
+
+    function removeConeById(id) {
+        const layer = drawnItems.getLayer(id);
+        if (layer && layer.conePolygon) {
+            map.removeLayer(layer.conePolygon);
+            layer.conePolygon = null;
+            layer.feature.properties.coneEnabled = false;
+            updateLayerTree();
+        }
     }
 
     function updateMarkerBuffer(layer) {
@@ -730,6 +825,66 @@
         } else if (layer.bufferCircle) {
             map.removeLayer(layer.bufferCircle);
             layer.bufferCircle = null;
+        }
+    }
+    
+    // Funciones matemáticas para crear el polígono del cono de visión
+    function getDestination(latlng, heading, dist) {
+        const R = 6378137; // Radio de la Tierra en metros
+        const brng = heading * Math.PI / 180;
+        const lat1 = latlng.lat * Math.PI / 180;
+        const lon1 = latlng.lng * Math.PI / 180;
+        const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist / R) +
+                               Math.cos(lat1) * Math.sin(dist / R) * Math.cos(brng));
+        const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist / R) * Math.cos(lat1),
+                                       Math.cos(dist / R) - Math.sin(lat1) * Math.sin(lat2));
+        return L.latLng(lat2 * 180 / Math.PI, lon2 * 180 / Math.PI);
+    }
+
+    function getConeLatLngs(latlng, radius, angle, spread) {
+        const points = [latlng];
+        const startAngle = angle - spread / 2;
+        const steps = Math.max(10, Math.floor(spread / 5));
+        for (let i = 0; i <= steps; i++) {
+            const currentAngle = startAngle + (i / steps) * spread;
+            points.push(getDestination(latlng, currentAngle, radius));
+        }
+        return points;
+    }
+
+    function updateMarkerCone(layer) {
+        if (!(layer instanceof L.Marker)) return;
+        const enabled = layer.feature.properties.coneEnabled;
+        
+        if (enabled) {
+            const radius = layer.feature.properties.coneDist;
+            const angle = layer.feature.properties.coneAngle;
+            const spread = layer.feature.properties.coneSpread;
+            const latlngs = getConeLatLngs(layer.getLatLng(), radius, angle, spread);
+            const coneColor = layer.feature.properties.coneColor || layer.feature.properties.color;
+            
+            if (layer.conePolygon) {
+                layer.conePolygon.setLatLngs(latlngs);
+                layer.conePolygon.setStyle({color: coneColor});
+            } else {
+                layer.conePolygon = L.polygon(latlngs, {
+                    color: coneColor,
+                    weight: 1,
+                    fillOpacity: 0.2,
+                    interactive: false,
+                    dashArray: '4, 4'
+                }).addTo(map);
+                layer.conePolygon.isHidden = layer.isHidden || false;
+            }
+            
+            if (layer.isHidden || (layer.conePolygon && layer.conePolygon.isHidden)) {
+                 layer.conePolygon.setStyle({ opacity: 0, fillOpacity: 0 });
+            } else {
+                 layer.conePolygon.setStyle({ opacity: 1, fillOpacity: 0.2 });
+            }
+        } else if (layer.conePolygon) {
+            map.removeLayer(layer.conePolygon);
+            layer.conePolygon = null;
         }
     }
 
@@ -832,6 +987,13 @@
             layer.feature.properties.iconType = 'punto';
             layer.feature.properties.bufferRadius = 0;
             layer.feature.properties.showLabel = false;
+            
+            // Valores por defecto del cono
+            layer.feature.properties.coneEnabled = false;
+            layer.feature.properties.coneAngle = 0;
+            layer.feature.properties.coneSpread = 60;
+            layer.feature.properties.coneDist = 100;
+            layer.feature.properties.coneColor = document.getElementById('markerColor').value || '#f1c40f';
         } else if (layer.options) {
             layer.feature.properties.color = layer.options.color;
             layer.feature.properties.weight = layer.options.weight;
@@ -969,6 +1131,17 @@
                 document.getElementById('edit-icon-input').value = layer.feature.properties.iconType || 'punto';
                 document.getElementById('edit-buffer-input').value = layer.feature.properties.bufferRadius || '';
                 document.getElementById('edit-show-label-input').checked = layer.feature.properties.showLabel || false;
+                
+                // Cargar valores del cono
+                document.getElementById('edit-cone-enable').checked = layer.feature.properties.coneEnabled || false;
+                document.getElementById('edit-cone-color-input').value = layer.feature.properties.coneColor || layer.feature.properties.color || '#f1c40f';
+                document.getElementById('edit-cone-angle-range').value = layer.feature.properties.coneAngle || 0;
+                document.getElementById('edit-cone-angle-val').innerText = (layer.feature.properties.coneAngle || 0) + '°';
+                document.getElementById('edit-cone-spread-range').value = layer.feature.properties.coneSpread || 60;
+                document.getElementById('edit-cone-spread-val').innerText = (layer.feature.properties.coneSpread || 60) + '°';
+                document.getElementById('edit-cone-dist').value = layer.feature.properties.coneDist || 100;
+                
+                document.getElementById('edit-cone-options').style.display = layer.feature.properties.coneEnabled ? 'block' : 'none';
             } else {
                 document.getElementById('edit-weight-input').value = layer.options.weight || 4;
             }
@@ -1001,8 +1174,17 @@
                 layer.feature.properties.color = newColor; layer.feature.properties.iconType = newIconType;
                 layer.feature.properties.bufferRadius = parseFloat(document.getElementById('edit-buffer-input').value) || 0;
                 layer.feature.properties.showLabel = document.getElementById('edit-show-label-input').checked;
+                
+                // Guardar valores del cono
+                layer.feature.properties.coneEnabled = document.getElementById('edit-cone-enable').checked;
+                layer.feature.properties.coneColor = document.getElementById('edit-cone-color-input').value;
+                layer.feature.properties.coneAngle = parseFloat(document.getElementById('edit-cone-angle-range').value);
+                layer.feature.properties.coneSpread = parseFloat(document.getElementById('edit-cone-spread-range').value);
+                layer.feature.properties.coneDist = parseFloat(document.getElementById('edit-cone-dist').value) || 100;
+                
                 updateMarkerBuffer(layer);
                 updateMarkerLabel(layer);
+                updateMarkerCone(layer);
             }
 
             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
@@ -1021,6 +1203,7 @@
         const layer = drawnItems.getLayer(id);
         if (layer) {
             if (layer.bufferCircle) map.removeLayer(layer.bufferCircle);
+            if (layer.conePolygon) map.removeLayer(layer.conePolygon);
             drawnItems.removeLayer(layer);
             updateLayerTree();
         }
@@ -1343,7 +1526,10 @@
             projectName = name.trim() || "Nuevo_Proyecto";
             document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
 
-            drawnItems.eachLayer(l => { if(l.bufferCircle) map.removeLayer(l.bufferCircle); });
+            drawnItems.eachLayer(l => { 
+                if(l.bufferCircle) map.removeLayer(l.bufferCircle); 
+                if(l.conePolygon) map.removeLayer(l.conePolygon); 
+            });
             drawnItems.clearLayers(); 
             document.getElementById('gallery').innerHTML = ''; 
             if (searchMarker) map.removeLayer(searchMarker);
@@ -1376,7 +1562,10 @@
                 const data = JSON.parse(e.target.result);
                 if (data.view) map.setView(data.view.center, data.view.zoom);
                 if (data.features) {
-                    drawnItems.eachLayer(l => { if(l.bufferCircle) map.removeLayer(l.bufferCircle); });
+                    drawnItems.eachLayer(l => { 
+                        if(l.bufferCircle) map.removeLayer(l.bufferCircle); 
+                        if(l.conePolygon) map.removeLayer(l.conePolygon);
+                    });
                     drawnItems.clearLayers();
                     L.geoJSON(data.features, {
                         pointToLayer: function (feature, latlng) {
@@ -1406,6 +1595,7 @@
                             if (layer instanceof L.Marker) {
                                 updateMarkerBuffer(layer);
                                 updateMarkerLabel(layer);
+                                updateMarkerCone(layer);
                             }
                             if (feature.properties.chartData) attachChartListener(layer, id);
                         }
@@ -1542,6 +1732,13 @@
             const color = '#3498db'; 
             layer.feature.properties.color = color; layer.feature.properties.iconType = 'punto'; 
             layer.feature.properties.bufferRadius = 0; layer.feature.properties.showLabel = false;
+            
+            layer.feature.properties.coneEnabled = false;
+            layer.feature.properties.coneAngle = 0;
+            layer.feature.properties.coneSpread = 60;
+            layer.feature.properties.coneDist = 100;
+            layer.feature.properties.coneColor = color;
+            
             layer.setIcon(getMarkerIconObj(color, 'punto'));
             const latlng = layer.getLatLng();
             baseText = `<div><b>📍 ${name}</b><br>Lat: ${latlng.lat.toFixed(5)}<br>Lon: ${latlng.lng.toFixed(5)}</div>`;
@@ -1661,6 +1858,12 @@
         newMarker.feature.properties.iconType = 'punto';
         newMarker.feature.properties.bufferRadius = 0;
         newMarker.feature.properties.showLabel = false;
+        
+        newMarker.feature.properties.coneEnabled = false;
+        newMarker.feature.properties.coneAngle = 0;
+        newMarker.feature.properties.coneSpread = 60;
+        newMarker.feature.properties.coneDist = 100;
+        newMarker.feature.properties.coneColor = color;
         
         const type = document.getElementById('gridType').value;
         let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}`;
