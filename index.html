@@ -145,6 +145,15 @@
             text-shadow: none !important;
         }
 
+        .leaflet-control-scale {
+            cursor: grab !important;
+            user-select: none !important;
+            pointer-events: auto !important;
+        }
+        .leaflet-control-scale:active {
+            cursor: grabbing !important;
+        }
+
         .layer-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         .layer-item:last-child { border-bottom: none; }
         .layer-vis-btn { background: none; border: none; cursor: pointer; color: #475569; font-size: 14px; padding: 0 5px;}
@@ -1505,10 +1514,20 @@
     function toggleScale() {
         const btn = document.getElementById('scaleToggleBtn');
         if (!scaleControlObj) {
-            scaleControlObj = L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+            scaleControlObj = L.control.scale({ imperial: false }).addTo(map);
             btn.innerText = "Ocultar Escala";
             btn.classList.add('active');
             document.getElementById('liveCoords').style.bottom = '60px'; 
+            
+            // Hacer la escala arrastrable sacándola del contenedor restrictivo de Leaflet
+            let scaleEl = scaleControlObj.getContainer();
+            document.getElementById('map-container').appendChild(scaleEl);
+            scaleEl.style.position = 'absolute';
+            scaleEl.style.bottom = '20px';
+            scaleEl.style.left = '15px';
+            scaleEl.style.zIndex = '998';
+            
+            dragElement(scaleEl);
         } else {
             map.removeControl(scaleControlObj);
             scaleControlObj = null;
