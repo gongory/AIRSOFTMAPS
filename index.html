@@ -92,6 +92,13 @@
             font-size: 10px; font-weight: bold; border: 1px solid currentColor;
             white-space: nowrap; pointer-events: none;
         }
+        
+        .alpha-grid-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
  
         .gallery-item { margin-bottom: 10px; border: 1px solid #ddd; padding: 5px; background: #fff; border-radius: 4px; }
         .gallery-item img { width: 100%; display: block; border-radius: 4px; }
@@ -349,10 +356,11 @@
 
         <div id="grid-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 12px; border: 1px solid #cbd5e0;">
             <label style="font-size: 11px; color: #64748b; display: block; margin-bottom: 4px;">Formato de Coordenadas</label>
-            <select id="gridType" class="form-select" onchange="updateUI()" style="margin-bottom: 12px;">
+            <select id="gridType" class="form-select" onchange="onGridTypeChange()" style="margin-bottom: 12px;">
                 <option value="decimal">Grados Decimales (DD)</option>
                 <option value="dms">G. M. S. (DMS)</option>
                 <option value="utm">UTM (Métricas)</option>
+                <option value="alpha">Táctica Alfanumérica (A1)</option>
             </select>
             
             <div class="grid-config-group">
@@ -459,7 +467,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
  
 <script>
-    let activeHandler = null, gridLayer = null, isGridVisible = false;
+    let activeHandler = null, gridLayer = null, isGridVisible = false, searchMarker = null;
     let mtnGridLayer = null, isMtnGridVisible = false;
     let projectName = "Proyecto_AirsoftMaps";
     let scaleControlObj = null;
@@ -841,26 +849,33 @@
         stopDrawing();
 
         if (e.layerType === 'marker') {
-            const lat = layer.getLatLng().lat;
-            const lng = layer.getLatLng().lng;
+            const latlng = layer.getLatLng();
+            const lat = latlng.lat;
+            const lng = latlng.lng;
             
             const type = document.getElementById('gridType').value;
             let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lng.toFixed(5)}`;
-            if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lng, false)}`;
-            else if (type === 'utm') {
+            if (type === 'dms') {
+                coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lng, false)}`;
+            } else if (type === 'utm') {
                 const u = latLonToUTM(lat, lng);
                 coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`;
+            } else if (type === 'alpha') {
+                let step = getGridStep(map.getZoom());
+                let lngIndex = Math.floor((lng + 180) / step);
+                let latIndex = Math.floor((lat + 90) / step);
+                coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`;
             }
             
-            baseText = `<div><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
+            baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>Calculando...</i></div>`;
             layer.bindPopup(baseText + actionBtns).openPopup(); 
             
             try {
                 const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lng.toFixed(5)}`);
                 const data = await res.json();
-                baseText = `<div><b>📍 ${layerName}</b><br>${coordText}<br>Alt: <b>${data.elevation[0]} m</b></div>`;
+                baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Alt: <b>${data.elevation[0]} m</b></div>`;
             } catch (error) {
-                baseText = `<div><b>📍 ${layerName}</b><br>${coordText}<br>Alt: Error</div>`;
+                baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Alt: Error</div>`;
             }
             layer.feature.properties.baseText = baseText;
             layer.setPopupContent(baseText + actionBtns);
@@ -1123,15 +1138,41 @@
         if (!scaleControlObj) {
             scaleControlObj = L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
             btn.innerText = "Ocultar Escala";
+            btn.classList.add('active');
             document.getElementById('liveCoords').style.bottom = '60px'; 
         } else {
             map.removeControl(scaleControlObj);
             scaleControlObj = null;
             btn.innerText = "Mostrar Escala";
+            btn.classList.remove('active');
             document.getElementById('liveCoords').style.bottom = '20px'; 
         }
     }
  
+    function getGridStep(z) {
+        // Ajustamos los saltos dinámicos para que no desaparezca de repente al alejar el mapa
+        return (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : z > 5 ? 1.0 : 5.0);
+    }
+
+    function getAlphaFromNumber(num) {
+        let letters = '';
+        while (num >= 0) {
+            letters = String.fromCharCode(65 + (num % 26)) + letters;
+            num = Math.floor(num / 26) - 1;
+        }
+        return letters;
+    }
+
+    function onGridTypeChange() {
+        // Enciende la cuadrícula automáticamente si estaba apagada para que el usuario no se confunda
+        if (!isGridVisible) {
+            toggleGrid();
+        } else {
+            updateGrid();
+        }
+        updateUI();
+    }
+
     function updateGrid() {
         if (!isGridVisible) return;
         if (gridLayer) map.removeLayer(gridLayer);
@@ -1141,24 +1182,82 @@
         const type = document.getElementById('gridType').value;
         const color = document.getElementById('gridColor').value;
         const weight = parseFloat(document.getElementById('gridWeight').value);
-        let step = (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : 0.5);
+        
+        let step = getGridStep(z);
  
-        const sLat = Math.floor(b.getSouth() / step) * step, eLat = Math.ceil(b.getNorth() / step) * step;
-        const sLng = Math.floor(b.getWest() / step) * step, eLng = Math.ceil(b.getEast() / step) * step;
+        let sLat = Math.floor(b.getSouth() / step) * step;
+        let eLat = Math.ceil(b.getNorth() / step) * step;
+        let sLng = Math.floor(b.getWest() / step) * step;
+        let eLng = Math.ceil(b.getEast() / step) * step;
+
+        // Auto-protección: Si hay demasiadas celdas en la pantalla, hacemos los cuadros más grandes en vez de ocultar todo
+        while (((eLat - sLat) / step) * ((eLng - sLng) / step) > 3000) {
+            step *= 2;
+            sLat = Math.floor(b.getSouth() / step) * step;
+            eLat = Math.ceil(b.getNorth() / step) * step;
+            sLng = Math.floor(b.getWest() / step) * step;
+            eLng = Math.ceil(b.getEast() / step) * step;
+        }
+ 
         const lineStyle = { color: color, weight: weight, opacity: 0.6 };
  
-        if (((eLat - sLat) / step) * ((eLng - sLng) / step) > 2000) return;
- 
+        // Dibujar Líneas
         for (let lat = sLat; lat <= eLat; lat += step) {
             L.polyline([[lat, b.getWest()], [lat, b.getEast()]], lineStyle).addTo(gridLayer);
-            let label = (type === 'utm') ? `Y:${latLonToUTM(lat, b.getCenter().lng).y.toFixed(0)}` : (type === 'dms' ? formatDMS(lat, true) : lat.toFixed(3));
-            L.marker([lat, b.getWest()], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [-5, 10], style: `color:${color}` }) }).addTo(gridLayer);
+            if (type !== 'alpha') {
+                let label = (type === 'utm') ? `Y:${latLonToUTM(lat, b.getCenter().lng).y.toFixed(0)}` : (type === 'dms' ? formatDMS(lat, true) : lat.toFixed(3));
+                L.marker([lat, b.getWest()], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [-5, 10], style: `color:${color}` }) }).addTo(gridLayer);
+            }
         }
         for (let lng = sLng; lng <= eLng; lng += step) {
             L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], lineStyle).addTo(gridLayer);
-            let label = (type === 'utm') ? `X:${latLonToUTM(b.getCenter().lat, lng).x.toFixed(0)}` : (type === 'dms' ? formatDMS(lng, false) : lng.toFixed(3));
-            L.marker([b.getNorth(), lng], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [30, -5], style: `color:${color}` }) }).addTo(gridLayer);
+            if (type !== 'alpha') {
+                let label = (type === 'utm') ? `X:${latLonToUTM(b.getCenter().lat, lng).x.toFixed(0)}` : (type === 'dms' ? formatDMS(lng, false) : lng.toFixed(3));
+                L.marker([b.getNorth(), lng], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [30, -5], style: `color:${color}` }) }).addTo(gridLayer);
+            }
         }
+
+        // Dibujar Cabeceras de Cuadrícula Táctica (Hundir la Flota)
+        if (type === 'alpha') {
+            const topEdgeLat = b.getNorth();
+            const leftEdgeLng = b.getWest();
+
+            // Columnas (Letras en el borde superior)
+            for (let lng = sLng; lng < eLng; lng += step) {
+                let lngIndex = Math.floor((lng + 180) / step);
+                let letter = getAlphaFromNumber(lngIndex);
+                
+                let htmlContent = `<div style="color:${color}; font-size:15px; font-weight:900; background:rgba(255,255,255,0.95); border:2px solid ${color}; width: 28px; height: 28px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">${letter}</div>`;
+                
+                L.marker([topEdgeLat, lng + step/2], {
+                    icon: L.divIcon({ 
+                        className: 'alpha-grid-header', 
+                        html: htmlContent, 
+                        iconSize: [32, 32], 
+                        iconAnchor: [16, -10] // Anclado debajo del borde superior de la pantalla
+                    }),
+                    interactive: false
+                }).addTo(gridLayer);
+            }
+
+            // Filas (Números en el borde izquierdo)
+            for (let lat = sLat; lat < eLat; lat += step) {
+                let latIndex = Math.floor((lat + 90) / step);
+                
+                let htmlContent = `<div style="color:${color}; font-size:15px; font-weight:900; background:rgba(255,255,255,0.95); border:2px solid ${color}; width: 28px; height: 28px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">${latIndex}</div>`;
+                
+                L.marker([lat + step/2, leftEdgeLng], {
+                    icon: L.divIcon({ 
+                        className: 'alpha-grid-header', 
+                        html: htmlContent, 
+                        iconSize: [32, 32], 
+                        iconAnchor: [-10, 16] // Anclado a la derecha del borde izquierdo de la pantalla
+                    }),
+                    interactive: false
+                }).addTo(gridLayer);
+            }
+        }
+
         gridLayer.addTo(map);
     }
  
@@ -1196,6 +1295,12 @@
         if (type === 'utm') {
             const u = latLonToUTM(e.latlng.lat, e.latlng.lng);
             coords = `Huso ${u.huso}${u.banda} | X: ${u.x.toFixed(0)} Y: ${u.y.toFixed(0)}`;
+        }
+        if (type === 'alpha') {
+            let step = getGridStep(map.getZoom());
+            let lngIndex = Math.floor((e.latlng.lng + 180) / step);
+            let latIndex = Math.floor((e.latlng.lat + 90) / step);
+            coords = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`;
         }
         document.getElementById('liveCoords').innerText = coords;
     });
@@ -1472,26 +1577,6 @@
         drawnItems.addLayer(layer);
     }
 
-    function utmToLatLon(zone, x, y, isSouth) {
-        const a = 6378137.0, e2 = 0.006694380004260827, k0 = 0.9996;
-        const ep2 = e2 / (1 - e2);
-        x = x - 500000.0;
-        if (isSouth) y = y - 10000000.0;
-        const M = y / k0;
-        const mu = M / (a * (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256));
-        const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
-        const phi1 = mu + (3*e1/2 - 27*e1*e1*e1/32)*Math.sin(2*mu) + (21*e1*e1/16 - 55*e1*e1*e1*e1/32)*Math.sin(4*mu) + (151*e1*e1*e1/96)*Math.sin(6*mu);
-        const N1 = a / Math.sqrt(1 - e2*Math.sin(phi1)*Math.sin(phi1));
-        const T1 = Math.tan(phi1)*Math.tan(phi1);
-        const C1 = ep2*Math.cos(phi1)*Math.cos(phi1);
-        const R1 = a*(1-e2) / Math.pow(1 - e2*Math.sin(phi1)*Math.sin(phi1), 1.5);
-        const D = x / (N1*k0);
-        let lat = phi1 - (N1*Math.tan(phi1)/R1) * (D*D/2 - (5 + 3*T1 + 10*C1 - 4*C1*C1 - 9*ep2)*Math.pow(D, 4)/24 + (61 + 90*T1 + 298*C1 + 45*T1*T1 - 252*ep2 - 3*C1*C1)*Math.pow(D, 6)/720);
-        let lon = (D - (1 + 2*T1 + C1)*Math.pow(D, 3)/6 + (5 - 2*C1 + 28*T1 - 3*C1*C1 + 8*ep2 + 24*T1*T1)*Math.pow(D, 5)/120) / Math.cos(phi1);
-        const lon0 = (zone - 1)*6 - 180 + 3;
-        return { lat: lat * 180 / Math.PI, lon: lon0 + lon * 180 / Math.PI };
-    }
-
     async function buscarLugar() {
         const q = document.getElementById('searchInput').value.trim();
         if (!q) return;
@@ -1524,6 +1609,22 @@
                 const isSouth = "CDEFGHJKLM".includes(band);
                 const ll = utmToLatLon(zone, x, y, isSouth);
                 if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; }
+            }
+        } else if (type === 'alpha') {
+            const parts = q.toUpperCase().match(/^([A-Z]+)(\d+)$/);
+            if (parts) {
+                const letters = parts[1];
+                const latIndex = parseInt(parts[2]);
+                
+                let lngIndex = 0;
+                for (let i = 0; i < letters.length; i++) {
+                    lngIndex = lngIndex * 26 + (letters.charCodeAt(i) - 64);
+                }
+                lngIndex -= 1; 
+
+                let step = getGridStep(map.getZoom());
+                foundLon = -180 + (lngIndex * step) + (step / 2);
+                foundLat = -90 + (latIndex * step) + (step / 2);
             }
         }
 
@@ -1567,11 +1668,16 @@
         else if (type === 'utm') {
             const u = latLonToUTM(lat, lon);
             coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`;
+        } else if (type === 'alpha') {
+            let step = getGridStep(map.getZoom());
+            let lngIndex = Math.floor((lon + 180) / step);
+            let latIndex = Math.floor((lat + 90) / step);
+            coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`;
         }
         
         let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
-            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
-            <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
+            <button onclick="editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button>
+            <button onclick="removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button>
         </div>`;
         
         let baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
@@ -1602,6 +1708,7 @@
         if(type === 'decimal') searchInput.placeholder = "Ciudad o 40.41, -3.70...";
         else if(type === 'dms') searchInput.placeholder = "Ciudad o 40°25'0\"N 3°42'0\"W...";
         else if(type === 'utm') searchInput.placeholder = "Ciudad o 30 T 440000 4450000...";
+        else if(type === 'alpha') searchInput.placeholder = "Celda Táctica (Ej: M32, BX450)...";
     }
 
     function toggleGridGroup() {
