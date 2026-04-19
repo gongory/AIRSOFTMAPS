@@ -2153,6 +2153,75 @@
         document.getElementById('manual-modal').style.display = 'none';
     }
 
+    // --- Funciones para hacer arrastrables los elementos ---
+    function dragElement(elmnt) {
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        elmnt.onmousedown = dragMouseDown;
+        elmnt.addEventListener('touchstart', dragTouchStart, {passive: false});
+
+        function fixPosition() {
+            let startTop = elmnt.offsetTop;
+            let startLeft = elmnt.offsetLeft;
+            elmnt.style.bottom = 'auto';
+            elmnt.style.right = 'auto';
+            elmnt.style.top = startTop + "px";
+            elmnt.style.left = startLeft + "px";
+        }
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            if(['INPUT', 'BUTTON', 'SELECT', 'A'].includes(e.target.tagName)) return;
+            e.preventDefault();
+            fixPosition();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        }
+
+        function dragTouchStart(e) {
+            e = e || window.event;
+            if(['INPUT', 'BUTTON', 'SELECT', 'A'].includes(e.target.tagName)) return;
+            fixPosition();
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+            document.ontouchend = closeDragElement;
+            document.ontouchmove = elementDragTouch;
+        }
+
+        function elementDragTouch(e) {
+            e = e || window.event;
+            pos1 = pos3 - e.touches[0].clientX;
+            pos2 = pos4 - e.touches[0].clientY;
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+            document.ontouchend = null;
+            document.ontouchmove = null;
+        }
+    }
+
+    // Inicializar arrastre
+    dragElement(document.getElementById("map-legend"));
+    dragElement(document.getElementById("compass-rose"));
+
 </script>
 </body>
 </html>
