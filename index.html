@@ -147,6 +147,15 @@
         .layer-vis-btn.hidden { opacity: 0.3; }
         .layer-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; font-weight: 600; color: var(--ign-blue);}
 
+        /* Estilos para los bandos (Carpetas) */
+        .faction-header {
+            background: #f1f5f9; padding: 8px; font-weight: bold; font-size: 12px; color: var(--ign-blue);
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e0;
+        }
+        .faction-content {
+            border-left: 3px solid #e2e8f0; margin-left: 5px;
+        }
+
         .map-legend {
             position: absolute; bottom: 85px; right: 20px; z-index: 998;
             background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px;
@@ -226,6 +235,15 @@
         <h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Editar Elemento</h3>
         <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nombre</label>
         <input type="text" id="edit-name-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;">
+
+        <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Bando / Grupo</label>
+        <select id="edit-faction-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;">
+            <option value="General">🏳️ General</option>
+            <option value="Rojo">🔴 Bando Rojo</option>
+            <option value="Azul">🔵 Bando Azul</option>
+            <option value="Organizacion">⚙️ Organización</option>
+            <option value="Neutral">⚪ Neutral / Civil</option>
+        </select>
 
         <div id="edit-style-options" style="display:none;">
             <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Color</label>
@@ -513,7 +531,7 @@
         <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
         
         <div class="section-title">🗂️ Gestor de Capas</div>
-        <div id="layer-list" style="max-height: 150px; overflow-y: auto; background: #fff; border: 1px solid #cbd5e0; border-radius: 8px; margin-bottom:15px;">
+        <div id="layer-list" style="max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #cbd5e0; border-radius: 8px; margin-bottom:15px;">
             <div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">No hay elementos dibujados</div>
         </div>
 
@@ -712,57 +730,82 @@
         const list = document.getElementById('layer-list');
         const layers = drawnItems.getLayers();
         if (layers.length === 0) {
-            list.innerHTML = '<div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">Vacio</div>';
+            list.innerHTML = '<div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">No hay elementos dibujados</div>';
             updateLegend();
             return;
         }
-        let html = '';
+        
+        // Agrupar capas por bando
+        const factions = {};
         layers.forEach(layer => {
-            const id = L.stamp(layer);
-            const name = layer.feature?.properties?.layerName || 'Elemento';
-            const isHidden = layer.isHidden || false;
-            const eyeIcon = isHidden ? '👁️‍🗨️' : '👁️';
-            const eyeClass = isHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
-            
-            let typeIcon = '📍';
-            if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) typeIcon = '📏';
-            if (layer instanceof L.Polygon) typeIcon = '🔲';
-
-            html += `<div class="layer-item">
-                <span class="layer-name-text" title="${name}">${typeIcon} ${name}</span>
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <button class="${eyeClass}" onclick="toggleLayerVisibility(${id})" title="Ver">${eyeIcon}</button>
-                    <button style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:12px; padding:0 5px;" onclick="removeLayerById(${id})">🗑️</button>
-                </div>
-            </div>`;
-
-            if (layer instanceof L.Marker && layer.feature?.properties?.bufferRadius > 0 && layer.bufferCircle) {
-                const bufferHidden = layer.bufferCircle.isHidden || false;
-                const bufferEye = bufferHidden ? '👁️‍🗨️' : '👁️';
-                const bufferEyeClass = bufferHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
-                
-                html += `<div class="layer-item" style="padding-left: 20px; background: #f8fafc; border-top: none;">
-                    <span class="layer-name-text" style="font-size: 11px; color: #64748b;" title="Radio de ${name}">└ ⭕ Radio (${layer.feature.properties.bufferRadius}m)</span>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <button class="${bufferEyeClass}" onclick="toggleBufferVisibility(${id})" title="Ver/Ocultar Radio">${bufferEye}</button>
-                    </div>
-                </div>`;
-            }
-            
-            if (layer instanceof L.Marker && layer.feature?.properties?.coneEnabled && layer.conePolygon) {
-                const coneHidden = layer.conePolygon.isHidden || false;
-                const coneEye = coneHidden ? '👁️‍🗨️' : '👁️';
-                const coneEyeClass = coneHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
-                
-                html += `<div class="layer-item" style="padding-left: 20px; background: #f8fafc; border-top: none;">
-                    <span class="layer-name-text" style="font-size: 11px; color: #64748b;" title="Visión de ${name}">└ 🔦 Visión (${layer.feature.properties.coneDist}m)</span>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <button class="${coneEyeClass}" onclick="toggleConeVisibility(${id})" title="Ver/Ocultar Visión">${coneEye}</button>
-                        <button style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:12px; padding:0 5px;" onclick="removeConeById(${id})" title="Eliminar Cono">🗑️</button>
-                    </div>
-                </div>`;
-            }
+            const faction = layer.feature?.properties?.faction || 'General';
+            if (!factions[faction]) factions[faction] = [];
+            factions[faction].push(layer);
         });
+
+        let html = '';
+        const factionIcons = { 'General': '🏳️', 'Rojo': '🔴', 'Azul': '🔵', 'Organizacion': '⚙️', 'Neutral': '⚪' };
+
+        for (const [factionName, factionLayers] of Object.entries(factions)) {
+            const allHidden = factionLayers.every(l => l.isHidden);
+            const eyeIcon = allHidden ? '👁️‍🗨️' : '👁️';
+            const eyeClass = allHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
+            const fIcon = factionIcons[factionName] || '📁';
+
+            html += `<div class="faction-header">
+                <span>${fIcon} ${factionName}</span>
+                <button class="${eyeClass}" onclick="toggleFactionVisibility('${factionName}')" title="Ver/Ocultar Bando" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0;">${eyeIcon}</button>
+            </div>
+            <div class="faction-content">`;
+
+            factionLayers.forEach(layer => {
+                const id = L.stamp(layer);
+                const name = layer.feature?.properties?.layerName || 'Elemento';
+                const isHidden = layer.isHidden || false;
+                const lEyeIcon = isHidden ? '👁️‍🗨️' : '👁️';
+                const lEyeClass = isHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
+                
+                let typeIcon = '📍';
+                if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) typeIcon = '📏';
+                if (layer instanceof L.Polygon) typeIcon = '🔲';
+
+                html += `<div class="layer-item">
+                    <span class="layer-name-text" title="${name}">${typeIcon} ${name}</span>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <button class="${lEyeClass}" onclick="toggleLayerVisibility(${id})" title="Ver">${lEyeIcon}</button>
+                        <button style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:12px; padding:0 5px;" onclick="removeLayerById(${id})">🗑️</button>
+                    </div>
+                </div>`;
+
+                if (layer instanceof L.Marker && layer.feature?.properties?.bufferRadius > 0 && layer.bufferCircle) {
+                    const bufferHidden = layer.bufferCircle.isHidden || false;
+                    const bufferEye = bufferHidden ? '👁️‍🗨️' : '👁️';
+                    const bufferEyeClass = bufferHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
+                    
+                    html += `<div class="layer-item" style="padding-left: 20px; background: #f8fafc; border-top: none;">
+                        <span class="layer-name-text" style="font-size: 11px; color: #64748b;" title="Radio de ${name}">└ ⭕ Radio (${layer.feature.properties.bufferRadius}m)</span>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="${bufferEyeClass}" onclick="toggleBufferVisibility(${id})" title="Ver/Ocultar Radio">${bufferEye}</button>
+                        </div>
+                    </div>`;
+                }
+                
+                if (layer instanceof L.Marker && layer.feature?.properties?.coneEnabled && layer.conePolygon) {
+                    const coneHidden = layer.conePolygon.isHidden || false;
+                    const coneEye = coneHidden ? '👁️‍🗨️' : '👁️';
+                    const coneEyeClass = coneHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
+                    
+                    html += `<div class="layer-item" style="padding-left: 20px; background: #f8fafc; border-top: none;">
+                        <span class="layer-name-text" style="font-size: 11px; color: #64748b;" title="Visión de ${name}">└ 🔦 Visión (${layer.feature.properties.coneDist}m)</span>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="${coneEyeClass}" onclick="toggleConeVisibility(${id})" title="Ver/Ocultar Visión">${coneEye}</button>
+                            <button style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:12px; padding:0 5px;" onclick="removeConeById(${id})" title="Eliminar Cono">🗑️</button>
+                        </div>
+                    </div>`;
+                }
+            });
+            html += `</div>`;
+        }
         list.innerHTML = html;
         updateLegend(); 
     }
@@ -797,7 +840,52 @@
             if (layer.isHidden) layer.conePolygon.setStyle({ opacity: 0, fillOpacity: 0 });
             else layer.conePolygon.setStyle({ opacity: 1, fillOpacity: 0.2 });
         }
+        if (layer.bufferCircle) {
+            layer.bufferCircle.isHidden = layer.isHidden;
+            if (layer.isHidden) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
+            else layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
+        }
         
+        updateLayerTree();
+    }
+
+    function toggleFactionVisibility(factionName) {
+        const layers = drawnItems.getLayers().filter(l => (l.feature?.properties?.faction || 'General') === factionName);
+        if (layers.length === 0) return;
+        
+        const hideAll = !layers.every(l => l.isHidden);
+        
+        layers.forEach(layer => {
+            layer.isHidden = hideAll;
+            if (layer.isHidden) {
+                if (layer instanceof L.Marker) {
+                    layer.setOpacity(0);
+                    if (layer.getTooltip()) layer.getTooltip().setOpacity(0);
+                }
+                else layer.setStyle({ opacity: 0, fillOpacity: 0 });
+                layer.closePopup();
+            } else {
+                if (layer instanceof L.Marker) {
+                    layer.setOpacity(1);
+                    if (layer.getTooltip()) layer.getTooltip().setOpacity(1);
+                }
+                else layer.setStyle({ 
+                    opacity: 1, 
+                    fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) 
+                });
+            }
+            
+            if (layer.conePolygon) {
+                layer.conePolygon.isHidden = layer.isHidden;
+                if (layer.isHidden) layer.conePolygon.setStyle({ opacity: 0, fillOpacity: 0 });
+                else layer.conePolygon.setStyle({ opacity: 1, fillOpacity: 0.2 });
+            }
+            if (layer.bufferCircle) {
+                layer.bufferCircle.isHidden = layer.isHidden;
+                if (layer.isHidden) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
+                else layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
+            }
+        });
         updateLayerTree();
     }
 
@@ -1019,6 +1107,7 @@
         
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
+        layer.feature.properties.faction = 'General';
         layer.isHidden = false;
         
         if (e.layerType === 'marker') {
@@ -1155,6 +1244,7 @@
 
         const modal = document.getElementById('edit-modal');
         document.getElementById('edit-name-input').value = layer.feature.properties.layerName || '';
+        document.getElementById('edit-faction-input').value = layer.feature.properties.faction || 'General';
         
         const isShape = (layer instanceof L.Polyline);
         const isMarker = (layer instanceof L.Marker);
@@ -1191,6 +1281,7 @@
         window.confirmEditModal = function() {
             modal.style.display = 'none';
             const newName = document.getElementById('edit-name-input').value.trim() || layer.feature.properties.layerName;
+            layer.feature.properties.faction = document.getElementById('edit-faction-input').value;
             
             if (newName !== layer.feature.properties.layerName) {
                 const oldName = layer.feature.properties.layerName;
@@ -1626,6 +1717,10 @@
                             drawnItems.addLayer(layer);
                             const id = L.stamp(layer);
                             layer.isHidden = false;
+                            
+                            // Mantenemos la compatibilidad con proyectos antiguos sin bando
+                            if(!feature.properties.faction) layer.feature.properties.faction = 'General';
+
                             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
                                 <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
                                 <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
@@ -1762,7 +1857,7 @@
 
     function addImportedLayer(layer, name, type) {
         const id = L.stamp(layer);
-        layer.feature = { type: 'Feature', properties: { layerName: name } };
+        layer.feature = { type: 'Feature', properties: { layerName: name, faction: 'General' } };
         layer.isHidden = false;
         
         let baseText = 'Importado';
@@ -1892,6 +1987,7 @@
         
         newMarker.feature = { type: 'Feature', properties: {} };
         newMarker.feature.properties.layerName = name;
+        newMarker.feature.properties.faction = 'General';
         newMarker.isHidden = false;
         newMarker.feature.properties.color = color;
         newMarker.feature.properties.iconType = 'punto';
