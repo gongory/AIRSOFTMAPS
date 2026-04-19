@@ -155,6 +155,8 @@
             cursor: grab; user-select: none;
         }
         .map-legend:active { cursor: grabbing; }
+
+        #compass-rose:active { cursor: grabbing; }
         
         .legend-title { font-weight: 800; color: var(--ign-blue); margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; font-size: 13px; }
         .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 600; color: #475569;}
@@ -170,6 +172,30 @@
     <div class="map-legend" id="map-legend">
         <div class="legend-title">📋 Leyenda Táctica</div>
         <div id="legend-content">No hay elementos</div>
+    </div>
+    
+    <!-- Rosa de los vientos arrastrable -->
+    <div id="compass-rose" style="display: none; position: absolute; top: 40px; left: 40px; z-index: 998; cursor: grab; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); pointer-events: auto;">
+        <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(50,50)">
+                <!-- Puntos secundarios -->
+                <g transform="rotate(45)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
+                <g transform="rotate(135)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
+                <g transform="rotate(225)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
+                <g transform="rotate(315)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
+
+                <!-- Puntos principales -->
+                <g transform="rotate(0)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#e74c3c"/><polygon points="0,-48 0,0 -10,-10" fill="#c0392b"/></g>
+                <g transform="rotate(90)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
+                <g transform="rotate(180)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
+                <g transform="rotate(270)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
+
+                <!-- Centro y Letra -->
+                <circle cx="0" cy="0" r="4" fill="#1e293b"/>
+                <circle cx="0" cy="0" r="1.5" fill="#fff"/>
+                <text x="0" y="-31" font-family="sans-serif" font-weight="900" font-size="14" fill="#fff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">N</text>
+            </g>
+        </svg>
     </div>
 </div>
 
@@ -479,7 +505,8 @@
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('marker')">📍 Marcador</button>
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polygon')">🔲 Área</button>
-                <button class="btn-outline" style="margin-bottom: 0;" onclick="captureMap()">📸 Capturar</button>
+                <button class="btn-outline" style="margin-bottom: 0;" id="btn-compass" onclick="toggleCompass()">🧭 Rosa Vientos</button>
+                <button class="btn-outline" style="margin-bottom: 0; grid-column: span 2;" onclick="captureMap()">📸 Capturar</button>
             </div>
         </div>
 
@@ -594,6 +621,18 @@
         document.getElementById('toggleLegendBtn').innerText = isLegendVisible ? '👁️‍🗨️ Ocultar' : '👁️ Mostrar';
         document.getElementById('toggleLegendBtn').style.borderStyle = isLegendVisible ? 'solid' : 'dashed';
         if (isLegendVisible) updateLegend();
+    }
+
+    function toggleCompass() {
+        const compass = document.getElementById('compass-rose');
+        const btn = document.getElementById('btn-compass');
+        if (compass.style.display === 'none') {
+            compass.style.display = 'block';
+            btn.classList.add('active');
+        } else {
+            compass.style.display = 'none';
+            btn.classList.remove('active');
+        }
     }
 
     function updateLegend() {
@@ -1952,6 +1991,13 @@
     L.DomEvent.disableScrollPropagation(legendElement);
     const draggableLegend = new L.Draggable(legendElement);
     draggableLegend.enable();
+    
+    // Hacer la rosa de los vientos arrastrable
+    const compassElement = document.getElementById('compass-rose');
+    L.DomEvent.disableClickPropagation(compassElement);
+    L.DomEvent.disableScrollPropagation(compassElement);
+    const draggableCompass = new L.Draggable(compassElement);
+    draggableCompass.enable();
  
     updateMtnInfo();
     updateLayerTree(); 
