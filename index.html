@@ -1421,6 +1421,32 @@
         document.getElementById('image-modal-content').src = '';
     }
 
+    // Función para imprimir imagen
+    function printImage(src, title) {
+        const printWin = window.open('', '_blank');
+        if (!printWin) {
+            alert("Por favor, permite las ventanas emergentes en tu navegador para poder imprimir.");
+            return;
+        }
+        printWin.document.write(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>${title}</title>
+                    <style>
+                        @page { margin: 0; size: auto; }
+                        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: white; }
+                        img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+                    </style>
+                </head>
+                <body>
+                    <img src="${src}" onload="window.print(); window.close();">
+                </body>
+            </html>
+        `);
+        printWin.document.close();
+    }
+
     async function captureMap() {
         const captureName = await askName("Introduce un nombre para la captura:", "Mapa_AirsoftMaps");
         toggleMenu();
@@ -1435,8 +1461,9 @@
             const imgData = canvas.toDataURL();
             item.innerHTML = `<img src="${imgData}" style="cursor: zoom-in;" onclick="openImageModal(this.src)" title="Clic para ampliar">
                 <div style="font-size:13px; font-weight:bold; color:var(--ign-blue); text-align:center; margin:5px 0;">${captureName}</div>
-                <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px; flex-wrap: wrap; gap: 5px;">
                     <button onclick="openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none; background:none; color:var(--success); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">👁️ Ver</button>
+                    <button onclick="printImage(this.closest('.gallery-item').querySelector('img').src, this.parentElement.previousElementSibling.innerText)" style="border:none; background:none; color:#64748b; cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🖨️ Imprimir</button>
                     <a href="${imgData}" download="${captureName}.png" style="color:var(--ign-blue); font-weight:bold; text-decoration:none; font-size: 12px;">⬇️ Descargar</a>
                     <button onclick="this.closest('.gallery-item').remove()" style="border:none; background:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🗑️ Borrar</button>
                 </div>`;
