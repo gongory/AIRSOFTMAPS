@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AirsoftMaps - Edición y Personalización</title>
  
+    <!-- Iconos para la pestaña del navegador y acceso directo en móviles/PC -->
     <link rel="icon" type="image/jpeg" href="images.jpg">
     <link rel="apple-touch-icon" href="images.jpg">
 
@@ -82,9 +83,12 @@
         .coord-display {
             position: absolute; bottom: 110px; left: 10px; z-index: 999; background: rgba(255,255,255,0.95);
             padding: 8px 16px; border-radius: 30px; font-size: 12px; font-family: 'Consolas', monospace;
-            border: 1px solid #e2e8f0; font-weight: 600; box-shadow: var(--shadow); pointer-events: none; min-width: 260px; text-align: center;
+            border: 1px solid #e2e8f0; font-weight: 600; box-shadow: var(--shadow); 
+            pointer-events: auto; cursor: grab; user-select: none; /* Hecho arrastrable */
+            min-width: 260px; text-align: center;
             transition: bottom 0.3s ease;
         }
+        .coord-display:active { cursor: grabbing; }
  
         .fab-menu {
             position: absolute; top: 15px; right: 15px; z-index: 1000; background: var(--ign-blue); color: white;
@@ -583,6 +587,15 @@
                         <option value="#34495e">Oscuro</option>
                     </select>
                 </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Estilo Brújula</label>
+                    <select id="compassStyle" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="updateCompassStyle()">
+                        <option value="modern" selected>Moderna (Por defecto)</option>
+                        <option value="classic">Clásica / Vintage</option>
+                        <option value="military">Militar / Táctica</option>
+                        <option value="minimal">Minimalista</option>
+                    </select>
+                </div>
             </div>
             <div class="edit-tools-grid" style="margin-bottom: 0;">
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('marker')">📍 Marcador</button>
@@ -631,6 +644,69 @@
         'radio': 'Comunicaciones', 'hq': 'HQ / Mando', 'suministros': 'Suministros', 'sniper': 'Observación', 'peligro': 'Peligro', 
         'encuentro': 'Encuentro', 'obstaculo': 'Obstáculo', 'agua': 'Agua'
     };
+
+    const compassStyles = {
+        modern: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(50,50)">
+                <g transform="rotate(45)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
+                <g transform="rotate(135)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
+                <g transform="rotate(225)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
+                <g transform="rotate(315)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g>
+
+                <g transform="rotate(0)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#e74c3c"/><polygon points="0,-48 0,0 -10,-10" fill="#c0392b"/></g>
+                <g transform="rotate(90)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
+                <g transform="rotate(180)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
+                <g transform="rotate(270)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g>
+
+                <circle cx="0" cy="0" r="4" fill="#1e293b"/>
+                <circle cx="0" cy="0" r="1.5" fill="#fff"/>
+                <text x="0" y="-31" font-family="sans-serif" font-weight="900" font-size="14" fill="#fff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">N</text>
+            </g>
+        </svg>`,
+        classic: `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(60,60)">
+                <circle cx="0" cy="0" r="45" fill="#fef9e7" stroke="#8b5a2b" stroke-width="2"/>
+                <circle cx="0" cy="0" r="40" fill="none" stroke="#8b5a2b" stroke-width="1" stroke-dasharray="2 2"/>
+                <g transform="rotate(45)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g>
+                <g transform="rotate(135)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g>
+                <g transform="rotate(225)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g>
+                <g transform="rotate(315)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g>
+                <g transform="rotate(0)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#8b0000"/><polygon points="0,-40 0,0 -8,-8" fill="#5c0000"/></g>
+                <g transform="rotate(90)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g>
+                <g transform="rotate(180)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g>
+                <g transform="rotate(270)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g>
+                <circle cx="0" cy="0" r="5" fill="#8b5a2b"/>
+                <circle cx="0" cy="0" r="2" fill="#fef9e7"/>
+                <text x="0" y="-48" font-family="serif" font-weight="bold" font-size="14" fill="#8b0000" text-anchor="middle">N</text>
+            </g>
+        </svg>`,
+        military: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(50,50)">
+                <circle cx="0" cy="0" r="42" fill="rgba(75, 83, 32, 0.1)" stroke="#4b5320" stroke-width="3" stroke-dasharray="6 4"/>
+                <circle cx="0" cy="0" r="34" fill="none" stroke="#4b5320" stroke-width="1"/>
+                <line x1="0" y1="-46" x2="0" y2="46" stroke="#4b5320" stroke-width="2"/>
+                <line x1="-46" y1="0" x2="46" y2="0" stroke="#4b5320" stroke-width="2"/>
+                <polygon points="0,-46 6,-25 -6,-25" fill="#ff4500"/>
+                <circle cx="0" cy="0" r="10" fill="none" stroke="#4b5320" stroke-width="2"/>
+                <circle cx="0" cy="0" r="2" fill="#ff4500"/>
+                <text x="14" y="-28" font-family="monospace" font-weight="bold" font-size="12" fill="#4b5320" style="text-shadow: 1px 1px 0px rgba(255,255,255,0.7);">000</text>
+            </g>
+        </svg>`,
+        minimal: `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(40,40)">
+                <circle cx="0" cy="0" r="30" fill="rgba(255,255,255,0.8)" stroke="#333" stroke-width="2"/>
+                <path d="M0,-25 L8,10 L0,2 L-8,10 Z" fill="#e74c3c"/>
+                <path d="M0,-25 L0,2 L-8,10 Z" fill="#c0392b"/>
+                <circle cx="0" cy="0" r="3" fill="#333"/>
+                <text x="0" y="-32" font-family="sans-serif" font-weight="900" font-size="14" fill="#333" text-anchor="middle">N</text>
+            </g>
+        </svg>`
+    };
+
+    function updateCompassStyle() {
+        const style = document.getElementById('compassStyle').value;
+        document.getElementById('compass-rose').innerHTML = compassStyles[style];
+    }
  
     const createLayers = () => ({
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { attribution: '© IGN', crossOrigin: 'anonymous' }),
@@ -2334,6 +2410,7 @@
     dragElement(document.getElementById("map-legend"));
     dragElement(document.getElementById("compass-rose"));
     dragElement(document.getElementById("numeric-scale-widget"));
+    dragElement(document.getElementById("liveCoords"));
 
 </script>
 </body>
