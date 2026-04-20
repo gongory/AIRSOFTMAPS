@@ -1567,25 +1567,349 @@
         document.getElementById('image-modal-content').src = '';
     }
 
-    function printImage(src, title) {
+    // --- NUEVO SISTEMA DE IMPRESIÓN ---
+    function printImage(src, title, captureId = null) {
         const printWin = window.open('', '_blank');
         if (!printWin) {
             alert("Por favor, permite las ventanas emergentes en tu navegador para poder imprimir.");
             return;
         }
+
+        // Recuperar los elementos flotantes capturados
+        const extras = (captureId && window.captures && window.captures[captureId]) ? window.captures[captureId] : {};
+        let extrasHtml = '';
+        let extTop = 20; // Posición en cascada inicial
+        
+        if (extras.legend) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: 320px;">${extras.legend}</div>`; extTop += 100; }
+        if (extras.compass) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: 320px;">${extras.compass}</div>`; extTop += 120; }
+        if (extras.numScale) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: 320px;">${extras.numScale}</div>`; extTop += 60; }
+        if (extras.geoScale) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: 320px;">${extras.geoScale}</div>`; }
+
         printWin.document.write(`
             <!DOCTYPE html>
             <html>
                 <head>
-                    <title>${title}</title>
+                    <title>${title} - Preparación de Impresión</title>
                     <style>
-                        @page { margin: 0; size: auto; }
-                        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: white; }
-                        img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+                        body { 
+                            margin: 0; 
+                            background: #cbd5e0; 
+                            font-family: 'Segoe UI', sans-serif; 
+                            overflow-x: hidden;
+                        }
+                        .no-print {
+                            position: fixed; 
+                            top: 0; left: 0; width: 100%; 
+                            background: white; 
+                            padding: 15px; 
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+                            display: flex; 
+                            justify-content: center;
+                            align-items: center; 
+                            gap: 20px;
+                            z-index: 1000; 
+                            border-bottom: 3px solid #003366;
+                            box-sizing: border-box;
+                        }
+                        select, button {
+                            padding: 8px 12px;
+                            border-radius: 6px;
+                            font-size: 14px;
+                            font-weight: bold;
+                        }
+                        select { border: 2px solid #cbd5e0; cursor: pointer; }
+                        button { 
+                            background: #003366; color: white; border: none; cursor: pointer; 
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                        }
+                        button:hover { background: #002244; }
+                        
+                        .workspace {
+                            margin-top: 80px; 
+                            display: flex; 
+                            justify-content: center; 
+                            padding: 20px;
+                        }
+                        
+                        /* Contenedor que simula el folio real */
+                        #paper {
+                            background: white; 
+                            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                            position: relative; 
+                            overflow: hidden; /* Recorta lo que salga del folio */
+                            transition: width 0.3s, height 0.3s;
+                        }
+
+                        /* Caja de la imagen arrastrable */
+                        #mapBox {
+                            position: absolute; 
+                            top: 20px; left: 20px;
+                            width: 250px; /* Tamaño inicial */
+                            border: 2px dashed #003366;
+                            cursor: grab;
+                            box-sizing: border-box;
+                        }
+                        #mapBox:active { cursor: grabbing; }
+                        #mapBox img {
+                            width: 100%; 
+                            height: auto; 
+                            display: block; 
+                            pointer-events: none; /* Para no interferir con el drag */
+                        }
+
+                        /* Tiradores para redimensionar en las esquinas */
+                        .resize-handle {
+                            position: absolute; 
+                            width: 16px; height: 16px; 
+                            background: #e6b800;
+                            border: 2px solid #003366;
+                            border-radius: 50%; 
+                            z-index: 10;
+                        }
+                        .nw { top: -8px; left: -8px; cursor: nw-resize; }
+                        .ne { top: -8px; right: -8px; cursor: ne-resize; }
+                        .sw { bottom: -8px; left: -8px; cursor: sw-resize; }
+                        .se { bottom: -8px; right: -8px; cursor: se-resize; }
+                        .n { top: -8px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+                        .s { bottom: -8px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+                        .w { top: 50%; left: -8px; transform: translateY(-50%); cursor: w-resize; }
+                        .e { top: 50%; right: -8px; transform: translateY(-50%); cursor: e-resize; }
+
+                        /* --- ESTILOS EXTRAS IMPRESIÓN --- */
+                        .print-extra {
+                            position: absolute;
+                            cursor: grab;
+                            z-index: 50;
+                        }
+                        .print-extra:active { cursor: grabbing; }
+                        .print-extra > * {
+                            position: relative !important;
+                            bottom: auto !important;
+                            top: auto !important;
+                            left: auto !important;
+                            right: auto !important;
+                            margin: 0 !important;
+                            pointer-events: none !important;
+                        }
+                        .map-legend {
+                            background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid #cbd5e0;
+                            font-size: 12px; min-width: 150px;
+                        }
+                        .legend-title { font-weight: 800; color: #003366; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; font-size: 13px; }
+                        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 600; color: #475569;}
+                        .legend-color-box { width: 14px; height: 14px; border-radius: 3px; border: 2px solid #333;}
+                        
+                        #numeric-scale-widget {
+                            background: rgba(255, 255, 255, 0.95); padding: 6px 12px; border-radius: 6px; 
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid #222; 
+                            font-weight: 900; color: #000; font-size: 13px; white-space: nowrap;
+                        }
+
+                        .leaflet-control-scale-line {
+                            border: 2px solid #222 !important;
+                            background-color: rgba(255, 255, 255, 0.9) !important;
+                            background-image: 
+                                linear-gradient(to bottom, #222, #222), 
+                                linear-gradient(to right, #ffffff 50%, #222222 50%) !important;
+                            background-size: 100% 2px, 100% 6px !important; 
+                            background-position: 0 calc(100% - 6px), 0 100% !important; 
+                            background-repeat: no-repeat !important;
+                            color: #000 !important;
+                            font-weight: 900 !important;
+                            font-size: 12px !important;
+                            text-align: center !important;
+                            line-height: 1.2 !important;
+                            padding: 4px 5px 12px 5px !important;
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;
+                            text-shadow: none !important;
+                            box-sizing: border-box;
+                            min-width: 80px;
+                        }
+
+                        @media print {
+                            body { background: white; margin: 0; padding: 0; }
+                            .no-print { display: none !important; }
+                            .workspace { margin: 0; padding: 0; display: block; }
+                            #paper { box-shadow: none; margin: 0; border: none; }
+                            #mapBox { border: none !important; }
+                            .resize-handle { display: none !important; }
+                        }
                     </style>
                 </head>
                 <body>
-                    <img src="${src}" onload="window.print(); window.close();">
+                    <div class="no-print">
+                        <label style="color: #003366; font-weight: 800;">📄 Formato de Papel:</label>
+                        <select id="formatSelect">
+                            <option value="A4-L">A4 (Horizontal)</option>
+                            <option value="A4-P">A4 (Vertical)</option>
+                            <option value="A3-L">A3 (Horizontal)</option>
+                            <option value="A3-P">A3 (Vertical)</option>
+                        </select>
+                        <button onclick="window.print()">🖨️ Imprimir Mapa</button>
+                        <span style="font-size: 12px; color: #64748b; margin-left: 10px;">* Arrastra el mapa, recórtalo y mueve la leyenda o escalas libremente.</span>
+                    </div>
+                    
+                    <div class="workspace">
+                        <div id="paper">
+                            <div id="mapBox">
+                                <img src="${src}" id="mapImg">
+                                <div class="resize-handle nw" id="nw" title="Arrastra para redimensionar"></div>
+                                <div class="resize-handle ne" id="ne" title="Arrastra para redimensionar"></div>
+                                <div class="resize-handle sw" id="sw" title="Arrastra para redimensionar"></div>
+                                <div class="resize-handle se" id="se" title="Arrastra para redimensionar"></div>
+                                <div class="resize-handle n" id="n" title="Arrastra para redimensionar"></div>
+                                <div class="resize-handle s" id="s" title="Arrastra para redimensionar"></div>
+                                <div class="resize-handle e" id="e" title="Arrastra para redimensionar"></div>
+                                <div class="resize-handle w" id="w" title="Arrastra para redimensionar"></div>
+                            </div>
+                            ${extrasHtml}
+                        </div>
+                    </div>
+
+                    <script>
+                        const paper = document.getElementById('paper');
+                        const formatSelect = document.getElementById('formatSelect');
+                        const mapBox = document.getElementById('mapBox');
+                        
+                        // Tamaños estándar en milímetros (aprox) para la vista previa
+                        const SCALE_FACTOR = 3.5; 
+                        const formats = {
+                            'A4-L': { w: 297, h: 210, print: 'A4 landscape' },
+                            'A4-P': { w: 210, h: 297, print: 'A4 portrait' },
+                            'A3-L': { w: 420, h: 297, print: 'A3 landscape' },
+                            'A3-P': { w: 297, h: 420, print: 'A3 portrait' }
+                        };
+
+                        // Cambiar formato de folio
+                        formatSelect.addEventListener('change', (e) => {
+                            const f = formats[e.target.value];
+                            paper.style.width = (f.w * SCALE_FACTOR) + 'px';
+                            paper.style.height = (f.h * SCALE_FACTOR) + 'px';
+                            
+                            let style = document.getElementById('printPageStyle');
+                            if(!style) {
+                                style = document.createElement('style');
+                                style.id = 'printPageStyle';
+                                document.head.appendChild(style);
+                            }
+                            style.innerHTML = \`@page { size: \${f.print}; margin: 0; }\`;
+                            mapBox.style.width = (f.w * SCALE_FACTOR * 0.8) + 'px';
+                        });
+                        
+                        formatSelect.dispatchEvent(new Event('change'));
+
+                        // Lógica para arrastrar y soltar (Drag & Drop) y Redimensionar
+                        let isDragging = false, isResizing = false;
+                        let startX, startY, startLeft, startTop, startWidth;
+                        let activeHandle = null;
+                        
+                        let activeExtra = null;
+                        let extraStartX, extraStartY, extraStartLeft, extraStartTop;
+                        
+                        // Capturar el ratio de la imagen para que nunca se deforme
+                        const mapImg = document.getElementById('mapImg');
+                        let ratio = 1;
+                        mapImg.onload = () => { ratio = mapImg.naturalHeight / mapImg.naturalWidth; };
+
+                        // Click en el mapa (Mover)
+                        mapBox.addEventListener('mousedown', (e) => {
+                            if (e.target.classList.contains('resize-handle')) return; 
+                            isDragging = true;
+                            startX = e.clientX; 
+                            startY = e.clientY;
+                            startLeft = mapBox.offsetLeft; 
+                            startTop = mapBox.offsetTop;
+                        });
+
+                        // Click en los elementos extra (Leyenda, Brújula, Escalas)
+                        document.querySelectorAll('.print-extra').forEach(extra => {
+                            extra.addEventListener('mousedown', (e) => {
+                                activeExtra = extra;
+                                extraStartX = e.clientX;
+                                extraStartY = e.clientY;
+                                extraStartLeft = extra.offsetLeft;
+                                extraStartTop = extra.offsetTop;
+                                e.stopPropagation();
+                            });
+                        });
+
+                        // Click en cualquier tirador amarillo (Redimensionar)
+                        document.querySelectorAll('.resize-handle').forEach(handle => {
+                            handle.addEventListener('mousedown', (e) => {
+                                isResizing = true;
+                                activeHandle = e.target.id;
+                                startX = e.clientX;
+                                startY = e.clientY;
+                                startWidth = mapBox.offsetWidth;
+                                startLeft = mapBox.offsetLeft;
+                                startTop = mapBox.offsetTop;
+                                
+                                if (ratio === 1 && mapImg.naturalWidth) { 
+                                    ratio = mapImg.naturalHeight / mapImg.naturalWidth; 
+                                }
+                                e.stopPropagation();
+                                e.preventDefault();
+                            });
+                        });
+
+                        window.addEventListener('mousemove', (e) => {
+                            if (isDragging) {
+                                const dx = e.clientX - startX;
+                                const dy = e.clientY - startY;
+                                mapBox.style.left = (startLeft + dx) + 'px';
+                                mapBox.style.top = (startTop + dy) + 'px';
+                            } else if (isResizing) {
+                                const dx = e.clientX - startX;
+                                const dy = e.clientY - startY;
+                                let newWidth = startWidth;
+                                let newLeft = startLeft;
+                                let newTop = startTop;
+
+                                if (activeHandle === 'se') {
+                                    newWidth = startWidth + dx;
+                                } else if (activeHandle === 'sw') {
+                                    newWidth = startWidth - dx;
+                                    newLeft = startLeft + dx;
+                                } else if (activeHandle === 'ne') {
+                                    newWidth = startWidth + dx;
+                                    newTop = startTop - ((newWidth - startWidth) * ratio);
+                                } else if (activeHandle === 'nw') {
+                                    newWidth = startWidth - dx;
+                                    newLeft = startLeft + dx;
+                                    newTop = startTop - ((newWidth - startWidth) * ratio);
+                                } else if (activeHandle === 'e') {
+                                    newWidth = startWidth + dx;
+                                } else if (activeHandle === 'w') {
+                                    newWidth = startWidth - dx;
+                                    newLeft = startLeft + dx;
+                                } else if (activeHandle === 's') {
+                                    newWidth = startWidth + (dy / ratio);
+                                } else if (activeHandle === 'n') {
+                                    newWidth = startWidth - (dy / ratio);
+                                    newTop = startTop - ((newWidth - startWidth) * ratio);
+                                }
+
+                                if (newWidth > 50) {
+                                    mapBox.style.width = newWidth + 'px';
+                                    if (['sw', 'nw', 'w'].includes(activeHandle)) mapBox.style.left = newLeft + 'px';
+                                    if (['ne', 'nw', 'n'].includes(activeHandle)) mapBox.style.top = newTop + 'px';
+                                }
+                            } else if (activeExtra) {
+                                const dx = e.clientX - extraStartX;
+                                const dy = e.clientY - extraStartY;
+                                activeExtra.style.left = (extraStartLeft + dx) + 'px';
+                                activeExtra.style.top = (extraStartTop + dy) + 'px';
+                            }
+                        });
+
+                        window.addEventListener('mouseup', () => {
+                            isDragging = false;
+                            isResizing = false;
+                            activeHandle = null;
+                            activeExtra = null;
+                        });
+                    <\/script>
                 </body>
             </html>
         `);
@@ -1594,11 +1918,38 @@
 
     async function captureMap() {
         const captureName = await askName("Introduce un nombre para la captura:", "Mapa_AirsoftMaps");
+        const safeName = captureName.endsWith('.png') ? captureName : captureName + '.png';
+
         toggleMenu();
         document.body.classList.add('hide-controls');
+        
+        // Guardar el estado de los elementos flotantes antes de generar el lienzo
+        const captureId = Date.now();
+        window.captures = window.captures || {};
+        
+        const legendEl = document.getElementById('map-legend');
+        const compassEl = document.getElementById('compass-rose');
+        const numScaleEl = document.getElementById('numeric-scale-widget');
+        const geoScaleEl = document.querySelector('.leaflet-control-scale');
+        
+        window.captures[captureId] = {
+            legend: (isLegendVisible && legendEl) ? legendEl.outerHTML : '',
+            compass: (compassEl && compassEl.style.display !== 'none') ? compassEl.outerHTML : '',
+            numScale: numScaleEl ? numScaleEl.outerHTML : '',
+            geoScale: geoScaleEl ? geoScaleEl.outerHTML : ''
+        };
+
         setTimeout(async () => {
             const canvas = await html2canvas(document.getElementById('map-container'), { 
-                useCORS: true, ignoreElements: (el) => el.classList && (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution'))
+                useCORS: true, 
+                ignoreElements: (el) => {
+                    if (!el.classList) return false;
+                    if (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution')) return true;
+                    // Evitamos que estos elementos se queden fijos en la imagen capturada
+                    if (el.id === 'map-legend' || el.id === 'compass-rose' || el.id === 'numeric-scale-widget') return true;
+                    if (el.classList.contains('leaflet-control-scale')) return true;
+                    return false;
+                }
             });
             const item = document.createElement('div');
             item.className = 'gallery-item';
@@ -1608,8 +1959,8 @@
                 <div style="font-size:13px; font-weight:bold; color:var(--ign-blue); text-align:center; margin:5px 0;">${captureName}</div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px; flex-wrap: wrap; gap: 5px;">
                     <button onclick="openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none; background:none; color:var(--success); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">👁️ Ver</button>
-                    <button onclick="printImage(this.closest('.gallery-item').querySelector('img').src, this.parentElement.previousElementSibling.innerText)" style="border:none; background:none; color:#64748b; cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🖨️ Imprimir</button>
-                    <a href="${imgData}" download="${captureName}.png" style="color:var(--ign-blue); font-weight:bold; text-decoration:none; font-size: 12px;">⬇️ Descargar</a>
+                    <button onclick="printImage(this.closest('.gallery-item').querySelector('img').src, this.parentElement.previousElementSibling.innerText, ${captureId})" style="border:none; background:none; color:#64748b; cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🖨️ Imprimir</button>
+                    <a href="${imgData}" download="${safeName}" style="color:var(--ign-blue); font-weight:bold; text-decoration:none; font-size: 12px;">⬇️ Descargar</a>
                     <button onclick="this.closest('.gallery-item').remove()" style="border:none; background:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🗑️ Borrar</button>
                 </div>`;
             document.getElementById('gallery').prepend(item);
