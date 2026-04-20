@@ -550,7 +550,8 @@
  
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <button id="gridToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleGrid()">Activar Cuadrícula</button>
-                <button id="scaleToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleScale()">Mostrar Escala</button>
+                <button id="scaleToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleScale()">Mostrar Escala Gráfica</button>
+                <button id="numScaleToggleBtn" class="btn-outline" style="margin-bottom:0; grid-column: span 2;" onclick="toggleNumScale()">Ocultar Escala Numérica</button>
             </div>
         </div>
  
@@ -645,7 +646,7 @@
     const tacticalNames = {
         'punto': 'Punto', 'base': 'Base / Camp.', 'objetivo': 'Objetivo', 'bandera': 'Respawn', 
         'combate': 'Combate', 'defensa': 'Defensa', 'vehiculo': 'Extracción', 'medico': 'Hospital', 
-        'radio': 'Comunicaciones', 'hq': 'HQ / Mando', 'suministros': 'Suministros', 'sniper': 'Observación', 'peligro': 'Peligro', 
+        'radio': 'Comunicaciones', 'hq': 'HQ / Mando', 'sumuministros': 'Suministros', 'sniper': 'Observación', 'peligro': 'Peligro', 
         'encuentro': 'Encuentro', 'obstaculo': 'Obstáculo', 'agua': 'Agua'
     };
 
@@ -796,6 +797,18 @@
         } else {
             compass.style.display = 'none';
             btn.classList.remove('active');
+        }
+    }
+    
+    function toggleNumScale() {
+        const widget = document.getElementById('numeric-scale-widget');
+        const btn = document.getElementById('numScaleToggleBtn');
+        if (widget.style.display === 'none') {
+            widget.style.display = 'block';
+            btn.innerText = "Ocultar Escala Numérica";
+        } else {
+            widget.style.display = 'none';
+            btn.innerText = "Mostrar Escala Numérica";
         }
     }
 
@@ -2176,7 +2189,7 @@
         const btn = document.getElementById('scaleToggleBtn');
         if (!scaleControlObj) {
             scaleControlObj = L.control.scale({ imperial: false }).addTo(map);
-            btn.innerText = "Ocultar Escala";
+            btn.innerText = "Ocultar Escala Gráfica";
             btn.classList.add('active');
             
             let scaleEl = scaleControlObj.getContainer();
@@ -2190,7 +2203,7 @@
         } else {
             map.removeControl(scaleControlObj);
             scaleControlObj = null;
-            btn.innerText = "Mostrar Escala";
+            btn.innerText = "Mostrar Escala Gráfica";
             btn.classList.remove('active');
         }
     }
