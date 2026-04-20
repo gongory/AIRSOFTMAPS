@@ -1581,7 +1581,6 @@
         const extras = (captureId && window.captures && window.captures[captureId]) ? window.captures[captureId] : {};
         let extrasHtml = '';
         let extTop = 20; 
-        // Cambiamos el inicio a 20px a la izquierda para que nunca se salgan en pantallas de móvil estrechas
         let extLeft = 20; 
         
         if (extras.legend) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.legend}</div>`; extTop += 100; }
@@ -1610,10 +1609,8 @@
                             background: #cbd5e0 !important; 
                             font-family: 'Segoe UI', sans-serif !important; 
                             overflow-x: hidden !important;
-                            /* Eliminamos el touch-action: none del body para poder hacer scroll hacia abajo en móvil */
                         }
                         .no-print {
-                            /* Cambiamos a relative para que empuje el contenido y no se superponga en móviles */
                             position: relative !important; 
                             width: 100% !important; 
                             background: white !important; 
@@ -1663,7 +1660,7 @@
                             border: 2px dashed #003366 !important;
                             cursor: grab !important;
                             box-sizing: border-box !important;
-                            touch-action: none !important; /* Bloquea el zoom/scroll SÓLO al arrastrar el mapa */
+                            touch-action: none !important; 
                             background: transparent !important;
                         }
                         #mapBox:active { cursor: grabbing !important; }
@@ -1671,13 +1668,12 @@
                             width: 100% !important; 
                             height: auto !important; 
                             display: block !important; 
-                            -webkit-user-drag: none !important; /* SOLUCIÓN: Bloquea arrastre nativo sin anular el clic */
+                            -webkit-user-drag: none !important; 
                             user-select: none !important;
                         }
 
                         .resize-handle {
                             position: absolute !important; 
-                            /* Hacemos los botones más grandes para que al encoger la pantalla se puedan tocar */
                             width: 30px !important; height: 30px !important; 
                             background: #e6b800 !important;
                             border: 2px solid #003366 !important;
@@ -1729,7 +1725,15 @@
                             body { background: white !important; margin: 0 !important; padding: 0 !important; }
                             .no-print { display: none !important; }
                             .workspace { margin: 0 !important; padding: 0 !important; display: block !important; height: auto !important; }
-                            #paper { box-shadow: none !important; margin: 0 !important; border: none !important; transform: none !important; }
+                            #paper { 
+                                box-shadow: none !important; 
+                                margin: 0 !important; 
+                                border: none !important; 
+                                transform: none !important; 
+                                overflow: hidden !important; 
+                                page-break-after: avoid !important; 
+                                page-break-before: avoid !important; 
+                            }
                             #mapBox { border: none !important; }
                             .resize-handle { display: none !important; }
                         }
@@ -1748,6 +1752,8 @@
                             <input type="checkbox" id="fitScreenCheck" checked> 🔍 Ver toda la hoja
                         </label>
                         <button onclick="window.print()">🖨️ Imprimir Mapa</button>
+                        <button onclick="downloadMap(event)" style="background-color: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 5px;">⬇️ Descargar Imagen</button>
+                        <button onclick="window.close()" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 5px;">❌ Salir</button>
                         <span style="font-size: 12px; color: #64748b; width: 100%; text-align: center;">* Arrastra los elementos y recorta el mapa desde los puntos dorados.</span>
                     </div>
                     
@@ -1772,9 +1778,74 @@
                         const paper = document.getElementById('paper');
                         const formatSelect = document.getElementById('formatSelect');
                         const fitScreenCheck = document.getElementById('fitScreenCheck');
-                        const mapBox = document.getElementById('mapBox');
-                        const mapImg = document.getElementById('mapImg');
-                        
+
+                        async function downloadMap(event) {
+                            const btn = event.currentTarget;
+                            const originalText = btn.innerHTML;
+                            btn.innerHTML = "⏳ Generando...";
+                            btn.disabled = true;
+
+                            if (!window.html2canvas) {
+                                const script = document.createElement('script');
+                                script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+                                document.head.appendChild(script);
+                                await new Promise(resolve => script.onload = resolve);
+                            }
+
+                            // GUARDAR ESTADOS ORIGINALES
+                            const originalTransform = paper.style.transform;
+                            const originalShadow = paper.style.boxShadow;
+                            const mapBox = document.getElementById('mapBox');
+                            const originalMapBoxCss = mapBox.style.cssText;
+                            const handles = document.querySelectorAll('.resize-handle');
+
+                            // PREPARAR PARA FOTO LIMPIA
+                            paper.style.transform = 'scale(1)';
+                            paper.style.setProperty('box-shadow', 'none', 'important'); // Quitar sombra de la hoja
+                            mapBox.style.setProperty('border', 'none', 'important'); // Quitar linea discontinua con !important
+                            handles.forEach(h => h.style.display = 'none'); // Quitar puntos dorados
+
+                            // FORZAR ACTUALIZACIÓN DEL NAVEGADOR
+                            // Esto arregla el bug de la imagen "salida" y el fondo gris dándole tiempo a la hoja para tomar su tamaño real
+                            await new Promise(resolve => setTimeout(resolve, 150));
+
+                            try {
+                                const canvas = await html2canvas(paper, { 
+                                    useCORS: true, 
+                                    allowTaint: true,
+                                    scale: 1, 
+                                    backgroundColor: "#ffffff",
+                                    // Asegurar dimensiones exactas sin importar que el mapa sobresalga internamente
+                                    width: paper.offsetWidth,
+                                    height: paper.offsetHeight
+                                });
+                                
+                                // RESTAURAR ESTADOS
+                                paper.style.transform = originalTransform;
+                                paper.style.boxShadow = originalShadow;
+                                mapBox.style.cssText = originalMapBoxCss;
+                                handles.forEach(h => h.style.display = '');
+                                
+                                const link = document.createElement('a');
+                                link.download = 'Mapa_Tactico_Airsoft.png';
+                                link.href = canvas.toDataURL('image/png');
+                                link.click();
+
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                            } catch (error) {
+                                console.error("Error al crear la imagen:", error);
+                                // RESTAURAR EN CASO DE ERROR TAMBIÉN
+                                paper.style.transform = originalTransform;
+                                paper.style.boxShadow = originalShadow;
+                                mapBox.style.cssText = originalMapBoxCss;
+                                handles.forEach(h => h.style.display = '');
+                                
+                                btn.innerHTML = "❌ Error";
+                                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+                            }
+                        }
+
                         const SCALE_FACTOR = 3.5; 
                         const formats = {
                             'A4-L': { w: 297, h: 210, print: 'A4 landscape' },
@@ -1790,11 +1861,9 @@
                             const paperW = f.w * SCALE_FACTOR;
                             const paperH = f.h * SCALE_FACTOR;
                             
-                            // El folio virtual mantiene el mismo tamaño HD exacto
                             paper.style.width = paperW + 'px';
                             paper.style.height = paperH + 'px';
                             
-                            // Analizar la pantalla disponible y encoger visualmente el folio si no cabe (Móviles)
                             const availableWidth = window.innerWidth - 40; 
                             const noPrintHeight = document.querySelector('.no-print').offsetHeight;
                             const availableHeight = window.innerHeight - noPrintHeight - 40;
@@ -1813,7 +1882,6 @@
                             window.currentVisualScale = scale;
                             paper.style.transform = \`scale(\${scale})\`;
                             paper.style.transformOrigin = 'top center';
-                            // Ajustar el contenedor para que no deje un espacio en blanco enorme al encoger
                             document.querySelector('.workspace').style.height = (paperH * scale + 40) + 'px';
                             
                             let style = document.getElementById('printPageStyle');
@@ -1833,7 +1901,16 @@
                         formatSelect.addEventListener('change', updateLayout);
                         fitScreenCheck.addEventListener('change', updateLayout);
                         window.addEventListener('resize', updateLayout);
-                        updateLayout(); // Iniciar cálculos
+                        
+                        // SOLUCIÓN BUG HOJA EN BLANCO: Desactiva temporalmente el transform justo al imprimir
+                        window.addEventListener('beforeprint', () => {
+                            paper.style.transform = 'none';
+                        });
+                        window.addEventListener('afterprint', () => {
+                            updateLayout(); 
+                        });
+
+                        updateLayout(); 
 
                         let isDragging = false, isResizing = false;
                         let startX, startY, startLeft, startTop, startWidth;
@@ -1913,7 +1990,6 @@
                             const scale = window.currentVisualScale || 1;
 
                             if (isDragging) {
-                                // Dividimos por la escala para que el movimiento del dedo y la imagen sea 1:1 real
                                 const dx = (coords.x - startX) / scale;
                                 const dy = (coords.y - startY) / scale;
                                 mapBox.style.left = (startLeft + dx) + 'px';
@@ -1972,7 +2048,6 @@
         toggleMenu();
         document.body.classList.add('hide-controls');
         
-        // Guardar el estado de los elementos flotantes antes de generar el lienzo
         const captureId = Date.now();
         window.captures = window.captures || {};
         
@@ -1994,7 +2069,6 @@
                 ignoreElements: (el) => {
                     if (!el.classList) return false;
                     if (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution')) return true;
-                    // Evitamos que estos elementos se queden fijos en la imagen capturada
                     if (el.id === 'map-legend' || el.id === 'compass-rose' || el.id === 'numeric-scale-widget') return true;
                     if (el.classList.contains('leaflet-control-scale')) return true;
                     return false;
