@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AirsoftMaps - Edición y Personalización</title>
  
-    <!-- Iconos para la pestaña del navegador y acceso directo en móviles/PC -->
     <link rel="icon" type="image/jpeg" href="images.jpg">
     <link rel="apple-touch-icon" href="images.jpg">
 
@@ -34,28 +33,6 @@
         /* Contenedor Flex para separar mapa y marco inferior */
         #map-container { display: flex; flex-direction: column; position: relative; height: 100vh; width: 100%; }
         #map { flex: 1; width: 100%; background: #eee; }
-        
-        /* Marco inferior en blanco */
-        .bottom-frame {
-            height: 90px;
-            width: 100%;
-            background: #ffffff;
-            border-top: 2px solid #cbd5e0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            z-index: 997;
-        }
-        .bottom-frame-text {
-            color: #cbd5e0;
-            font-size: 14px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            user-select: none;
-            pointer-events: none;
-        }
  
         .sidebar {
             position: absolute; top: 10px; right: 10px; z-index: 1001;
@@ -139,7 +116,6 @@
         .hide-controls .fab-menu,
         .hide-controls .coord-display,
         .hide-controls .sidebar,
-        .hide-controls .bottom-frame-text,
         .hide-controls #drawing-actions { visibility: hidden !important; }
 
         .edit-tools-grid {
@@ -214,9 +190,6 @@
  
 <div id="map-container">
     <div id="map"></div>
-    <div class="bottom-frame">
-        <span class="bottom-frame-text">⇊ Zona de arrastre (Leyenda, Escala, Brújula) ⇊</span>
-    </div>
     
     <div class="map-legend" id="map-legend">
         <div class="legend-title">📋 Leyenda Táctica</div>
