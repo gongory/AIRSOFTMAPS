@@ -1575,15 +1575,19 @@
             return;
         }
 
+        const parentStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(el => el.outerHTML).join('\n');
+
         // Recuperar los elementos flotantes capturados
         const extras = (captureId && window.captures && window.captures[captureId]) ? window.captures[captureId] : {};
         let extrasHtml = '';
-        let extTop = 20; // Posición en cascada inicial
+        let extTop = 20; 
+        // Cambiamos el inicio a 20px a la izquierda para que nunca se salgan en pantallas de móvil estrechas
+        let extLeft = 20; 
         
-        if (extras.legend) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: 320px;">${extras.legend}</div>`; extTop += 100; }
-        if (extras.compass) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: 320px;">${extras.compass}</div>`; extTop += 120; }
-        if (extras.numScale) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: 320px;">${extras.numScale}</div>`; extTop += 60; }
-        if (extras.geoScale) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: 320px;">${extras.geoScale}</div>`; }
+        if (extras.legend) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.legend}</div>`; extTop += 100; }
+        if (extras.compass) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.compass}</div>`; extTop += 120; }
+        if (extras.numScale) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.numScale}</div>`; extTop += 60; }
+        if (extras.geoScale) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.geoScale}</div>`; }
 
         printWin.document.write(`
             <!DOCTYPE html>
@@ -1591,129 +1595,141 @@
                 <head>
                     <title>${title} - Preparación de Impresión</title>
                     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                    
+                    ${parentStyles}
+
                     <style>
+                        * {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                            color-adjust: exact !important;
+                        }
+
                         body { 
-                            margin: 0; 
-                            background: #cbd5e0; 
-                            font-family: 'Segoe UI', sans-serif; 
-                            overflow-x: hidden;
-                            touch-action: none; /* Evita zoom táctil indeseado al arrastrar */
+                            margin: 0 !important; 
+                            background: #cbd5e0 !important; 
+                            font-family: 'Segoe UI', sans-serif !important; 
+                            overflow-x: hidden !important;
+                            /* Eliminamos el touch-action: none del body para poder hacer scroll hacia abajo en móvil */
                         }
                         .no-print {
-                            position: fixed; 
-                            top: 0; left: 0; width: 100%; 
-                            background: white; 
-                            padding: 15px; 
-                            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-                            display: flex; 
-                            justify-content: center;
-                            align-items: center; 
-                            gap: 20px;
-                            z-index: 1000; 
-                            border-bottom: 3px solid #003366;
-                            box-sizing: border-box;
-                            flex-wrap: wrap;
+                            /* Cambiamos a relative para que empuje el contenido y no se superponga en móviles */
+                            position: relative !important; 
+                            width: 100% !important; 
+                            background: white !important; 
+                            padding: 15px !important; 
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important; 
+                            display: flex !important; 
+                            justify-content: center !important;
+                            align-items: center !important; 
+                            gap: 20px !important;
+                            z-index: 1000 !important; 
+                            border-bottom: 3px solid #003366 !important;
+                            box-sizing: border-box !important;
+                            flex-wrap: wrap !important;
                         }
                         select, button {
-                            padding: 8px 12px;
-                            border-radius: 6px;
-                            font-size: 14px;
-                            font-weight: bold;
+                            padding: 8px 12px !important;
+                            border-radius: 6px !important;
+                            font-size: 14px !important;
+                            font-weight: bold !important;
                         }
-                        select { border: 2px solid #cbd5e0; cursor: pointer; }
+                        select { border: 2px solid #cbd5e0 !important; cursor: pointer !important; }
                         button { 
-                            background: #003366; color: white; border: none; cursor: pointer; 
-                            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                            background: #003366 !important; color: white !important; border: none !important; cursor: pointer !important; 
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
                         }
-                        button:hover { background: #002244; }
+                        button:hover { background: #002244 !important; }
                         
                         .workspace {
-                            margin-top: 100px; 
-                            display: flex; 
-                            justify-content: center; 
-                            padding: 20px;
+                            margin-top: 20px !important; 
+                            display: flex !important; 
+                            justify-content: center !important; 
+                            padding: 20px !important;
+                            box-sizing: border-box !important;
                         }
                         
                         #paper {
-                            background: white; 
-                            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-                            position: relative; 
-                            overflow: hidden; 
-                            transition: width 0.3s, height 0.3s;
+                            background: white !important; 
+                            box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
+                            position: relative !important; 
+                            overflow: hidden !important; 
                         }
 
                         #mapBox {
-                            position: absolute; 
+                            position: absolute !important; 
                             top: 20px; left: 20px;
                             width: 250px; 
-                            border: 2px dashed #003366;
-                            cursor: grab;
-                            box-sizing: border-box;
-                            touch-action: none;
+                            border: 2px dashed #003366 !important;
+                            cursor: grab !important;
+                            box-sizing: border-box !important;
+                            touch-action: none !important; /* Bloquea el zoom/scroll SÓLO al arrastrar el mapa */
+                            background: transparent !important;
                         }
-                        #mapBox:active { cursor: grabbing; }
+                        #mapBox:active { cursor: grabbing !important; }
                         #mapBox img {
-                            width: 100%; 
-                            height: auto; 
-                            display: block; 
-                            pointer-events: none; /* Bloquea el drag nativo de la imagen */
-                            user-select: none;
+                            width: 100% !important; 
+                            height: auto !important; 
+                            display: block !important; 
+                            -webkit-user-drag: none !important; /* SOLUCIÓN: Bloquea arrastre nativo sin anular el clic */
+                            user-select: none !important;
                         }
 
                         .resize-handle {
-                            position: absolute; 
-                            width: 20px; height: 20px; /* Un poco más grandes para dedos */
-                            background: #e6b800;
-                            border: 2px solid #003366;
-                            border-radius: 50%; 
-                            z-index: 10;
-                            touch-action: none;
+                            position: absolute !important; 
+                            /* Hacemos los botones más grandes para que al encoger la pantalla se puedan tocar */
+                            width: 30px !important; height: 30px !important; 
+                            background: #e6b800 !important;
+                            border: 2px solid #003366 !important;
+                            border-radius: 50% !important; 
+                            z-index: 10 !important;
+                            touch-action: none !important;
                         }
-                        .nw { top: -10px; left: -10px; cursor: nw-resize; }
-                        .ne { top: -10px; right: -10px; cursor: ne-resize; }
-                        .sw { bottom: -10px; left: -10px; cursor: sw-resize; }
-                        .se { bottom: -10px; right: -10px; cursor: se-resize; }
-                        .n { top: -10px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
-                        .s { bottom: -10px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
-                        .w { top: 50%; left: -10px; transform: translateY(-50%); cursor: w-resize; }
-                        .e { top: 50%; right: -10px; transform: translateY(-50%); cursor: e-resize; }
+                        .nw { top: -15px !important; left: -15px !important; cursor: nw-resize !important; }
+                        .ne { top: -15px !important; right: -15px !important; cursor: ne-resize !important; }
+                        .sw { bottom: -15px !important; left: -15px !important; cursor: sw-resize !important; }
+                        .se { bottom: -15px !important; right: -15px !important; cursor: se-resize !important; }
+                        .n { top: -15px !important; left: 50% !important; transform: translateX(-50%) !important; cursor: n-resize !important; }
+                        .s { bottom: -15px !important; left: 50% !important; transform: translateX(-50%) !important; cursor: s-resize !important; }
+                        .w { top: 50% !important; left: -15px !important; transform: translateY(-50%) !important; cursor: w-resize !important; }
+                        .e { top: 50% !important; right: -15px !important; transform: translateY(-50%) !important; cursor: e-resize !important; }
 
                         .print-extra {
-                            position: absolute;
-                            cursor: grab;
-                            z-index: 50;
-                            touch-action: none;
+                            position: absolute !important;
+                            cursor: grab !important;
+                            z-index: 50 !important;
+                            touch-action: none !important;
                         }
-                        .print-extra:active { cursor: grabbing; }
+                        .print-extra:active { cursor: grabbing !important; }
                         .print-extra > * {
                             position: relative !important;
                             bottom: auto !important; top: auto !important;
                             left: auto !important; right: auto !important;
                             margin: 0 !important;
                             pointer-events: none !important;
-                            user-select: none;
+                            user-select: none !important;
                         }
-                        /* Estilos para que los elementos se vean bien al sacarlos */
-                        .map-legend { background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid #cbd5e0; font-size: 12px; min-width: 150px; }
-                        .legend-title { font-weight: 800; color: #003366; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; font-size: 13px; }
-                        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 600; color: #475569;}
-                        .legend-color-box { width: 14px; height: 14px; border-radius: 3px; border: 2px solid #333;}
+
+                        .map-legend { background: rgba(255, 255, 255, 0.95) !important; padding: 12px !important; border-radius: 10px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; border: 1px solid #cbd5e0 !important; font-size: 12px !important; min-width: 150px !important; }
+                        .legend-title { font-weight: 800 !important; color: #003366 !important; margin-bottom: 8px !important; border-bottom: 1px solid #e2e8f0 !important; padding-bottom: 4px !important; font-size: 13px !important; }
+                        .legend-item { display: flex !important; align-items: center !important; gap: 10px !important; margin-bottom: 6px !important; font-weight: 600 !important; color: #475569 !important;}
+                        .legend-color-box { width: 14px !important; height: 14px !important; border-radius: 3px !important; border: 2px solid #333 !important;}
                         
-                        #numeric-scale-widget { background: rgba(255, 255, 255, 0.95); padding: 6px 12px; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid #222; font-weight: 900; color: #000; font-size: 13px; white-space: nowrap; }
+                        #numeric-scale-widget { background: rgba(255, 255, 255, 0.95) !important; padding: 6px 12px !important; border-radius: 6px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important; border: 2px solid #222 !important; font-weight: 900 !important; color: #000 !important; font-size: 13px !important; white-space: nowrap !important; }
 
                         .leaflet-control-scale-line {
                             border: 2px solid #222 !important; background-color: rgba(255, 255, 255, 0.9) !important;
                             background-image: linear-gradient(to bottom, #222, #222), linear-gradient(to right, #ffffff 50%, #222222 50%) !important;
                             background-size: 100% 2px, 100% 6px !important; background-position: 0 calc(100% - 6px), 0 100% !important; 
                             background-repeat: no-repeat !important; color: #000 !important; font-weight: 900 !important; font-size: 12px !important;
-                            text-align: center !important; line-height: 1.2 !important; padding: 4px 5px 12px 5px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important; text-shadow: none !important; box-sizing: border-box; min-width: 80px;
+                            text-align: center !important; line-height: 1.2 !important; padding: 4px 5px 12px 5px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important; text-shadow: none !important; box-sizing: border-box !important; min-width: 80px !important;
                         }
 
                         @media print {
-                            body { background: white; margin: 0; padding: 0; }
+                            body { background: white !important; margin: 0 !important; padding: 0 !important; }
                             .no-print { display: none !important; }
-                            .workspace { margin: 0; padding: 0; display: block; }
-                            #paper { box-shadow: none; margin: 0; border: none; }
+                            .workspace { margin: 0 !important; padding: 0 !important; display: block !important; height: auto !important; }
+                            #paper { box-shadow: none !important; margin: 0 !important; border: none !important; transform: none !important; }
                             #mapBox { border: none !important; }
                             .resize-handle { display: none !important; }
                         }
@@ -1728,14 +1744,16 @@
                             <option value="A3-L">A3 (Horizontal)</option>
                             <option value="A3-P">A3 (Vertical)</option>
                         </select>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:13px; font-weight:bold; cursor:pointer; color: #003366; background: #e2e8f0; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e0;">
+                            <input type="checkbox" id="fitScreenCheck" checked> 🔍 Ver toda la hoja
+                        </label>
                         <button onclick="window.print()">🖨️ Imprimir Mapa</button>
-                        <span style="font-size: 12px; color: #64748b;">* Arrastra los elementos y recorta el mapa desde los puntos dorados.</span>
+                        <span style="font-size: 12px; color: #64748b; width: 100%; text-align: center;">* Arrastra los elementos y recorta el mapa desde los puntos dorados.</span>
                     </div>
                     
                     <div class="workspace">
                         <div id="paper">
                             <div id="mapBox">
-                                <!-- Añadido draggable="false" para anular comportamiento de navegador en PC -->
                                 <img src="${src}" id="mapImg" draggable="false">
                                 <div class="resize-handle nw" id="nw"></div>
                                 <div class="resize-handle ne" id="ne"></div>
@@ -1753,6 +1771,7 @@
                     <script>
                         const paper = document.getElementById('paper');
                         const formatSelect = document.getElementById('formatSelect');
+                        const fitScreenCheck = document.getElementById('fitScreenCheck');
                         const mapBox = document.getElementById('mapBox');
                         const mapImg = document.getElementById('mapImg');
                         
@@ -1764,10 +1783,38 @@
                             'A3-P': { w: 297, h: 420, print: 'A3 portrait' }
                         };
 
-                        formatSelect.addEventListener('change', (e) => {
-                            const f = formats[e.target.value];
-                            paper.style.width = (f.w * SCALE_FACTOR) + 'px';
-                            paper.style.height = (f.h * SCALE_FACTOR) + 'px';
+                        window.currentVisualScale = 1;
+
+                        function updateLayout() {
+                            const f = formats[formatSelect.value];
+                            const paperW = f.w * SCALE_FACTOR;
+                            const paperH = f.h * SCALE_FACTOR;
+                            
+                            // El folio virtual mantiene el mismo tamaño HD exacto
+                            paper.style.width = paperW + 'px';
+                            paper.style.height = paperH + 'px';
+                            
+                            // Analizar la pantalla disponible y encoger visualmente el folio si no cabe (Móviles)
+                            const availableWidth = window.innerWidth - 40; 
+                            const noPrintHeight = document.querySelector('.no-print').offsetHeight;
+                            const availableHeight = window.innerHeight - noPrintHeight - 40;
+                            
+                            let scale = 1;
+                            
+                            if (fitScreenCheck.checked) {
+                                const scaleW = availableWidth / paperW;
+                                const scaleH = availableHeight / paperH;
+                                scale = Math.min(scaleW, scaleH);
+                            } else {
+                                scale = availableWidth / paperW;
+                                if (scale > 1) scale = 1;
+                            }
+                            
+                            window.currentVisualScale = scale;
+                            paper.style.transform = \`scale(\${scale})\`;
+                            paper.style.transformOrigin = 'top center';
+                            // Ajustar el contenedor para que no deje un espacio en blanco enorme al encoger
+                            document.querySelector('.workspace').style.height = (paperH * scale + 40) + 'px';
                             
                             let style = document.getElementById('printPageStyle');
                             if(!style) {
@@ -1776,9 +1823,17 @@
                                 document.head.appendChild(style);
                             }
                             style.innerHTML = \`@page { size: \${f.print}; margin: 0; }\`;
-                            mapBox.style.width = (f.w * SCALE_FACTOR * 0.8) + 'px';
-                        });
-                        formatSelect.dispatchEvent(new Event('change'));
+                            
+                            if (!window.mapInitialized) {
+                                mapBox.style.width = (paperW * 0.8) + 'px';
+                                window.mapInitialized = true;
+                            }
+                        }
+
+                        formatSelect.addEventListener('change', updateLayout);
+                        fitScreenCheck.addEventListener('change', updateLayout);
+                        window.addEventListener('resize', updateLayout);
+                        updateLayout(); // Iniciar cálculos
 
                         let isDragging = false, isResizing = false;
                         let startX, startY, startLeft, startTop, startWidth;
@@ -1790,7 +1845,6 @@
                         let ratio = 1;
                         mapImg.onload = () => { ratio = mapImg.naturalHeight / mapImg.naturalWidth; };
 
-                        // Función unificada para obtener coordenadas de ratón y de toques en pantalla
                         function getCoords(e) {
                             if (e.touches && e.touches.length > 0) {
                                 return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -1798,7 +1852,6 @@
                             return { x: e.clientX, y: e.clientY };
                         }
 
-                        // Evento Iniciar Movimiento del Mapa
                         const startMapDrag = (e) => {
                             if (e.target.classList.contains('resize-handle')) return; 
                             isDragging = true;
@@ -1807,12 +1860,11 @@
                             startY = coords.y;
                             startLeft = mapBox.offsetLeft; 
                             startTop = mapBox.offsetTop;
-                            if (e.type === 'mousedown') e.preventDefault(); // Bloquear fantasma en PC
+                            if (e.type === 'mousedown') e.preventDefault();
                         };
                         mapBox.addEventListener('mousedown', startMapDrag);
                         mapBox.addEventListener('touchstart', startMapDrag, {passive: false});
 
-                        // Evento Iniciar Movimiento de Extras (Leyenda, Escala)
                         document.querySelectorAll('.print-extra').forEach(extra => {
                             const startExtraDrag = (e) => {
                                 activeExtra = extra;
@@ -1822,18 +1874,16 @@
                                 extraStartLeft = extra.offsetLeft;
                                 extraStartTop = extra.offsetTop;
                                 
-                                // Traer el elemento al frente al tocarlo
                                 document.querySelectorAll('.print-extra').forEach(el => el.style.zIndex = 50);
                                 extra.style.zIndex = 100;
 
-                                e.stopPropagation(); // Evita que se mueva el mapa de debajo
+                                e.stopPropagation(); 
                                 if (e.type === 'mousedown') e.preventDefault();
                             };
                             extra.addEventListener('mousedown', startExtraDrag);
                             extra.addEventListener('touchstart', startExtraDrag, {passive: false});
                         });
 
-                        // Evento Iniciar Redimensionamiento (Puntos dorados)
                         document.querySelectorAll('.resize-handle').forEach(handle => {
                             const startResize = (e) => {
                                 isResizing = true;
@@ -1855,23 +1905,22 @@
                             handle.addEventListener('touchstart', startResize, {passive: false});
                         });
 
-                        // Motor de movimiento global
                         const moveHandler = (e) => {
                             if (!isDragging && !isResizing && !activeExtra) return;
-                            
-                            // Previene que en el móvil la pantalla se mueva mientras arrastramos algo
                             if (e.cancelable) e.preventDefault();
 
                             const coords = getCoords(e);
+                            const scale = window.currentVisualScale || 1;
 
                             if (isDragging) {
-                                const dx = coords.x - startX;
-                                const dy = coords.y - startY;
+                                // Dividimos por la escala para que el movimiento del dedo y la imagen sea 1:1 real
+                                const dx = (coords.x - startX) / scale;
+                                const dy = (coords.y - startY) / scale;
                                 mapBox.style.left = (startLeft + dx) + 'px';
                                 mapBox.style.top = (startTop + dy) + 'px';
                             } else if (isResizing) {
-                                const dx = coords.x - startX;
-                                const dy = coords.y - startY;
+                                const dx = (coords.x - startX) / scale;
+                                const dy = (coords.y - startY) / scale;
                                 let newWidth = startWidth;
                                 let newLeft = startLeft;
                                 let newTop = startTop;
@@ -1891,14 +1940,13 @@
                                     if (['ne', 'nw', 'n'].includes(activeHandle)) mapBox.style.top = newTop + 'px';
                                 }
                             } else if (activeExtra) {
-                                const dx = coords.x - extraStartX;
-                                const dy = coords.y - extraStartY;
+                                const dx = (coords.x - extraStartX) / scale;
+                                const dy = (coords.y - extraStartY) / scale;
                                 activeExtra.style.left = (extraStartLeft + dx) + 'px';
                                 activeExtra.style.top = (extraStartTop + dy) + 'px';
                             }
                         };
 
-                        // Soltar evento
                         const endHandler = () => {
                             isDragging = false;
                             isResizing = false;
@@ -1906,7 +1954,6 @@
                             activeExtra = null;
                         };
 
-                        // Escuchadores globales (Ratón y Táctil)
                         window.addEventListener('mousemove', moveHandler);
                         window.addEventListener('touchmove', moveHandler, {passive: false});
                         window.addEventListener('mouseup', endHandler);
