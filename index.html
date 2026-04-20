@@ -1567,7 +1567,7 @@
         document.getElementById('image-modal-content').src = '';
     }
 
-    // --- NUEVO SISTEMA DE IMPRESIÓN ---
+    // --- NUEVO SISTEMA DE IMPRESIÓN MEJORADO (PC y MÓVIL) ---
     function printImage(src, title, captureId = null) {
         const printWin = window.open('', '_blank');
         if (!printWin) {
@@ -1590,12 +1590,14 @@
             <html>
                 <head>
                     <title>${title} - Preparación de Impresión</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                     <style>
                         body { 
                             margin: 0; 
                             background: #cbd5e0; 
                             font-family: 'Segoe UI', sans-serif; 
                             overflow-x: hidden;
+                            touch-action: none; /* Evita zoom táctil indeseado al arrastrar */
                         }
                         .no-print {
                             position: fixed; 
@@ -1610,6 +1612,7 @@
                             z-index: 1000; 
                             border-bottom: 3px solid #003366;
                             box-sizing: border-box;
+                            flex-wrap: wrap;
                         }
                         select, button {
                             padding: 8px 12px;
@@ -1625,106 +1628,85 @@
                         button:hover { background: #002244; }
                         
                         .workspace {
-                            margin-top: 80px; 
+                            margin-top: 100px; 
                             display: flex; 
                             justify-content: center; 
                             padding: 20px;
                         }
                         
-                        /* Contenedor que simula el folio real */
                         #paper {
                             background: white; 
                             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
                             position: relative; 
-                            overflow: hidden; /* Recorta lo que salga del folio */
+                            overflow: hidden; 
                             transition: width 0.3s, height 0.3s;
                         }
 
-                        /* Caja de la imagen arrastrable */
                         #mapBox {
                             position: absolute; 
                             top: 20px; left: 20px;
-                            width: 250px; /* Tamaño inicial */
+                            width: 250px; 
                             border: 2px dashed #003366;
                             cursor: grab;
                             box-sizing: border-box;
+                            touch-action: none;
                         }
                         #mapBox:active { cursor: grabbing; }
                         #mapBox img {
                             width: 100%; 
                             height: auto; 
                             display: block; 
-                            pointer-events: none; /* Para no interferir con el drag */
+                            pointer-events: none; /* Bloquea el drag nativo de la imagen */
+                            user-select: none;
                         }
 
-                        /* Tiradores para redimensionar en las esquinas */
                         .resize-handle {
                             position: absolute; 
-                            width: 16px; height: 16px; 
+                            width: 20px; height: 20px; /* Un poco más grandes para dedos */
                             background: #e6b800;
                             border: 2px solid #003366;
                             border-radius: 50%; 
                             z-index: 10;
+                            touch-action: none;
                         }
-                        .nw { top: -8px; left: -8px; cursor: nw-resize; }
-                        .ne { top: -8px; right: -8px; cursor: ne-resize; }
-                        .sw { bottom: -8px; left: -8px; cursor: sw-resize; }
-                        .se { bottom: -8px; right: -8px; cursor: se-resize; }
-                        .n { top: -8px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
-                        .s { bottom: -8px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
-                        .w { top: 50%; left: -8px; transform: translateY(-50%); cursor: w-resize; }
-                        .e { top: 50%; right: -8px; transform: translateY(-50%); cursor: e-resize; }
+                        .nw { top: -10px; left: -10px; cursor: nw-resize; }
+                        .ne { top: -10px; right: -10px; cursor: ne-resize; }
+                        .sw { bottom: -10px; left: -10px; cursor: sw-resize; }
+                        .se { bottom: -10px; right: -10px; cursor: se-resize; }
+                        .n { top: -10px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+                        .s { bottom: -10px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+                        .w { top: 50%; left: -10px; transform: translateY(-50%); cursor: w-resize; }
+                        .e { top: 50%; right: -10px; transform: translateY(-50%); cursor: e-resize; }
 
-                        /* --- ESTILOS EXTRAS IMPRESIÓN --- */
                         .print-extra {
                             position: absolute;
                             cursor: grab;
                             z-index: 50;
+                            touch-action: none;
                         }
                         .print-extra:active { cursor: grabbing; }
                         .print-extra > * {
                             position: relative !important;
-                            bottom: auto !important;
-                            top: auto !important;
-                            left: auto !important;
-                            right: auto !important;
+                            bottom: auto !important; top: auto !important;
+                            left: auto !important; right: auto !important;
                             margin: 0 !important;
                             pointer-events: none !important;
+                            user-select: none;
                         }
-                        .map-legend {
-                            background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px;
-                            box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid #cbd5e0;
-                            font-size: 12px; min-width: 150px;
-                        }
+                        /* Estilos para que los elementos se vean bien al sacarlos */
+                        .map-legend { background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid #cbd5e0; font-size: 12px; min-width: 150px; }
                         .legend-title { font-weight: 800; color: #003366; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; font-size: 13px; }
                         .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 600; color: #475569;}
                         .legend-color-box { width: 14px; height: 14px; border-radius: 3px; border: 2px solid #333;}
                         
-                        #numeric-scale-widget {
-                            background: rgba(255, 255, 255, 0.95); padding: 6px 12px; border-radius: 6px; 
-                            box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid #222; 
-                            font-weight: 900; color: #000; font-size: 13px; white-space: nowrap;
-                        }
+                        #numeric-scale-widget { background: rgba(255, 255, 255, 0.95); padding: 6px 12px; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid #222; font-weight: 900; color: #000; font-size: 13px; white-space: nowrap; }
 
                         .leaflet-control-scale-line {
-                            border: 2px solid #222 !important;
-                            background-color: rgba(255, 255, 255, 0.9) !important;
-                            background-image: 
-                                linear-gradient(to bottom, #222, #222), 
-                                linear-gradient(to right, #ffffff 50%, #222222 50%) !important;
-                            background-size: 100% 2px, 100% 6px !important; 
-                            background-position: 0 calc(100% - 6px), 0 100% !important; 
-                            background-repeat: no-repeat !important;
-                            color: #000 !important;
-                            font-weight: 900 !important;
-                            font-size: 12px !important;
-                            text-align: center !important;
-                            line-height: 1.2 !important;
-                            padding: 4px 5px 12px 5px !important;
-                            box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;
-                            text-shadow: none !important;
-                            box-sizing: border-box;
-                            min-width: 80px;
+                            border: 2px solid #222 !important; background-color: rgba(255, 255, 255, 0.9) !important;
+                            background-image: linear-gradient(to bottom, #222, #222), linear-gradient(to right, #ffffff 50%, #222222 50%) !important;
+                            background-size: 100% 2px, 100% 6px !important; background-position: 0 calc(100% - 6px), 0 100% !important; 
+                            background-repeat: no-repeat !important; color: #000 !important; font-weight: 900 !important; font-size: 12px !important;
+                            text-align: center !important; line-height: 1.2 !important; padding: 4px 5px 12px 5px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important; text-shadow: none !important; box-sizing: border-box; min-width: 80px;
                         }
 
                         @media print {
@@ -1739,7 +1721,7 @@
                 </head>
                 <body>
                     <div class="no-print">
-                        <label style="color: #003366; font-weight: 800;">📄 Formato de Papel:</label>
+                        <label style="color: #003366; font-weight: 800;">📄 Formato:</label>
                         <select id="formatSelect">
                             <option value="A4-L">A4 (Horizontal)</option>
                             <option value="A4-P">A4 (Vertical)</option>
@@ -1747,21 +1729,22 @@
                             <option value="A3-P">A3 (Vertical)</option>
                         </select>
                         <button onclick="window.print()">🖨️ Imprimir Mapa</button>
-                        <span style="font-size: 12px; color: #64748b; margin-left: 10px;">* Arrastra el mapa, recórtalo y mueve la leyenda o escalas libremente.</span>
+                        <span style="font-size: 12px; color: #64748b;">* Arrastra los elementos y recorta el mapa desde los puntos dorados.</span>
                     </div>
                     
                     <div class="workspace">
                         <div id="paper">
                             <div id="mapBox">
-                                <img src="${src}" id="mapImg">
-                                <div class="resize-handle nw" id="nw" title="Arrastra para redimensionar"></div>
-                                <div class="resize-handle ne" id="ne" title="Arrastra para redimensionar"></div>
-                                <div class="resize-handle sw" id="sw" title="Arrastra para redimensionar"></div>
-                                <div class="resize-handle se" id="se" title="Arrastra para redimensionar"></div>
-                                <div class="resize-handle n" id="n" title="Arrastra para redimensionar"></div>
-                                <div class="resize-handle s" id="s" title="Arrastra para redimensionar"></div>
-                                <div class="resize-handle e" id="e" title="Arrastra para redimensionar"></div>
-                                <div class="resize-handle w" id="w" title="Arrastra para redimensionar"></div>
+                                <!-- Añadido draggable="false" para anular comportamiento de navegador en PC -->
+                                <img src="${src}" id="mapImg" draggable="false">
+                                <div class="resize-handle nw" id="nw"></div>
+                                <div class="resize-handle ne" id="ne"></div>
+                                <div class="resize-handle sw" id="sw"></div>
+                                <div class="resize-handle se" id="se"></div>
+                                <div class="resize-handle n" id="n"></div>
+                                <div class="resize-handle s" id="s"></div>
+                                <div class="resize-handle e" id="e"></div>
+                                <div class="resize-handle w" id="w"></div>
                             </div>
                             ${extrasHtml}
                         </div>
@@ -1771,8 +1754,8 @@
                         const paper = document.getElementById('paper');
                         const formatSelect = document.getElementById('formatSelect');
                         const mapBox = document.getElementById('mapBox');
+                        const mapImg = document.getElementById('mapImg');
                         
-                        // Tamaños estándar en milímetros (aprox) para la vista previa
                         const SCALE_FACTOR = 3.5; 
                         const formats = {
                             'A4-L': { w: 297, h: 210, print: 'A4 landscape' },
@@ -1781,7 +1764,6 @@
                             'A3-P': { w: 297, h: 420, print: 'A3 portrait' }
                         };
 
-                        // Cambiar formato de folio
                         formatSelect.addEventListener('change', (e) => {
                             const f = formats[e.target.value];
                             paper.style.width = (f.w * SCALE_FACTOR) + 'px';
@@ -1796,10 +1778,8 @@
                             style.innerHTML = \`@page { size: \${f.print}; margin: 0; }\`;
                             mapBox.style.width = (f.w * SCALE_FACTOR * 0.8) + 'px';
                         });
-                        
                         formatSelect.dispatchEvent(new Event('change'));
 
-                        // Lógica para arrastrar y soltar (Drag & Drop) y Redimensionar
                         let isDragging = false, isResizing = false;
                         let startX, startY, startLeft, startTop, startWidth;
                         let activeHandle = null;
@@ -1807,40 +1787,60 @@
                         let activeExtra = null;
                         let extraStartX, extraStartY, extraStartLeft, extraStartTop;
                         
-                        // Capturar el ratio de la imagen para que nunca se deforme
-                        const mapImg = document.getElementById('mapImg');
                         let ratio = 1;
                         mapImg.onload = () => { ratio = mapImg.naturalHeight / mapImg.naturalWidth; };
 
-                        // Click en el mapa (Mover)
-                        mapBox.addEventListener('mousedown', (e) => {
+                        // Función unificada para obtener coordenadas de ratón y de toques en pantalla
+                        function getCoords(e) {
+                            if (e.touches && e.touches.length > 0) {
+                                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                            }
+                            return { x: e.clientX, y: e.clientY };
+                        }
+
+                        // Evento Iniciar Movimiento del Mapa
+                        const startMapDrag = (e) => {
                             if (e.target.classList.contains('resize-handle')) return; 
                             isDragging = true;
-                            startX = e.clientX; 
-                            startY = e.clientY;
+                            const coords = getCoords(e);
+                            startX = coords.x; 
+                            startY = coords.y;
                             startLeft = mapBox.offsetLeft; 
                             startTop = mapBox.offsetTop;
-                        });
+                            if (e.type === 'mousedown') e.preventDefault(); // Bloquear fantasma en PC
+                        };
+                        mapBox.addEventListener('mousedown', startMapDrag);
+                        mapBox.addEventListener('touchstart', startMapDrag, {passive: false});
 
-                        // Click en los elementos extra (Leyenda, Brújula, Escalas)
+                        // Evento Iniciar Movimiento de Extras (Leyenda, Escala)
                         document.querySelectorAll('.print-extra').forEach(extra => {
-                            extra.addEventListener('mousedown', (e) => {
+                            const startExtraDrag = (e) => {
                                 activeExtra = extra;
-                                extraStartX = e.clientX;
-                                extraStartY = e.clientY;
+                                const coords = getCoords(e);
+                                extraStartX = coords.x;
+                                extraStartY = coords.y;
                                 extraStartLeft = extra.offsetLeft;
                                 extraStartTop = extra.offsetTop;
-                                e.stopPropagation();
-                            });
+                                
+                                // Traer el elemento al frente al tocarlo
+                                document.querySelectorAll('.print-extra').forEach(el => el.style.zIndex = 50);
+                                extra.style.zIndex = 100;
+
+                                e.stopPropagation(); // Evita que se mueva el mapa de debajo
+                                if (e.type === 'mousedown') e.preventDefault();
+                            };
+                            extra.addEventListener('mousedown', startExtraDrag);
+                            extra.addEventListener('touchstart', startExtraDrag, {passive: false});
                         });
 
-                        // Click en cualquier tirador amarillo (Redimensionar)
+                        // Evento Iniciar Redimensionamiento (Puntos dorados)
                         document.querySelectorAll('.resize-handle').forEach(handle => {
-                            handle.addEventListener('mousedown', (e) => {
+                            const startResize = (e) => {
                                 isResizing = true;
                                 activeHandle = e.target.id;
-                                startX = e.clientX;
-                                startY = e.clientY;
+                                const coords = getCoords(e);
+                                startX = coords.x;
+                                startY = coords.y;
                                 startWidth = mapBox.offsetWidth;
                                 startLeft = mapBox.offsetLeft;
                                 startTop = mapBox.offsetTop;
@@ -1849,46 +1849,41 @@
                                     ratio = mapImg.naturalHeight / mapImg.naturalWidth; 
                                 }
                                 e.stopPropagation();
-                                e.preventDefault();
-                            });
+                                if (e.type === 'mousedown') e.preventDefault();
+                            };
+                            handle.addEventListener('mousedown', startResize);
+                            handle.addEventListener('touchstart', startResize, {passive: false});
                         });
 
-                        window.addEventListener('mousemove', (e) => {
+                        // Motor de movimiento global
+                        const moveHandler = (e) => {
+                            if (!isDragging && !isResizing && !activeExtra) return;
+                            
+                            // Previene que en el móvil la pantalla se mueva mientras arrastramos algo
+                            if (e.cancelable) e.preventDefault();
+
+                            const coords = getCoords(e);
+
                             if (isDragging) {
-                                const dx = e.clientX - startX;
-                                const dy = e.clientY - startY;
+                                const dx = coords.x - startX;
+                                const dy = coords.y - startY;
                                 mapBox.style.left = (startLeft + dx) + 'px';
                                 mapBox.style.top = (startTop + dy) + 'px';
                             } else if (isResizing) {
-                                const dx = e.clientX - startX;
-                                const dy = e.clientY - startY;
+                                const dx = coords.x - startX;
+                                const dy = coords.y - startY;
                                 let newWidth = startWidth;
                                 let newLeft = startLeft;
                                 let newTop = startTop;
 
-                                if (activeHandle === 'se') {
-                                    newWidth = startWidth + dx;
-                                } else if (activeHandle === 'sw') {
-                                    newWidth = startWidth - dx;
-                                    newLeft = startLeft + dx;
-                                } else if (activeHandle === 'ne') {
-                                    newWidth = startWidth + dx;
-                                    newTop = startTop - ((newWidth - startWidth) * ratio);
-                                } else if (activeHandle === 'nw') {
-                                    newWidth = startWidth - dx;
-                                    newLeft = startLeft + dx;
-                                    newTop = startTop - ((newWidth - startWidth) * ratio);
-                                } else if (activeHandle === 'e') {
-                                    newWidth = startWidth + dx;
-                                } else if (activeHandle === 'w') {
-                                    newWidth = startWidth - dx;
-                                    newLeft = startLeft + dx;
-                                } else if (activeHandle === 's') {
-                                    newWidth = startWidth + (dy / ratio);
-                                } else if (activeHandle === 'n') {
-                                    newWidth = startWidth - (dy / ratio);
-                                    newTop = startTop - ((newWidth - startWidth) * ratio);
-                                }
+                                if (activeHandle === 'se') { newWidth = startWidth + dx; }
+                                else if (activeHandle === 'sw') { newWidth = startWidth - dx; newLeft = startLeft + dx; }
+                                else if (activeHandle === 'ne') { newWidth = startWidth + dx; newTop = startTop - ((newWidth - startWidth) * ratio); }
+                                else if (activeHandle === 'nw') { newWidth = startWidth - dx; newLeft = startLeft + dx; newTop = startTop - ((newWidth - startWidth) * ratio); }
+                                else if (activeHandle === 'e') { newWidth = startWidth + dx; }
+                                else if (activeHandle === 'w') { newWidth = startWidth - dx; newLeft = startLeft + dx; }
+                                else if (activeHandle === 's') { newWidth = startWidth + (dy / ratio); }
+                                else if (activeHandle === 'n') { newWidth = startWidth - (dy / ratio); newTop = startTop - ((newWidth - startWidth) * ratio); }
 
                                 if (newWidth > 50) {
                                     mapBox.style.width = newWidth + 'px';
@@ -1896,19 +1891,26 @@
                                     if (['ne', 'nw', 'n'].includes(activeHandle)) mapBox.style.top = newTop + 'px';
                                 }
                             } else if (activeExtra) {
-                                const dx = e.clientX - extraStartX;
-                                const dy = e.clientY - extraStartY;
+                                const dx = coords.x - extraStartX;
+                                const dy = coords.y - extraStartY;
                                 activeExtra.style.left = (extraStartLeft + dx) + 'px';
                                 activeExtra.style.top = (extraStartTop + dy) + 'px';
                             }
-                        });
+                        };
 
-                        window.addEventListener('mouseup', () => {
+                        // Soltar evento
+                        const endHandler = () => {
                             isDragging = false;
                             isResizing = false;
                             activeHandle = null;
                             activeExtra = null;
-                        });
+                        };
+
+                        // Escuchadores globales (Ratón y Táctil)
+                        window.addEventListener('mousemove', moveHandler);
+                        window.addEventListener('touchmove', moveHandler, {passive: false});
+                        window.addEventListener('mouseup', endHandler);
+                        window.addEventListener('touchend', endHandler);
                     <\/script>
                 </body>
             </html>
