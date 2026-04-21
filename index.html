@@ -187,7 +187,6 @@
         .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 600; color: #475569;}
         .legend-color-box { width: 14px; height: 14px; border-radius: 3px; border: 2px solid #333;}
         
-        /* --- MODO MÓVIL (Bottom Sheet UI) --- */
         body.mobile-mode .sidebar {
             top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
             width: 100% !important; max-width: 100% !important;
@@ -387,6 +386,22 @@
     </div>
 </div>
 
+<div id="rename-folder-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Renombrar Carpeta</h3>
+        <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Selecciona la carpeta / bando</label>
+        <select id="rename-folder-select" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;" onchange="document.getElementById('rename-folder-input').value = this.value"></select>
+        
+        <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nuevo nombre</label>
+        <input type="text" id="rename-folder-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;">
+        
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="closeRenameFolderModal()">Cancelar</button>
+            <button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="confirmRenameFolderModal()">Renombrar</button>
+        </div>
+    </div>
+</div>
+
 <div id="image-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:4000; align-items:center; justify-content:center;">
     <div style="position:relative; max-width:95%; max-height:95%; display:flex; flex-direction:column; align-items:center;">
         <button onclick="closeImageModal()" style="position:absolute; top:-40px; right:0; background:none; border:none; color:white; font-size:32px; cursor:pointer; font-weight:bold;" title="Cerrar">✕</button>
@@ -401,8 +416,11 @@
         
         <div style="font-size:13px; color:#475569; line-height:1.6;">
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📁 1. Gestión de Proyectos y Archivos</h4>
-            <p style="margin-top:0;"><b>Nuevo / Guardar / Cargar:</b> Permite limpiar el mapa o guardar tu progreso en un archivo <code>.json</code> para retomarlo otro día.<br>
-            <b>Importar / Exportar:</b> Compatible con formatos estándar de GPS (Garmin) y Google Earth (<code>.kml</code> y <code>.gpx</code>). Útil para extraer las coordenadas o cargar mapas de la organización.</p>
+            <p style="margin-top:0;">
+            <b>Nuevo / Guardar / Cargar:</b> Permite limpiar el mapa o guardar tu progreso en un archivo <code>.json</code> para retomarlo otro día.<br>
+            <b>Renombrar:</b> Te permite cambiar el nombre del proyecto actual o de cualquier carpeta/bando importado desde un menú desplegable.<br>
+            <b>Importar / Exportar:</b> Compatible con formatos estándar de GPS (Garmin) y Google Earth (<code>.kml</code> y <code>.gpx</code>). Útil para extraer las coordenadas o cargar mapas de la organización.
+            </p>
 
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🌍 2. Capas y Mezclador de Mapas</h4>
             <p style="margin-top:0;"><b>Mezclador:</b> Te permite superponer dos mapas a la vez. Por ejemplo, pon el <b>Mapa Topográfico (MTN)</b> de fondo y el <b>Satélite (PNOA)</b> encima con una opacidad al 40%. Así verás los árboles reales fundidos con las curvas de nivel topográficas.</p>
@@ -425,7 +443,8 @@
             </ul>
 
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🗂️ 5. Gestor de Capas y Bandos</h4>
-            <p style="margin-top:0;">Cada elemento que dibujas aparece aquí en forma de lista. Puedes asignarle un "Bando" (Rojo, Azul, Neutral) editando cada marcador. El gestor crea carpetas automáticas y te permite ocultar (👁️) tropas enteras de un solo clic para ver tu estrategia más clara.</p>
+            <p style="margin-top:0;">Cada elemento que dibujas aparece aquí en forma de lista. Puedes asignarle un "Bando" (Rojo, Azul, Neutral) editando cada marcador. El gestor crea carpetas automáticas y te permite ocultar (👁️) tropas enteras de un solo clic para ver tu estrategia más clara.<br>
+            💡 <i>Novedad:</i> <b>Haz clic en el nombre de cualquier carpeta</b> para plegarla o desplegarla. Ideal para mantener el orden cuando importas rutas de GPS con muchos puntos.</p>
 
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📋 6. Leyenda Táctica</h4>
             <p style="margin-top:0;">Un recuadro flotante que resume los iconos, colores, líneas y áreas que hay dibujados en el mapa. Puedes arrastrarla libremente por la pantalla para que no moleste o activarla/desactivarla usando el botón en la parte inferior del menú lateral.</p>
@@ -1692,7 +1711,7 @@
                     <title>${title} - Preparación de Impresión</title>
                     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                     
-                    ${parentStyles}
+                    ${parentStyles.replace(/`/g, '\\`')}
 
                     <style>
                         * {
@@ -2549,12 +2568,56 @@
  
     function toggleMenu() { document.getElementById('panelLateral').classList.toggle('oculto'); }
     
-    async function renombrarProyecto() {
+    function renombrarProyecto() {
+        toggleMenu(); 
+        
+        const factions = new Set();
+        factions.add(projectName); 
+        drawnItems.eachLayer(layer => {
+            const fac = layer.feature?.properties?.faction;
+            if (fac) factions.add(fac);
+        });
+
+        const select = document.getElementById('rename-folder-select');
+        select.innerHTML = '';
+        factions.forEach(fac => {
+            const opt = document.createElement('option');
+            opt.value = fac;
+            opt.text = '📁 ' + fac;
+            select.appendChild(opt);
+        });
+        
+        document.getElementById('rename-folder-input').value = select.value;
+        document.getElementById('rename-folder-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('rename-folder-input').select(), 100);
+    }
+
+    function closeRenameFolderModal() {
+        document.getElementById('rename-folder-modal').style.display = 'none';
         toggleMenu();
-        const name = await askName("Renombrar proyecto:", projectName);
-        projectName = name.trim() || "Proyecto";
-        document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
-        toggleMenu();
+    }
+
+    function confirmRenameFolderModal() {
+        const oldName = document.getElementById('rename-folder-select').value;
+        const newName = document.getElementById('rename-folder-input').value.trim();
+        
+        if (newName && newName !== oldName) {
+            drawnItems.eachLayer(layer => {
+                if ((layer.feature?.properties?.faction || projectName) === oldName) {
+                    layer.feature.properties.faction = newName;
+                }
+            });
+            
+            if (projectName === oldName) {
+                projectName = newName;
+                document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
+            }
+            
+            updateLayerTree(); 
+        }
+        
+        document.getElementById('rename-folder-modal').style.display = 'none';
+        toggleMenu(); 
     }
 
     function nuevoProyecto() {
