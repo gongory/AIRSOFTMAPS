@@ -1007,7 +1007,7 @@
         
         const factions = {};
         layers.forEach(layer => {
-            const faction = layer.feature?.properties?.faction || 'General';
+            const faction = layer.feature?.properties?.faction || projectName;
             if (!factions[faction]) factions[faction] = [];
             factions[faction].push(layer);
         });
@@ -1021,11 +1021,15 @@
             const eyeClass = allHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn';
             const fIcon = factionIcons[factionName] || '📁';
 
-            html += `<div class="faction-header">
-                <span>${fIcon} ${factionName}</span>
-                <button class="${eyeClass}" onclick="toggleFactionVisibility('${factionName}')" title="Ver/Ocultar Bando" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0;">${eyeIcon}</button>
+            html += `<div class="faction-header" style="cursor: pointer;" onclick="const content = this.nextElementSibling; const icon = this.querySelector('.toggle-icon'); if(content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▼'; } else { content.style.display = 'none'; icon.innerText = '▶'; }">
+                <div style="display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; margin-right: 10px;" title="${factionName}">
+                    <span class="toggle-icon" style="margin-right: 5px; font-size: 10px; width: 12px; display: inline-block;">▼</span>
+                    <span style="margin-right: 4px;">${fIcon}</span>
+                    <span style="overflow: hidden; text-overflow: ellipsis;">${factionName}</span>
+                </div>
+                <button class="${eyeClass}" onclick="event.stopPropagation(); toggleFactionVisibility('${factionName}')" title="Ver/Ocultar Grupo" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0;">${eyeIcon}</button>
             </div>
-            <div class="faction-content">`;
+            <div class="faction-content" style="display: block;">`;
 
             factionLayers.forEach(layer => {
                 const id = L.stamp(layer);
@@ -1135,7 +1139,7 @@
     }
 
     function toggleFactionVisibility(factionName) {
-        const layers = drawnItems.getLayers().filter(l => (l.feature?.properties?.faction || 'General') === factionName);
+        const layers = drawnItems.getLayers().filter(l => (l.feature?.properties?.faction || projectName) === factionName);
         if (layers.length === 0) return;
         
         const hideAll = !layers.every(l => l.isHidden);
@@ -1398,7 +1402,7 @@
         
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
-        layer.feature.properties.faction = 'General';
+        layer.feature.properties.faction = projectName; // Se asocia al proyecto actual
         layer.isHidden = false;
         
         if (e.layerType === 'marker') {
@@ -1539,8 +1543,22 @@
 
         const modal = document.getElementById('edit-modal');
         document.getElementById('edit-name-input').value = layer.feature.properties.layerName || '';
-        document.getElementById('edit-faction-input').value = layer.feature.properties.faction || 'General';
         
+        // --- Dinámica del Dropdown de Bando/Grupo ---
+        const factionSelect = document.getElementById('edit-faction-input');
+        const currentFaction = layer.feature.properties.faction || projectName;
+        
+        // Verifica si la carpeta ya existe en las opciones, si no, la añade temporalmente
+        let factionExists = Array.from(factionSelect.options).some(opt => opt.value === currentFaction);
+        if (!factionExists) {
+            const newOpt = document.createElement('option');
+            newOpt.value = currentFaction;
+            newOpt.text = '📁 ' + currentFaction;
+            factionSelect.appendChild(newOpt);
+        }
+        factionSelect.value = currentFaction;
+        // --- Fin dinámica Dropdown ---
+
         const isShape = (layer instanceof L.Polyline);
         const isMarker = (layer instanceof L.Marker);
         
@@ -1648,7 +1666,6 @@
         document.getElementById('image-modal-content').src = '';
     }
 
-    // --- NUEVO SISTEMA DE IMPRESIÓN MEJORADO (PC y MÓVIL) ---
     function printImage(src, title, captureId = null) {
         const printWin = window.open('', '_blank');
         if (!printWin) {
@@ -1658,7 +1675,6 @@
 
         const parentStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(el => el.outerHTML).join('\n');
 
-        // Recuperar los elementos flotantes capturados
         const extras = (captureId && window.captures && window.captures[captureId]) ? window.captures[captureId] : {};
         let extrasHtml = '';
         let extTop = 20; 
@@ -1692,7 +1708,6 @@
                             overflow-x: hidden !important;
                         }
                         
-                        /* --- NUEVO MENÚ DE IMPRESIÓN ADAPTATIVO --- */
                         .no-print {
                             position: sticky !important; top: 0 !important;
                             width: 100% !important; background: #f8fafc !important; 
@@ -1800,14 +1815,12 @@
                             text-align: center !important; line-height: 1.2 !important; padding: 4px 5px 12px 5px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important; text-shadow: none !important; box-sizing: border-box !important; min-width: 80px !important;
                         }
 
-                        /* --- AJUSTES ESPECÍFICOS PARA MÓVILES --- */
                         @media (max-width: 768px) {
                             .no-print { padding: 10px !important; gap: 8px !important; }
                             .toolbar-row { gap: 6px !important; }
                             .toolbar-row label, .toolbar-row select, .check-btn { font-size: 12px !important; padding: 6px 8px !important; }
                             .buttons button { font-size: 12px !important; padding: 8px 4px !important; }
                             
-                            /* Tiradores más grandes y fáciles de tocar en móvil */
                             .resize-handle { width: 44px !important; height: 44px !important; }
                             .nw { top: -22px !important; left: -22px !important; }
                             .ne { top: -22px !important; right: -22px !important; }
@@ -1901,14 +1914,12 @@
                                 await new Promise(resolve => script.onload = resolve);
                             }
 
-                            // GUARDAR ESTADOS ORIGINALES
                             const originalTransform = paper.style.transform;
                             const originalShadow = paper.style.boxShadow;
                             const mapBox = document.getElementById('mapBox');
                             const originalMapBoxCss = mapBox.style.cssText;
                             const handles = document.querySelectorAll('.resize-handle');
 
-                            // PREPARAR PARA FOTO LIMPIA Y A TAMAÑO REAL
                             paper.style.transform = 'scale(1)';
                             paper.style.setProperty('box-shadow', 'none', 'important');
                             mapBox.style.setProperty('border', 'none', 'important');
@@ -1926,7 +1937,6 @@
                                     height: paper.offsetHeight
                                 });
                                 
-                                // RESTAURAR ESTADOS
                                 paper.style.transform = originalTransform;
                                 paper.style.boxShadow = originalShadow;
                                 mapBox.style.cssText = originalMapBoxCss;
@@ -1940,7 +1950,6 @@
                                 btn.innerHTML = originalText;
                                 btn.disabled = false;
                             } catch (error) {
-                                console.error("Error al crear la imagen:", error);
                                 paper.style.transform = originalTransform;
                                 paper.style.boxShadow = originalShadow;
                                 mapBox.style.cssText = originalMapBoxCss;
@@ -2018,7 +2027,6 @@
 
                         window.addEventListener('resize', updateLayout);
                         
-                        // SOLUCIÓN BUG HOJA EN BLANCO Y RESPONSIVE
                         window.addEventListener('beforeprint', () => {
                             paper.style.transform = 'none';
                         });
@@ -2620,7 +2628,7 @@
                             const id = L.stamp(layer);
                             layer.isHidden = false;
                             
-                            if(!feature.properties.faction) layer.feature.properties.faction = 'General';
+                            if(!feature.properties.faction) layer.feature.properties.faction = projectName;
 
                             const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
                                 <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
@@ -2696,13 +2704,13 @@
     function importKMLGPX(event) {
         const file = event.target.files[0];
         if (!file) return;
+        const fileName = file.name;
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                // 1. Limpieza extrema: Eliminar namespaces y prefijos conflictivos de Google Earth (ej. <gx:Track> pasa a ser <Track>)
                 let text = e.target.result;
-                text = text.replace(/xmlns(:\w+)?="[^"]*"/g, ''); // Quita atributos xmlns
-                text = text.replace(/(<\/?)(\w+:)/g, '$1');       // Quita prefijos como gx:, kml:, etc.
+                text = text.replace(/xmlns(:\w+)?="[^"]*"/g, ''); 
+                text = text.replace(/(<\/?)(\w+:)/g, '$1');       
 
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(text, "text/xml");
@@ -2712,17 +2720,15 @@
                     Array.from(placemarks).forEach(p => {
                         const name = p.getElementsByTagName('name')[0]?.textContent || 'Punto KML';
                         
-                        // Importar Puntos
                         const points = p.getElementsByTagName('Point');
                         Array.from(points).forEach(pt => {
                             let coordsText = pt.getElementsByTagName('coordinates')[0]?.textContent.trim();
                             if (coordsText) { 
                                 let coords = coordsText.split(','); 
-                                if(coords.length >= 2) addImportedLayer(L.marker([parseFloat(coords[1]), parseFloat(coords[0])]), name, 'marker'); 
+                                if(coords.length >= 2) addImportedLayer(L.marker([parseFloat(coords[1]), parseFloat(coords[0])]), name, 'marker', fileName); 
                             }
                         });
                         
-                        // Importar Rutas Estándar
                         const lines = p.getElementsByTagName('LineString');
                         Array.from(lines).forEach(ln => {
                             let coordsText = ln.getElementsByTagName('coordinates')[0]?.textContent.trim();
@@ -2730,23 +2736,21 @@
                                 let latlngs = coordsText.split(/\s+/).map(c => { 
                                     let pts = c.split(','); return [parseFloat(pts[1]), parseFloat(pts[0])]; 
                                 }).filter(ll => !isNaN(ll[0]) && !isNaN(ll[1]));
-                                if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline');
+                                if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName);
                             }
                         });
 
-                        // Importar Rutas avanzadas de Google Earth (Tracks)
                         const tracks = p.getElementsByTagName('Track');
                         Array.from(tracks).forEach(trk => {
                             const coords = trk.getElementsByTagName('coord');
                             let latlngs = [];
                             Array.from(coords).forEach(c => {
-                                let pts = c.textContent.trim().split(/\s+/); // El formato suele ser: lon lat alt
+                                let pts = c.textContent.trim().split(/\s+/); 
                                 if (pts.length >= 2) latlngs.push([parseFloat(pts[1]), parseFloat(pts[0])]);
                             });
-                            if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline');
+                            if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName);
                         });
                         
-                        // Importar Polígonos (Áreas)
                         const polys = p.getElementsByTagName('Polygon');
                         Array.from(polys).forEach(poly => {
                             let coordsText = poly.getElementsByTagName('coordinates')[0]?.textContent.trim();
@@ -2754,37 +2758,34 @@
                                 let latlngs = coordsText.split(/\s+/).map(c => { 
                                     let pts = c.split(','); return [parseFloat(pts[1]), parseFloat(pts[0])]; 
                                 }).filter(ll => !isNaN(ll[0]) && !isNaN(ll[1]));
-                                if (latlngs.length > 2) addImportedLayer(L.polygon(latlngs, drawOptions.polygon.shapeOptions), name, 'polygon');
+                                if (latlngs.length > 2) addImportedLayer(L.polygon(latlngs, drawOptions.polygon.shapeOptions), name, 'polygon', fileName);
                             }
                         });
                     });
                 } else if (file.name.toLowerCase().endsWith('.gpx')) {
-                    // Importar Waypoints (Puntos GPX)
                     const wpts = xmlDoc.getElementsByTagName('wpt');
                     Array.from(wpts).forEach(w => {
                         const name = w.getElementsByTagName('name')[0]?.textContent || 'Punto GPX';
                         const lat = parseFloat(w.getAttribute('lat')), lon = parseFloat(w.getAttribute('lon'));
-                        if(!isNaN(lat) && !isNaN(lon)) addImportedLayer(L.marker([lat, lon]), name, 'marker');
+                        if(!isNaN(lat) && !isNaN(lon)) addImportedLayer(L.marker([lat, lon]), name, 'marker', fileName);
                     });
                     
-                    // Importar Tracks GPX
                     const trks = xmlDoc.getElementsByTagName('trk');
                     Array.from(trks).forEach(t => {
                         const name = t.getElementsByTagName('name')[0]?.textContent || 'Ruta GPX';
                         const trkpts = t.getElementsByTagName('trkpt');
                         const latlngs = [];
                         Array.from(trkpts).forEach(pt => { latlngs.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]); });
-                        if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline');
+                        if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName);
                     });
 
-                    // Importar Routes GPX
                     const rtes = xmlDoc.getElementsByTagName('rte');
                     Array.from(rtes).forEach(t => {
                         const name = t.getElementsByTagName('name')[0]?.textContent || 'Ruta GPX';
                         const rtepts = t.getElementsByTagName('rtept');
                         const latlngs = [];
                         Array.from(rtepts).forEach(pt => { latlngs.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]); });
-                        if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline');
+                        if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName);
                     });
                 }
                 
@@ -2799,9 +2800,9 @@
         event.target.value = '';
     }
 
-    function addImportedLayer(layer, name, type) {
+    function addImportedLayer(layer, name, type, folderName) {
         const id = L.stamp(layer);
-        layer.feature = { type: 'Feature', properties: { layerName: name, faction: 'General' } };
+        layer.feature = { type: 'Feature', properties: { layerName: name, faction: folderName || projectName } };
         layer.isHidden = false;
         
         let baseText = 'Importado';
@@ -2931,7 +2932,7 @@
         
         newMarker.feature = { type: 'Feature', properties: {} };
         newMarker.feature.properties.layerName = name;
-        newMarker.feature.properties.faction = 'General';
+        newMarker.feature.properties.faction = projectName;
         newMarker.isHidden = false;
         newMarker.feature.properties.color = color;
         newMarker.feature.properties.iconType = 'punto';
@@ -3114,7 +3115,7 @@
     dragElement(document.getElementById("liveCoords"));
 
     // --- GESTIÓN MODO MÓVIL / ESCRITORIO ---
-    let isMobileMode = window.innerWidth <= 768; // Autodetecta si la pantalla es de móvil al iniciar
+    let isMobileMode = window.innerWidth <= 768; 
 
     function initMobileMode() {
         const btn = document.getElementById('modeToggleBtn');
@@ -3134,7 +3135,7 @@
         initMobileMode();
     }
     
-    initMobileMode(); // Inicializar al cargar el mapa
+    initMobileMode(); 
 
 </script>
 </body>
