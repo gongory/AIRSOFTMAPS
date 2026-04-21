@@ -186,6 +186,40 @@
         .legend-title { font-weight: 800; color: var(--ign-blue); margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; font-size: 13px; }
         .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-weight: 600; color: #475569;}
         .legend-color-box { width: 14px; height: 14px; border-radius: 3px; border: 2px solid #333;}
+        
+        /* --- MODO MÓVIL (Bottom Sheet UI) --- */
+        body.mobile-mode .sidebar {
+            top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
+            width: 100% !important; max-width: 100% !important;
+            height: 85vh !important; max-height: 85vh !important;
+            border-radius: 24px 24px 0 0 !important;
+            border-bottom: none !important; border-left: none !important; border-right: none !important;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        body.mobile-mode .sidebar.oculto { transform: translateY(120%) !important; }
+        body.mobile-mode .sidebar:not(.oculto) { transform: translateY(0) !important; }
+        
+        body.mobile-mode .fab-menu {
+            top: auto !important; bottom: 30px !important; right: 20px !important;
+            width: 60px !important; height: 60px !important; font-size: 28px !important;
+            border-radius: 50% !important;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4) !important;
+        }
+        
+        body.mobile-mode .leaflet-control-zoom { display: none !important; }
+        
+        body.mobile-mode .coord-display {
+            bottom: 30px !important; left: 10px !important;
+            font-size: 10px !important; padding: 6px 12px !important;
+            min-width: auto !important; max-width: calc(100vw - 100px) !important;
+        }
+        
+        body.mobile-mode #drawing-actions {
+            top: auto !important; bottom: 120px !important;
+            width: 90% !important;
+            flex-direction: column !important;
+        }
+        body.mobile-mode #drawing-actions button { width: 100% !important; }
     </style>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -421,7 +455,10 @@
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
         <span id="app-title" style="font-weight: 600; font-size: 16px;">AirsoftMaps</span>
-        <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="toggleMenu()">✕</button>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button id="modeToggleBtn" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; font-size: 18px; border-radius: 50%; width: 32px; height: 32px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="toggleMobileMode()" title="Cambiar a modo móvil">📱</button>
+            <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="toggleMenu()">✕</button>
+        </div>
     </div>
     <div class="content">
         
@@ -456,6 +493,7 @@
         <div style="display:flex; gap:5px; margin-bottom:12px;">
             <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas..." onkeypress="if(event.key==='Enter') buscarLugar()">
             <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="buscarLugar()">Ir</button>
+            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 12px; font-size:16px;" onclick="toggleLocation()" title="Mi Ubicación">🎯</button>
         </div>
  
         <div class="section-title">🗺️ Información MTN</div>
@@ -637,6 +675,7 @@
     let scaleControlObj = null;
     let isLegendVisible = false;
     let isZoomLocked = false;
+    let userLocMarker = null, userLocCircle = null, locWatchId = null, isLocating = false;
 
     const tacticalIcons = { 
         'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁',
@@ -2126,6 +2165,50 @@
         }
     }
  
+    function toggleLocation() {
+        const searchInput = document.getElementById('searchInput');
+        if (!navigator.geolocation) {
+            const oldPlaceholder = searchInput.placeholder;
+            searchInput.placeholder = "GPS no soportado";
+            setTimeout(() => searchInput.placeholder = oldPlaceholder, 3000);
+            return;
+        }
+
+        if (isLocating) {
+            navigator.geolocation.clearWatch(locWatchId);
+            if (userLocMarker) map.removeLayer(userLocMarker);
+            if (userLocCircle) map.removeLayer(userLocCircle);
+            isLocating = false;
+        } else {
+            locWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const acc = pos.coords.accuracy;
+                    
+                    if (!userLocMarker) {
+                        userLocMarker = L.circleMarker([lat, lng], { radius: 6, color: '#fff', weight: 2, fillColor: '#0d6efd', fillOpacity: 1 }).addTo(map);
+                        userLocCircle = L.circle([lat, lng], { radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15 }).addTo(map);
+                        map.setView([lat, lng], 16);
+                    } else {
+                        userLocMarker.setLatLng([lat, lng]);
+                        userLocCircle.setLatLng([lat, lng]);
+                        userLocCircle.setRadius(acc);
+                    }
+                    isLocating = true;
+                },
+                (err) => {
+                    console.error(err);
+                    const oldPlaceholder = searchInput.placeholder;
+                    searchInput.placeholder = "Error GPS. Revisa permisos.";
+                    setTimeout(() => searchInput.placeholder = oldPlaceholder, 3000);
+                    isLocating = false;
+                },
+                { enableHighAccuracy: true, maximumAge: 0 }
+            );
+        }
+    }
+
     function toggleMtnGrid() {
         isMtnGridVisible = !isMtnGridVisible;
         const btn = document.getElementById('mtnGridBtn');
@@ -2902,6 +2985,29 @@
     dragElement(document.getElementById("compass-rose"));
     dragElement(document.getElementById("numeric-scale-widget"));
     dragElement(document.getElementById("liveCoords"));
+
+    // --- GESTIÓN MODO MÓVIL / ESCRITORIO ---
+    let isMobileMode = window.innerWidth <= 768; // Autodetecta si la pantalla es de móvil al iniciar
+
+    function initMobileMode() {
+        const btn = document.getElementById('modeToggleBtn');
+        if (isMobileMode) {
+            document.body.classList.add('mobile-mode');
+            btn.innerText = '💻';
+            btn.title = 'Cambiar a modo escritorio';
+        } else {
+            document.body.classList.remove('mobile-mode');
+            btn.innerText = '📱';
+            btn.title = 'Cambiar a modo móvil';
+        }
+    }
+
+    function toggleMobileMode() {
+        isMobileMode = !isMobileMode;
+        initMobileMode();
+    }
+    
+    initMobileMode(); // Inicializar al cargar el mapa
 
 </script>
 </body>
