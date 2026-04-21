@@ -6,8 +6,8 @@
     <title>AirsoftMaps - Edición y Personalización</title>
  
     <!-- Iconos para la pestaña del navegador y acceso directo en móviles/PC -->
-    <link rel="icon" type="image/jpeg" href="images.jpg">
-    <link rel="apple-touch-icon" href="images.jpg">
+    <link rel="icon" type="image/jpeg" href="images_2.jpg">
+    <link rel="apple-touch-icon" href="images_2.jpg">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -49,7 +49,7 @@
             background: var(--ign-blue); color: white; padding: 16px; border-radius: 12px 12px 0 0;
             display: flex; align-items: center; justify-content: space-between;
         }
-        .content { padding: 16px; overflow-y: auto; flex: 1; }
+        .content { padding: 16px; overflow-y: auto; flex: 1; scroll-behavior: smooth; }
  
         .section-title {
             font-size: 11px; font-weight: 800; color: #64748b;
@@ -326,6 +326,7 @@
                     <option value="encuentro">🤝 Punto de Encuentro</option>
                     <option value="obstaculo">🧱 Obstáculo / Muro</option>
                     <option value="agua">💧 Punto de Agua</option>
+                    <option value="images_2">📡 Radar personalizado</option>
                 </select>
 
                 <label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
@@ -685,7 +686,7 @@
     const tacticalNames = {
         'punto': 'Punto', 'base': 'Base / Camp.', 'objetivo': 'Objetivo', 'bandera': 'Respawn', 
         'combate': 'Combate', 'defensa': 'Defensa', 'vehiculo': 'Extracción', 'medico': 'Hospital', 
-        'radio': 'Comunicaciones', 'hq': 'HQ / Mando', 'sumuministros': 'Suministros', 'sniper': 'Observación', 'peligro': 'Peligro', 
+        'radio': 'Comunicaciones', 'hq': 'HQ / Mando', 'suministros': 'Suministros', 'sniper': 'Observación', 'peligro': 'Peligro', 
         'encuentro': 'Encuentro', 'obstaculo': 'Obstáculo', 'agua': 'Agua'
     };
 
@@ -968,8 +969,8 @@
         let html = '';
         uniqueTypes.forEach(info => {
             if (info.category === 'marker') {
-                const icon = tacticalIcons[info.type] || '📍';
-                const name = tacticalNames[info.type] || 'Punto';
+                const icon = info.type === 'images_2' ? `<img src="images_2.jpg" style="width: 14px; height: 14px; border-radius: 50%;">` : (tacticalIcons[info.type] || '📍');
+                const name = info.type === 'images_2' ? 'Radar' : (tacticalNames[info.type] || 'Punto');
                 html += `<div class="legend-item">
                     <div style="background-color: ${info.color}; width: 20px; height: 20px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:12px; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.4);">${info.type==='punto'?'':icon}</div>
                     <span>${name}</span>
@@ -1304,6 +1305,13 @@
     };
 
     function getMarkerIconObj(color, type) {
+        if (type === 'images_2') {
+            return L.divIcon({
+                className: 'custom-colored-marker',
+                html: `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; overflow: hidden;"><img src="images_2.jpg" style="width: 100%; height: 100%; object-fit: cover;"></div>`,
+                iconSize: [32, 32], iconAnchor: [16, 16]
+            });
+        }
         if (!type || type === 'punto') {
             return L.divIcon({
                 className: 'custom-colored-marker',
@@ -2904,6 +2912,7 @@
         if (container.style.display === 'none') {
             container.style.display = 'block';
             icon.innerText = '▲';
+            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
         } else {
             container.style.display = 'none';
             icon.innerText = '▼';
@@ -2916,6 +2925,7 @@
         if (container.style.display === 'none') {
             container.style.display = 'block';
             icon.innerText = '▲';
+            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
         } else {
             container.style.display = 'none';
             icon.innerText = '▼';
@@ -2928,6 +2938,7 @@
         if (container.style.display === 'none') {
             container.style.display = 'block';
             icon.innerText = '▲';
+            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
         } else {
             container.style.display = 'none';
             icon.innerText = '▼';
@@ -2940,6 +2951,7 @@
         if (container.style.display === 'none') {
             container.style.display = 'block';
             icon.innerText = '▲';
+            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
         } else {
             container.style.display = 'none';
             icon.innerText = '▼';
