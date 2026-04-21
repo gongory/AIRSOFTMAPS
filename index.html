@@ -1666,33 +1666,29 @@
                             font-family: 'Segoe UI', sans-serif !important; 
                             overflow-x: hidden !important;
                         }
+                        
+                        /* --- NUEVO MENÚ DE IMPRESIÓN ADAPTATIVO --- */
                         .no-print {
-                            position: relative !important; 
-                            width: 100% !important; 
-                            background: white !important; 
-                            padding: 15px !important; 
-                            box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important; 
-                            display: flex !important; 
-                            justify-content: center !important;
-                            align-items: center !important; 
-                            gap: 20px !important;
-                            z-index: 1000 !important; 
-                            border-bottom: 3px solid #003366 !important;
+                            position: sticky !important; top: 0 !important;
+                            width: 100% !important; background: #f8fafc !important; 
+                            padding: 12px !important; box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important; 
+                            z-index: 1000 !important; border-bottom: 3px solid #003366 !important;
+                            display: flex !important; flex-direction: column !important; gap: 10px !important;
                             box-sizing: border-box !important;
-                            flex-wrap: wrap !important;
                         }
-                        select, button {
-                            padding: 8px 12px !important;
-                            border-radius: 6px !important;
-                            font-size: 14px !important;
-                            font-weight: bold !important;
-                        }
-                        select { border: 2px solid #cbd5e0 !important; cursor: pointer !important; }
-                        button { 
-                            background: #003366 !important; color: white !important; border: none !important; cursor: pointer !important; 
-                            box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
-                        }
-                        button:hover { background: #002244 !important; }
+                        .toolbar-row { display: flex !important; justify-content: center !important; align-items: center !important; gap: 10px !important; width: 100% !important; flex-wrap: wrap !important; }
+                        .toolbar-row label { font-size: 14px !important; font-weight: bold !important; color: #003366 !important; }
+                        .toolbar-row select { padding: 8px !important; border-radius: 6px !important; border: 2px solid #cbd5e0 !important; font-weight:bold !important; cursor: pointer !important; }
+                        .check-btn { background: #e2e8f0 !important; padding: 8px 12px !important; border-radius: 6px !important; border: 1px solid #cbd5e0 !important; cursor: pointer !important; display: flex !important; align-items: center !important; gap: 5px !important; font-size: 13px !important; font-weight: bold !important; color: #003366 !important;}
+                        .toolbar-row input[type="range"] { flex: 1 !important; min-width: 100px !important; max-width: 250px !important; }
+                        
+                        .buttons { display: flex !important; gap: 8px !important; width: 100% !important; justify-content: center !important; }
+                        .buttons button { padding: 10px !important; border-radius: 6px !important; font-weight: bold !important; font-size: 14px !important; color: white !important; border: none !important; cursor: pointer !important; flex: 1 !important; max-width: 180px !important; box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important; }
+                        .btn-print { background: #003366 !important; }
+                        .btn-print:hover { background: #002244 !important; }
+                        .btn-down { background: #10b981 !important; }
+                        .btn-close { background: #dc3545 !important; }
+                        .hint { font-size: 12px !important; color: #64748b !important; text-align: center !important; margin-top: 5px !important;}
                         
                         .workspace {
                             margin-top: 20px !important; 
@@ -1717,7 +1713,8 @@
                             cursor: grab !important;
                             box-sizing: border-box !important;
                             touch-action: none !important; 
-                            background: transparent !important;
+                            background: rgba(255,255,255,0.01) !important;
+                            z-index: 10 !important;
                         }
                         #mapBox:active { cursor: grabbing !important; }
                         #mapBox img {
@@ -1725,7 +1722,7 @@
                             height: auto !important; 
                             display: block !important; 
                             -webkit-user-drag: none !important; 
-                            user-select: none !important;
+                            pointer-events: none !important;
                         }
 
                         .resize-handle {
@@ -1734,8 +1731,9 @@
                             background: #e6b800 !important;
                             border: 2px solid #003366 !important;
                             border-radius: 50% !important; 
-                            z-index: 10 !important;
+                            z-index: 20 !important;
                             touch-action: none !important;
+                            pointer-events: auto !important;
                         }
                         .nw { top: -15px !important; left: -15px !important; cursor: nw-resize !important; }
                         .ne { top: -15px !important; right: -15px !important; cursor: ne-resize !important; }
@@ -1777,6 +1775,25 @@
                             text-align: center !important; line-height: 1.2 !important; padding: 4px 5px 12px 5px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important; text-shadow: none !important; box-sizing: border-box !important; min-width: 80px !important;
                         }
 
+                        /* --- AJUSTES ESPECÍFICOS PARA MÓVILES --- */
+                        @media (max-width: 768px) {
+                            .no-print { padding: 10px !important; gap: 8px !important; }
+                            .toolbar-row { gap: 6px !important; }
+                            .toolbar-row label, .toolbar-row select, .check-btn { font-size: 12px !important; padding: 6px 8px !important; }
+                            .buttons button { font-size: 12px !important; padding: 8px 4px !important; }
+                            
+                            /* Tiradores más grandes y fáciles de tocar en móvil */
+                            .resize-handle { width: 44px !important; height: 44px !important; }
+                            .nw { top: -22px !important; left: -22px !important; }
+                            .ne { top: -22px !important; right: -22px !important; }
+                            .sw { bottom: -22px !important; left: -22px !important; }
+                            .se { bottom: -22px !important; right: -22px !important; }
+                            .n { top: -22px !important; }
+                            .s { bottom: -22px !important; }
+                            .e { right: -22px !important; }
+                            .w { left: -22px !important; }
+                        }
+
                         @media print {
                             body { background: white !important; margin: 0 !important; padding: 0 !important; }
                             .no-print { display: none !important; }
@@ -1797,20 +1814,29 @@
                 </head>
                 <body>
                     <div class="no-print">
-                        <label style="color: #003366; font-weight: 800;">📄 Formato:</label>
-                        <select id="formatSelect">
-                            <option value="A4-L">A4 (Horizontal)</option>
-                            <option value="A4-P">A4 (Vertical)</option>
-                            <option value="A3-L">A3 (Horizontal)</option>
-                            <option value="A3-P">A3 (Vertical)</option>
-                        </select>
-                        <label style="display:flex; align-items:center; gap:5px; font-size:13px; font-weight:bold; cursor:pointer; color: #003366; background: #e2e8f0; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e0;">
-                            <input type="checkbox" id="fitScreenCheck" checked> 🔍 Ver toda la hoja
-                        </label>
-                        <button onclick="window.print()">🖨️ Imprimir Mapa</button>
-                        <button onclick="downloadMap(event)" style="background-color: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 5px;">⬇️ Descargar Imagen</button>
-                        <button onclick="window.close()" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 5px;">❌ Salir</button>
-                        <span style="font-size: 12px; color: #64748b; width: 100%; text-align: center;">* Arrastra los elementos y recorta el mapa desde los puntos dorados.</span>
+                        <div class="toolbar-row">
+                            <label>📄 Papel:</label>
+                            <select id="formatSelect">
+                                <option value="A4-L">A4 (Horizontal)</option>
+                                <option value="A4-P">A4 (Vertical)</option>
+                                <option value="A3-L">A3 (Horizontal)</option>
+                                <option value="A3-P">A3 (Vertical)</option>
+                            </select>
+                            <label class="check-btn">
+                                <input type="checkbox" id="fitScreenCheck" checked> 🔍 Auto-Ajuste
+                            </label>
+                        </div>
+                        <div class="toolbar-row" id="zoomControlRow">
+                            <label>🔍 Zoom de Trabajo:</label>
+                            <input type="range" id="manualZoomSlider" min="0.2" max="2.5" step="0.05" value="1">
+                            <span id="zoomVal" style="font-weight:bold; color:#003366; width:45px; text-align:right;">Auto</span>
+                        </div>
+                        <div class="buttons">
+                            <button onclick="window.print()" class="btn-print">🖨️ Imprimir</button>
+                            <button onclick="downloadMap(event)" class="btn-down">⬇️ Descargar</button>
+                            <button onclick="window.close()" class="btn-close">❌ Salir</button>
+                        </div>
+                        <span class="hint">* Arrastra el mapa y los elementos. Tira de los puntos dorados para recortar.</span>
                     </div>
                     
                     <div class="workspace">
@@ -1834,6 +1860,8 @@
                         const paper = document.getElementById('paper');
                         const formatSelect = document.getElementById('formatSelect');
                         const fitScreenCheck = document.getElementById('fitScreenCheck');
+                        const manualZoomSlider = document.getElementById('manualZoomSlider');
+                        const zoomVal = document.getElementById('zoomVal');
 
                         async function downloadMap(event) {
                             const btn = event.currentTarget;
@@ -1855,14 +1883,12 @@
                             const originalMapBoxCss = mapBox.style.cssText;
                             const handles = document.querySelectorAll('.resize-handle');
 
-                            // PREPARAR PARA FOTO LIMPIA
+                            // PREPARAR PARA FOTO LIMPIA Y A TAMAÑO REAL
                             paper.style.transform = 'scale(1)';
-                            paper.style.setProperty('box-shadow', 'none', 'important'); // Quitar sombra de la hoja
-                            mapBox.style.setProperty('border', 'none', 'important'); // Quitar linea discontinua con !important
-                            handles.forEach(h => h.style.display = 'none'); // Quitar puntos dorados
+                            paper.style.setProperty('box-shadow', 'none', 'important');
+                            mapBox.style.setProperty('border', 'none', 'important');
+                            handles.forEach(h => h.style.display = 'none');
 
-                            // FORZAR ACTUALIZACIÓN DEL NAVEGADOR
-                            // Esto arregla el bug de la imagen "salida" y el fondo gris dándole tiempo a la hoja para tomar su tamaño real
                             await new Promise(resolve => setTimeout(resolve, 150));
 
                             try {
@@ -1871,7 +1897,6 @@
                                     allowTaint: true,
                                     scale: 1, 
                                     backgroundColor: "#ffffff",
-                                    // Asegurar dimensiones exactas sin importar que el mapa sobresalga internamente
                                     width: paper.offsetWidth,
                                     height: paper.offsetHeight
                                 });
@@ -1891,7 +1916,6 @@
                                 btn.disabled = false;
                             } catch (error) {
                                 console.error("Error al crear la imagen:", error);
-                                // RESTAURAR EN CASO DE ERROR TAMBIÉN
                                 paper.style.transform = originalTransform;
                                 paper.style.boxShadow = originalShadow;
                                 mapBox.style.cssText = originalMapBoxCss;
@@ -1920,9 +1944,9 @@
                             paper.style.width = paperW + 'px';
                             paper.style.height = paperH + 'px';
                             
-                            const availableWidth = window.innerWidth - 40; 
+                            const availableWidth = window.innerWidth - 20; 
                             const noPrintHeight = document.querySelector('.no-print').offsetHeight;
-                            const availableHeight = window.innerHeight - noPrintHeight - 40;
+                            const availableHeight = window.innerHeight - noPrintHeight - 20;
                             
                             let scale = 1;
                             
@@ -1930,13 +1954,15 @@
                                 const scaleW = availableWidth / paperW;
                                 const scaleH = availableHeight / paperH;
                                 scale = Math.min(scaleW, scaleH);
+                                manualZoomSlider.value = scale;
+                                zoomVal.innerText = 'Auto';
                             } else {
-                                scale = availableWidth / paperW;
-                                if (scale > 1) scale = 1;
+                                scale = parseFloat(manualZoomSlider.value);
+                                zoomVal.innerText = Math.round(scale * 100) + '%';
                             }
                             
                             window.currentVisualScale = scale;
-                            paper.style.transform = \`scale(\${scale})\`;
+                            paper.style.transform = 'scale(' + scale + ')';
                             paper.style.transformOrigin = 'top center';
                             document.querySelector('.workspace').style.height = (paperH * scale + 40) + 'px';
                             
@@ -1946,7 +1972,7 @@
                                 style.id = 'printPageStyle';
                                 document.head.appendChild(style);
                             }
-                            style.innerHTML = \`@page { size: \${f.print}; margin: 0; }\`;
+                            style.innerHTML = '@page { size: ' + f.print + '; margin: 0; }';
                             
                             if (!window.mapInitialized) {
                                 mapBox.style.width = (paperW * 0.8) + 'px';
@@ -1955,10 +1981,19 @@
                         }
 
                         formatSelect.addEventListener('change', updateLayout);
-                        fitScreenCheck.addEventListener('change', updateLayout);
+                        
+                        fitScreenCheck.addEventListener('change', () => {
+                            if(fitScreenCheck.checked) updateLayout();
+                        });
+
+                        manualZoomSlider.addEventListener('input', () => {
+                            fitScreenCheck.checked = false;
+                            updateLayout();
+                        });
+
                         window.addEventListener('resize', updateLayout);
                         
-                        // SOLUCIÓN BUG HOJA EN BLANCO: Desactiva temporalmente el transform justo al imprimir
+                        // SOLUCIÓN BUG HOJA EN BLANCO Y RESPONSIVE
                         window.addEventListener('beforeprint', () => {
                             paper.style.transform = 'none';
                         });
@@ -1969,13 +2004,14 @@
                         updateLayout(); 
 
                         let isDragging = false, isResizing = false;
-                        let startX, startY, startLeft, startTop, startWidth;
+                        let startX, startY, startLeft, startTop, startWidth, startHeight;
                         let activeHandle = null;
                         
                         let activeExtra = null;
                         let extraStartX, extraStartY, extraStartLeft, extraStartTop;
                         
                         let ratio = 1;
+                        const mapImg = document.getElementById('mapImg');
                         mapImg.onload = () => { ratio = mapImg.naturalHeight / mapImg.naturalWidth; };
 
                         function getCoords(e) {
@@ -2025,6 +2061,7 @@
                                 startX = coords.x;
                                 startY = coords.y;
                                 startWidth = mapBox.offsetWidth;
+                                startHeight = mapBox.offsetHeight;
                                 startLeft = mapBox.offsetLeft;
                                 startTop = mapBox.offsetTop;
                                 
