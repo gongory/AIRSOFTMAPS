@@ -209,7 +209,7 @@
         body.mobile-mode .leaflet-control-zoom { display: none !important; }
         
         body.mobile-mode .coord-display {
-            bottom: 30px !important; left: 10px !important;
+            bottom: 30px; left: 10px;
             font-size: 10px !important; padding: 6px 12px !important;
             min-width: auto !important; max-width: calc(100vw - 100px) !important;
         }
@@ -2460,6 +2460,25 @@
         return { x, y, huso, banda: letters[index] };
     }
  
+    function utmToLatLon(zone, x, y, isSouth) {
+        const a = 6378137.0, f = 1 / 298.257223563, k0 = 0.9996;
+        const e2 = 2 * f - f * f, ep2 = e2 / (1 - e2);
+        if (isSouth) y -= 10000000.0;
+        const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+        const M = y / k0;
+        const mu = M / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * Math.pow(e2, 3) / 256));
+        const phi1 = mu + (3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32) * Math.sin(2 * mu) + (21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32) * Math.sin(4 * mu) + (151 * Math.pow(e1, 3) / 96) * Math.sin(6 * mu);
+        const N1 = a / Math.sqrt(1 - e2 * Math.sin(phi1) * Math.sin(phi1));
+        const T1 = Math.tan(phi1) * Math.tan(phi1);
+        const C1 = ep2 * Math.cos(phi1) * Math.cos(phi1);
+        const R1 = a * (1 - e2) / Math.pow(1 - e2 * Math.sin(phi1) * Math.sin(phi1), 1.5);
+        const D = (x - 500000.0) / (N1 * k0);
+        const latRad = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * Math.pow(D, 4) / 24 + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * Math.pow(D, 6) / 720);
+        const lonRad = (D - (1 + 2 * T1 + C1) * Math.pow(D, 3) / 6 + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * Math.pow(D, 5) / 120) / Math.cos(phi1);
+        const lon0 = (zone - 1) * 6 - 180 + 3;
+        return { lat: latRad * 180 / Math.PI, lon: (lonRad * 180 / Math.PI) + lon0 };
+    }
+
     function formatDMS(deg, isLat) {
         const abs = Math.abs(deg);
         const d = Math.floor(abs), m = Math.floor((abs - d) * 60), s = ((abs - d - m/60) * 3600).toFixed(1);
