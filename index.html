@@ -486,6 +486,13 @@
             <button class="btn-outline" style="border-color: var(--success); color: var(--success); margin-bottom: 0;" onclick="openManual()">📖 Manual de Usuario</button>
         </div>
 
+        <div class="section-title" style="margin-top: 0;">🔍 Buscador</div>
+        <div style="display:flex; gap:5px; margin-bottom:12px;">
+            <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas..." onkeypress="if(event.key==='Enter') buscarLugar()">
+            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="buscarLugar()">Ir</button>
+            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 12px; font-size:16px;" onclick="toggleLocation()" title="Mi Ubicación">🎯</button>
+        </div>
+
         <button class="btn-outline" id="toggleProjectBtn" onclick="toggleProjectGroup()" style="margin-bottom: 15px; justify-content: space-between;">
             <span id="toggleProjectText">📁 Gestión de Proyecto</span>
             <span id="toggleProjectIcon">▼</span>
@@ -514,18 +521,9 @@
                 <p style="font-size: 10px; color: #64748b; margin: 8px 0 0 0; text-align: center;">Formatos compatibles: Google Earth (.kml) y Garmin (.gpx)<br><i>(Extrae puntos, rutas y áreas estándar)</i></p>
             </div>
         </div>
-        
-        <div class="section-title" style="margin-top: 0;">🔍 Buscador</div>
-        <div style="display:flex; gap:5px; margin-bottom:12px;">
-            <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas..." onkeypress="if(event.key==='Enter') buscarLugar()">
-            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="buscarLugar()">Ir</button>
-            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 12px; font-size:16px;" onclick="toggleLocation()" title="Mi Ubicación">🎯</button>
-        </div>
  
-        <div class="section-title">🗺️ Información MTN</div>
-        
-        <button class="btn-outline" id="toggleMtnBtn" onclick="toggleMtnGroup()" style="margin-bottom: 10px; justify-content: space-between;">
-            <span id="toggleMtnText">🗺️ Mostrar Info MTN</span>
+        <button class="btn-outline" id="toggleMtnBtn" onclick="toggleMtnGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+            <span id="toggleMtnText">🗺️ Información MTN</span>
             <span id="toggleMtnIcon">▼</span>
         </button>
 
@@ -536,10 +534,8 @@
             <button id="mtnGridBtn" class="btn-outline" style="margin-bottom: 0;" onclick="toggleMtnGrid()">Ver Cuadrículas MTN</button>
         </div>
  
-        <div class="section-title">🌍 Mezclador de Mapas</div>
-        
-        <button class="btn-outline" id="toggleMapMixerBtn" onclick="toggleMapMixerGroup()" style="margin-bottom: 10px; justify-content: space-between;">
-            <span id="toggleMapMixerText">🗺️ Mostrar Mezclador</span>
+        <button class="btn-outline" id="toggleMapMixerBtn" onclick="toggleMapMixerGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+            <span id="toggleMapMixerText">🌍 Mezclador de Mapas</span>
             <span id="toggleMapMixerIcon">▼</span>
         </button>
 
@@ -565,10 +561,8 @@
             <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4" style="width:100%; margin-bottom: 0;" oninput="changeLayer()">
         </div>
  
-        <div class="section-title">📍 Sistema y Cuadrícula</div>
-        
-        <button class="btn-outline" id="toggleGridMenuBtn" onclick="toggleGridGroup()" style="margin-bottom: 10px; justify-content: space-between;">
-            <span id="toggleGridMenuText">📐 Mostrar Sistema</span>
+        <button class="btn-outline" id="toggleGridMenuBtn" onclick="toggleGridGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+            <span id="toggleGridMenuText">📍 Sistema y Cuadrícula</span>
             <span id="toggleGridMenuIcon">▼</span>
         </button>
 
@@ -627,10 +621,8 @@
             </div>
         </div>
  
-        <div class="section-title">✏️ Edición de Mapa</div>
-        
-        <button class="btn-outline" id="toggleEditBtn" onclick="toggleEditGroup()" style="margin-bottom: 10px; justify-content: space-between;">
-            <span id="toggleEditText">🛠️ Mostrar Herramientas</span>
+        <button class="btn-outline" id="toggleEditBtn" onclick="toggleEditGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+            <span id="toggleEditText">✏️ Edición de Mapa</span>
             <span id="toggleEditIcon">▼</span>
         </button>
         
@@ -679,17 +671,12 @@
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polygon')">🔲 Área</button>
                 <button class="btn-outline" style="margin-bottom: 0;" id="btn-compass" onclick="toggleCompass()">🧭 Rosa Vientos</button>
-                <button class="btn-outline" id="toggleLegendBtn" style="margin-bottom: 0; border-style: dashed;" onclick="toggleMapLegend()">📋 Leyenda</button>
-                <button class="btn-outline" style="margin-bottom: 0;" onclick="captureMap()">📸 Capturar</button>
+                <button class="btn-outline" id="toggleLegendBtn" style="margin-bottom: 0; border-style: dashed; grid-column: span 2;" onclick="toggleMapLegend()">📋 Leyenda</button>
             </div>
         </div>
-
-        <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
         
-        <div class="section-title">🗂️ Gestor de Capas</div>
-        
-        <button class="btn-outline" id="toggleLayerManagerBtn" onclick="toggleLayerManagerGroup()" style="margin-bottom: 10px; justify-content: space-between;">
-            <span id="toggleLayerManagerText">🗂️ Mostrar Gestor de Capas</span>
+        <button class="btn-outline" id="toggleLayerManagerBtn" onclick="toggleLayerManagerGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+            <span id="toggleLayerManagerText">🗂️ Gestor de Capas</span>
             <span id="toggleLayerManagerIcon">▼</span>
         </button>
 
@@ -698,9 +685,18 @@
                 <div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">No hay elementos dibujados</div>
             </div>
         </div>
+        
+        <button class="btn-outline" id="toggleGalleryBtn" onclick="toggleGalleryGroup()" style="margin-bottom: 10px; justify-content: space-between;">
+            <span id="toggleGalleryText">📸 Galería de Capturas</span>
+            <span id="toggleGalleryIcon">▼</span>
+        </button>
 
-        <div class="section-title" style="margin-top:0;">📸 Galería de Capturas</div>
-        <div id="gallery"></div>
+        <div id="gallery-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
+            <button class="btn-outline" style="margin-bottom: 10px; font-size: 14px; border-width: 2px;" onclick="captureMap()">📸 Tomar Nueva Captura</button>
+            <div id="gallery"></div>
+        </div>
+        
+        <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0;" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
     </div>
 </div>
  
@@ -3136,6 +3132,19 @@
     function toggleLayerManagerGroup() {
         const container = document.getElementById('layer-manager-container');
         const icon = document.getElementById('toggleLayerManagerIcon');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            icon.innerText = '▲';
+            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+        } else {
+            container.style.display = 'none';
+            icon.innerText = '▼';
+        }
+    }
+
+    function toggleGalleryGroup() {
+        const container = document.getElementById('gallery-container');
+        const icon = document.getElementById('toggleGalleryIcon');
         if (container.style.display === 'none') {
             container.style.display = 'block';
             icon.innerText = '▲';
