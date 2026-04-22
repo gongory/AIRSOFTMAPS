@@ -1,4 +1,4 @@
-.<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -483,30 +483,36 @@
     <div class="content">
         
         <div style="display:flex; gap:8px; margin-bottom: 10px;">
-            <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0; padding: 10px 5px;" onclick="nuevoProyecto()">📄 Nuevo</button>
-            <button class="btn-outline" style="margin-bottom: 0; padding: 10px 5px;" onclick="renombrarProyecto()">✏️ Renombrar</button>
-            <button class="btn-outline" style="border-color: var(--success); color: var(--success); margin-bottom: 0; padding: 10px 5px;" onclick="openManual()">📖 Manual</button>
-        </div>
-        
-        <div style="display:flex; gap:8px; margin-bottom: 10px;">
-            <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar (JSON)</button>
-            <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar (JSON)</button>
-            <input type="file" id="file-loader" style="display:none;" accept=".json" onchange="cargarProyecto(event)">
+            <button class="btn-outline" style="border-color: var(--success); color: var(--success); margin-bottom: 0;" onclick="openManual()">📖 Manual de Usuario</button>
         </div>
 
-        <button class="btn-outline" id="toggleTransferBtn" onclick="toggleTransferGroup()" style="margin-bottom: 15px; justify-content: space-between;">
-            <span id="toggleTransferText">🔄 Importar / Exportar (KML/GPX)</span>
-            <span id="toggleTransferIcon">▼</span>
+        <button class="btn-outline" id="toggleProjectBtn" onclick="toggleProjectGroup()" style="margin-bottom: 15px; justify-content: space-between;">
+            <span id="toggleProjectText">📁 Gestión de Proyecto</span>
+            <span id="toggleProjectIcon">▼</span>
         </button>
 
-        <div id="transfer-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportKML()">⬇️ Exportar KML</button>
-                <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportGPX()">⬇️ Exportar GPX</button>
+        <div id="project-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
+            <div style="display:flex; gap:8px; margin-bottom: 10px;">
+                <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0; padding: 10px 5px;" onclick="nuevoProyecto()">📄 Nuevo</button>
+                <button class="btn-outline" style="margin-bottom: 0; padding: 10px 5px;" onclick="renombrarProyecto()">✏️ Renombrar</button>
             </div>
-            <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="document.getElementById('kml-gpx-loader').click()">⬆️ Importar Archivo</button>
-            <input type="file" id="kml-gpx-loader" style="display:none;" accept=".kml,.gpx" onchange="importKMLGPX(event)">
-            <p style="font-size: 10px; color: #64748b; margin: 8px 0 0 0; text-align: center;">Formatos compatibles: Google Earth (.kml) y Garmin (.gpx)<br><i>(Extrae puntos, rutas y áreas estándar)</i></p>
+            
+            <div style="display:flex; gap:8px; margin-bottom: 10px;">
+                <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar (JSON)</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar (JSON)</button>
+                <input type="file" id="file-loader" style="display:none;" accept=".json" onchange="cargarProyecto(event)">
+            </div>
+
+            <div style="border-top: 1px dashed #cbd5e0; margin-top: 15px; padding-top: 10px;">
+                <label style="font-size: 11px; font-weight: bold; color: #475569; display: block; margin-bottom: 8px;">Importar / Exportar (KML/GPX)</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportKML()">⬇️ Exportar KML</button>
+                    <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportGPX()">⬇️ Exportar GPX</button>
+                </div>
+                <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="document.getElementById('kml-gpx-loader').click()">⬆️ Importar Archivo</button>
+                <input type="file" id="kml-gpx-loader" style="display:none;" accept=".kml,.gpx" onchange="importKMLGPX(event)">
+                <p style="font-size: 10px; color: #64748b; margin: 8px 0 0 0; text-align: center;">Formatos compatibles: Google Earth (.kml) y Garmin (.gpx)<br><i>(Extrae puntos, rutas y áreas estándar)</i></p>
+            </div>
         </div>
         
         <div class="section-title" style="margin-top: 0;">🔍 Buscador</div>
@@ -517,10 +523,18 @@
         </div>
  
         <div class="section-title">🗺️ Información MTN</div>
-        <div id="mtnInfo" class="mtn-card">
-            <div class="mtn-title">Identificando hoja...</div>
+        
+        <button class="btn-outline" id="toggleMtnBtn" onclick="toggleMtnGroup()" style="margin-bottom: 10px; justify-content: space-between;">
+            <span id="toggleMtnText">🗺️ Mostrar Info MTN</span>
+            <span id="toggleMtnIcon">▼</span>
+        </button>
+
+        <div id="mtn-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
+            <div id="mtnInfo" class="mtn-card" style="margin-bottom: 10px; margin-top: 0;">
+                <div class="mtn-title">Identificando hoja...</div>
+            </div>
+            <button id="mtnGridBtn" class="btn-outline" style="margin-bottom: 0;" onclick="toggleMtnGrid()">Ver Cuadrículas MTN</button>
         </div>
-        <button id="mtnGridBtn" class="btn-outline" onclick="toggleMtnGrid()">Ver Cuadrículas MTN</button>
  
         <div class="section-title">🌍 Mezclador de Mapas</div>
         
@@ -665,19 +679,25 @@
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polygon')">🔲 Área</button>
                 <button class="btn-outline" style="margin-bottom: 0;" id="btn-compass" onclick="toggleCompass()">🧭 Rosa Vientos</button>
-                <button class="btn-outline" style="margin-bottom: 0; grid-column: span 2;" onclick="captureMap()">📸 Capturar</button>
+                <button class="btn-outline" id="toggleLegendBtn" style="margin-bottom: 0; border-style: dashed;" onclick="toggleMapLegend()">📋 Leyenda</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="captureMap()">📸 Capturar</button>
             </div>
         </div>
 
         <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
         
         <div class="section-title">🗂️ Gestor de Capas</div>
-        <div id="layer-list" style="max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #cbd5e0; border-radius: 8px; margin-bottom:15px;">
-            <div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">No hay elementos dibujados</div>
-        </div>
+        
+        <button class="btn-outline" id="toggleLayerManagerBtn" onclick="toggleLayerManagerGroup()" style="margin-bottom: 10px; justify-content: space-between;">
+            <span id="toggleLayerManagerText">🗂️ Mostrar Gestor de Capas</span>
+            <span id="toggleLayerManagerIcon">▼</span>
+        </button>
 
-        <div class="section-title" style="margin-top:0;">📋 Leyenda Táctica</div>
-        <button class="btn-outline" id="toggleLegendBtn" onclick="toggleMapLegend()" style="border-style: dashed; width: max-content; margin: 0 auto 15px auto; padding: 6px 16px; font-size: 11px;">👁️ Mostrar</button>
+        <div id="layer-manager-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
+            <div id="layer-list" style="max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #cbd5e0; border-radius: 8px;">
+                <div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">No hay elementos dibujados</div>
+            </div>
+        </div>
 
         <div class="section-title" style="margin-top:0;">📸 Galería de Capturas</div>
         <div id="gallery"></div>
@@ -842,7 +862,7 @@
     function toggleMapLegend() {
         isLegendVisible = !isLegendVisible;
         document.getElementById('map-legend').style.display = isLegendVisible ? 'block' : 'none';
-        document.getElementById('toggleLegendBtn').innerText = isLegendVisible ? '👁️‍🗨️ Ocultar' : '👁️ Mostrar';
+        document.getElementById('toggleLegendBtn').innerText = isLegendVisible ? '📋 Ocultar Leyenda' : '📋 Leyenda';
         document.getElementById('toggleLegendBtn').style.borderStyle = isLegendVisible ? 'solid' : 'dashed';
         if (isLegendVisible) updateLegend();
     }
@@ -3087,9 +3107,35 @@
         }
     }
 
-    function toggleTransferGroup() {
-        const container = document.getElementById('transfer-group-container');
-        const icon = document.getElementById('toggleTransferIcon');
+    function toggleProjectGroup() {
+        const container = document.getElementById('project-group-container');
+        const icon = document.getElementById('toggleProjectIcon');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            icon.innerText = '▲';
+            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+        } else {
+            container.style.display = 'none';
+            icon.innerText = '▼';
+        }
+    }
+
+    function toggleMtnGroup() {
+        const container = document.getElementById('mtn-group-container');
+        const icon = document.getElementById('toggleMtnIcon');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            icon.innerText = '▲';
+            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+        } else {
+            container.style.display = 'none';
+            icon.innerText = '▼';
+        }
+    }
+
+    function toggleLayerManagerGroup() {
+        const container = document.getElementById('layer-manager-container');
+        const icon = document.getElementById('toggleLayerManagerIcon');
         if (container.style.display === 'none') {
             container.style.display = 'block';
             icon.innerText = '▲';
