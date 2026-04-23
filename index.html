@@ -219,6 +219,27 @@
             flex-direction: column !important;
         }
         body.mobile-mode #drawing-actions button { width: 100% !important; }
+        
+        /* MODO OSCURO */
+        body.dark-mode {
+            --bg-sidebar: #1e293b;
+            --ign-blue: #0f172a;
+            background: #0f172a;
+            color: #f8fafc;
+        }
+        body.dark-mode .sidebar { border-color: #334155; color: #f8fafc; }
+        body.dark-mode .content, body.dark-mode .mtn-card, body.dark-mode .gallery-item { background: var(--bg-sidebar); }
+        body.dark-mode .section-title { color: #94a3b8; border-bottom-color: #334155; }
+        body.dark-mode .btn-outline { background: #334155; color: #f8fafc; border-color: #475569; }
+        body.dark-mode .btn-outline:hover, body.dark-mode .btn-outline.active { background: #475569; color: white; }
+        body.dark-mode .form-input, body.dark-mode .form-select { background: #334155; color: white; border-color: #475569; }
+        body.dark-mode .faction-header { background: #334155; color: #f8fafc; border-bottom-color: #475569; }
+        body.dark-mode [id$="-container"], body.dark-mode #layer-list, body.dark-mode .layer-item { background: #0f172a !important; border-color: #334155 !important; color: #f8fafc; }
+        body.dark-mode .mtn-title, body.dark-mode .layer-name-text, body.dark-mode .legend-title { color: #f8fafc !important; }
+        body.dark-mode label, body.dark-mode p, body.dark-mode span, body.dark-mode .hint { color: #cbd5e0 !important; }
+        body.dark-mode .map-legend, body.dark-mode .coord-display, body.dark-mode #numeric-scale-widget { background: rgba(30, 41, 59, 0.95) !important; border-color: #475569 !important; color: #f8fafc !important; }
+        body.dark-mode .leaflet-control-scale-line { background-color: rgba(30, 41, 59, 0.9) !important; color: #fff !important; border-color: #cbd5e0 !important; background-image: linear-gradient(to bottom, #cbd5e0, #cbd5e0), linear-gradient(to right, rgba(30, 41, 59, 0.9) 50%, #cbd5e0 50%) !important; }
+        body.dark-mode .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
     </style>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -477,6 +498,7 @@
         <span id="app-title" style="font-weight: 600; font-size: 16px;">AirsoftMaps</span>
         <div style="display:flex; align-items:center; gap:12px;">
             <button id="modeToggleBtn" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; font-size: 18px; border-radius: 50%; width: 32px; height: 32px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="toggleMobileMode()" title="Cambiar a modo móvil">📱</button>
+            <button id="themeToggleBtn" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; font-size: 18px; border-radius: 50%; width: 32px; height: 32px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="toggleTheme()" title="Cambiar a Modo Oscuro">🌙</button>
             <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="toggleMenu()">✕</button>
         </div>
     </div>
@@ -3284,6 +3306,21 @@
     function toggleMobileMode() {
         isMobileMode = !isMobileMode;
         initMobileMode();
+    }
+    
+    function toggleTheme() {
+        const body = document.body;
+        const btnTheme = document.getElementById('themeToggleBtn');
+        
+        body.classList.toggle('dark-mode');
+        
+        if (body.classList.contains('dark-mode')) {
+            btnTheme.innerHTML = '☀️';
+            btnTheme.title = 'Cambiar a Modo Claro';
+        } else {
+            btnTheme.innerHTML = '🌙';
+            btnTheme.title = 'Cambiar a Modo Oscuro';
+        }
     }
     
     initMobileMode(); 
