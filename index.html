@@ -802,7 +802,7 @@
     let currentOverlay = overLayers.pnoa;
     currentOverlay.setOpacity(0.4);
  
-    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false, zoomSnap: 0 });
+    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false, zoomSnap: 0, tap: false });
     L.control.zoom({ position: 'topleft' }).addTo(map);
  
     const drawnItems = new L.FeatureGroup().addTo(map);
