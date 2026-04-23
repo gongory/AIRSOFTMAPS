@@ -2276,6 +2276,14 @@
     }
  
     function toggleLocation() {
+        if (userLocMarker) {
+            map.removeLayer(userLocMarker);
+            if (userLocCircle) map.removeLayer(userLocCircle);
+            userLocMarker = null;
+            userLocCircle = null;
+            return;
+        }
+
         if (!navigator.geolocation) {
             alert("Tu navegador no soporta la geolocalización.");
             return;
