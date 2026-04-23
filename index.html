@@ -2271,47 +2271,61 @@
     }
  
     function toggleLocation() {
-        const searchInput = document.getElementById('searchInput');
         if (!navigator.geolocation) {
-            const oldPlaceholder = searchInput.placeholder;
-            searchInput.placeholder = "GPS no soportado";
-            setTimeout(() => searchInput.placeholder = oldPlaceholder, 3000);
+            alert("Tu navegador no soporta la geolocalización.");
             return;
         }
 
-        if (isLocating) {
-            navigator.geolocation.clearWatch(locWatchId);
-            if (userLocMarker) map.removeLayer(userLocMarker);
-            if (userLocCircle) map.removeLayer(userLocCircle);
-            isLocating = false;
-        } else {
-            locWatchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    const acc = pos.coords.accuracy;
-                    
-                    if (!userLocMarker) {
-                        userLocMarker = L.circleMarker([lat, lng], { radius: 6, color: '#fff', weight: 2, fillColor: '#0d6efd', fillOpacity: 1 }).addTo(map);
-                        userLocCircle = L.circle([lat, lng], { radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15 }).addTo(map);
-                        map.setView([lat, lng], 16);
-                    } else {
-                        userLocMarker.setLatLng([lat, lng]);
-                        userLocCircle.setLatLng([lat, lng]);
-                        userLocCircle.setRadius(acc);
-                    }
-                    isLocating = true;
-                },
-                (err) => {
-                    console.error(err);
-                    const oldPlaceholder = searchInput.placeholder;
-                    searchInput.placeholder = "Error GPS. Revisa permisos.";
-                    setTimeout(() => searchInput.placeholder = oldPlaceholder, 3000);
-                    isLocating = false;
-                },
-                { enableHighAccuracy: true, maximumAge: 0 }
-            );
+        const btn = document.querySelector('button[title="Mi Ubicación"]');
+        const originalText = btn ? btn.innerHTML : '🎯';
+        
+        if (btn) {
+            btn.innerHTML = "⏳";
+            btn.style.opacity = "0.7";
         }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                const acc = pos.coords.accuracy;
+
+                map.flyTo([lat, lng], 17, { duration: 1.5 });
+
+                if (userLocMarker) map.removeLayer(userLocMarker);
+                if (userLocCircle) map.removeLayer(userLocCircle);
+
+                userLocCircle = L.circle([lat, lng], {
+                    radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15
+                }).addTo(map);
+
+                userLocMarker = L.circleMarker([lat, lng], { 
+                    radius: 6, color: '#fff', weight: 2, fillColor: '#0d6efd', fillOpacity: 1 
+                }).addTo(map);
+
+                userLocMarker.bindPopup(`<b>Tu ubicación</b><br>Margen de error: ${Math.round(acc)}m`).openPopup();
+
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.style.opacity = "1";
+                }
+            },
+            (err) => {
+                console.error("Error GPS:", err);
+                let msg = "No se pudo obtener la ubicación.";
+                if (err.code === 1) msg = "Permiso denegado. Activa la ubicación en los ajustes de tu navegador o dispositivo.";
+                if (err.code === 2) msg = "Ubicación no disponible (comprueba si tienes cobertura GPS).";
+                if (err.code === 3) msg = "Se agotó el tiempo de espera al intentar localizarte.";
+                
+                alert(msg);
+                
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.style.opacity = "1";
+                }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
     }
 
     function toggleMtnGrid() {
