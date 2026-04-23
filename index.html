@@ -705,6 +705,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
  
 <script>
+    // Parche FIX MOBILE: Evita que Leaflet.draw duplique el punto por eventos touch y cierre la ruta/área al 2º clic
+    if (L.Draw && L.Draw.Polyline) {
+        L.Draw.Polyline.prototype._onTouch = function () {};
+    }
+
     let activeHandler = null, gridLayer = null, isGridVisible = false, searchMarker = null;
     let mtnGridLayer = null, isMtnGridVisible = false;
     let projectName = "Proyecto_AirsoftMaps";
