@@ -3395,8 +3395,15 @@
     let db, auth, appId, userId = null;
 
     try {
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = {
+            apiKey: "AIzaSyDIy8yd_3z85TUYADDVRI6lDo9-jJvYsVo",
+            authDomain: "airsoftmaps-3bc14.firebaseapp.com",
+            projectId: "airsoftmaps-3bc14",
+            storageBucket: "airsoftmaps-3bc14.firebasestorage.app",
+            messagingSenderId: "198929323056",
+            appId: "1:198929323056:web:96653efbc97f6f919249f5"
+        };
+        appId = 'airsoftmaps-3bc14';
         
         const app = initializeApp(firebaseConfig);
         auth = getAuth(app);
