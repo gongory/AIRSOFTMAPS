@@ -438,9 +438,8 @@
         <div style="font-size:13px; color:#475569; line-height:1.6;">
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📁 1. Gestión de Proyectos y Archivos</h4>
             <p style="margin-top:0;">
-            <b>Guardar/Cargar en Nube:</b> Guarda tus mapas online para tenerlos en cualquier dispositivo de forma dinámica.<br>
-            <b>Nuevo / Guardar / Cargar (JSON):</b> Guarda tu progreso en un archivo físico para retomarlo otro día.<br>
-            <b>Renombrar:</b> Te permite cambiar el nombre del proyecto actual o de cualquier carpeta/bando importado.<br>
+            <b>Nuevo / Guardar / Cargar:</b> Permite limpiar el mapa o guardar tu progreso en un archivo <code>.json</code> para retomarlo otro día.<br>
+            <b>Renombrar:</b> Te permite cambiar el nombre del proyecto actual o de cualquier carpeta/bando importado desde un menú desplegable.<br>
             <b>Importar / Exportar:</b> Compatible con formatos estándar de GPS (Garmin) y Google Earth (<code>.kml</code> y <code>.gpx</code>). Útil para extraer las coordenadas o cargar mapas de la organización.
             </p>
 
@@ -451,30 +450,31 @@
             <p style="margin-top:0;">El marcador flotante de la esquina inferior izquierda indica donde está tu ratón. Puedes cambiar su formato en esta sección.<br>
             <b>Cuadrícula Táctica (Alfa):</b> Dibuja un sistema tipo "Hundir la Flota" (ej. D4, F7), ideal y rápido para dar coordenadas por radio sin tener que dictar números largos.<br>
             <b>Escala Exacta y Numérica:</b> Muestra una escala arrastrable calculada en vivo (ej. 1:25.000). Si eliges una "Escala Exacta" del menú, la vista se ajusta milimétricamente para que coincida con la realidad al imprimir.<br>
-            <b>🔒 Bloquear Zoom:</b> Al usar una escala exacta, el mapa se bloquea (rueda del ratón, doble clic, etc.) para que no la estropees por accidente antes de hacer una captura.</p>
+            <b>🔒 Bloquear Zoom:</b> Al usar una escala exacta, el mapa se bloquea (rueda del ratón, doble clic, etc.) para que no la estropees por accidente antes de hacer una captura. Puedes bloquearlo/desbloquearlo manualmente con el botón.</p>
 
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">✏️ 4. Herramientas de Edición</h4>
             <ul style="padding-left:20px; margin-top:0;">
                 <li><b>📍 Marcador:</b> Coloca puntos estratégicos. Al editarlo, puedes asignarle iconos tácticos (Respawn, Médico... o tu <b>Radar personalizado</b>). 
-                    <br><i>Avanzado:</i> Puedes añadirle un <b>⭕ Radio de Acción</b> (ej. 50m de alcance) o un <b>🔦 Cono de Visión</b> rotatorio.
+                    <br><i>Avanzado:</i> Puedes añadirle un <b>⭕ Radio de Acción</b> (ej. 50m de alcance) o un <b>🔦 Cono de Visión</b> que puedes rotar para indicar la zona que vigila un vigía.
                 </li>
-                <li><b>📏 Ruta/Medir:</b> Traza líneas. Si haces clic sobre una ruta ya dibujada, la app calculará la distancia, el <b>desnivel</b>, te mostrará una gráfica y estimará el <b>⏱️ tiempo a pie</b>.</li>
+                <li><b>📏 Ruta/Medir:</b> Traza líneas. Si haces clic sobre una ruta ya dibujada, la app conectará con el satélite para calcular la distancia, el <b>desnivel positivo/negativo</b> y te mostrará una gráfica de elevación. Además, estimará el <b>⏱️ tiempo a pie</b> teniendo en cuenta las cuestas (Regla de Naismith).</li>
                 <li><b>🔲 Área:</b> Dibuja polígonos para medir hectáreas o delimitar zonas de juego seguras.</li>
                 <li><b>🧭 Rosa Vientos:</b> Muestra una brújula en pantalla que puedes arrastrar a donde quieras.</li>
-                <li><b>📸 Capturar:</b> Toma una "foto" limpia del mapa y la guarda en la galería inferior.</li>
+                <li><b>📸 Capturar:</b> Toma una "foto" limpia del mapa (escondiendo todos los menús laterales) y la guarda en la galería inferior lista para descargar.</li>
             </ul>
 
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🗂️ 5. Gestor de Capas y Bandos</h4>
-            <p style="margin-top:0;">Cada elemento que dibujas aparece aquí en forma de lista. Puedes asignarle un "Bando" editando cada marcador. Puedes ocultar tropas enteras de un solo clic. Haz clic en el nombre de cualquier carpeta para plegarla.</p>
+            <p style="margin-top:0;">Cada elemento que dibujas aparece aquí en forma de lista. Puedes asignarle un "Bando" (Rojo, Azul, Neutral) editando cada marcador. El gestor crea carpetas automáticas y te permite ocultar (👁️) tropas enteras de un solo clic para ver tu estrategia más clara.<br>
+            💡 <i>Novedad:</i> <b>Haz clic en el nombre de cualquier carpeta</b> para plegarla o desplegarla. Ideal para mantener el orden cuando importas rutas de GPS con muchos puntos.</p>
 
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📋 6. Leyenda Táctica</h4>
-            <p style="margin-top:0;">Un recuadro flotante que resume los iconos, colores, líneas y áreas. Puedes arrastrarla libremente por la pantalla.</p>
+            <p style="margin-top:0;">Un recuadro flotante que resume los iconos, colores, líneas y áreas que hay dibujados en el mapa. Puedes arrastrarla libremente por la pantalla para que no moleste o activarla/desactivarla usando el botón en la parte inferior del menú lateral.</p>
 
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📸 7. Galería e Impresión Avanzada</h4>
             <p style="margin-top:0;">Cuando usas la herramienta "Capturar", la imagen limpia aparece al final del panel lateral.</p>
             <ul style="padding-left:20px; margin-top:0;">
                 <li><b>Ver / Descargar / Borrar:</b> Opciones rápidas para visualizar, guardar la imagen original o eliminarla.</li>
-                <li><b>🖨️ Imprimir:</b> Abre una pestaña de impresión donde podrás arrastrar el mapa, mover libremente elementos y prepararlo en formato A4/A3.</li>
+                <li><b>🖨️ Imprimir:</b> Abre una nueva pestaña con un sistema avanzado de preparación. Aquí podrás elegir el formato del papel (A4, A3), encuadrar el mapa arrastrándolo o usando los puntos dorados, y mover libremente elementos extra como la leyenda o la brújula. Incluye botones rápidos para Imprimir, Descargar el montaje final o <b>Salir</b> (cerrar la pestaña de impresión).</li>
             </ul>
         </div>
         
@@ -530,12 +530,6 @@
                 <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar (JSON)</button>
                 <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar (JSON)</button>
                 <input type="file" id="file-loader" style="display:none;" accept=".json" onchange="cargarProyecto(event)">
-            </div>
-            
-            <!-- Nuevos botones para la Nube -->
-            <div style="display:flex; gap:8px; margin-bottom: 10px;">
-                <button class="btn-outline" style="margin-bottom:0; border-color: var(--info); color: var(--info);" onclick="guardarNube()">☁️ Guardar en Nube</button>
-                <button class="btn-outline" style="margin-bottom:0; border-color: var(--info); color: var(--info);" onclick="cargarNube()">☁️ Cargar de Nube</button>
             </div>
 
             <div style="border-top: 1px dashed #cbd5e0; margin-top: 15px; padding-top: 10px;">
@@ -733,36 +727,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
  
 <script>
-    // Parche FIX MOBILE
+    // Parche FIX MOBILE: Evita que Leaflet.draw duplique el punto por eventos touch y cierre la ruta/área al 2º clic
     if (L.Draw && L.Draw.Polyline) {
         L.Draw.Polyline.prototype._onTouch = function () {};
     }
-
-    // Funcionalidad global de notificación para reemplazar popups
-    function customAlert(msg) {
-        const toast = document.createElement('div');
-        toast.style.position = 'fixed';
-        toast.style.bottom = '30px';
-        toast.style.left = '50%';
-        toast.style.transform = 'translateX(-50%)';
-        toast.style.background = 'rgba(15, 23, 42, 0.95)';
-        toast.style.color = 'white';
-        toast.style.padding = '12px 24px';
-        toast.style.borderRadius = '30px';
-        toast.style.zIndex = '9999';
-        toast.style.fontSize = '14px';
-        toast.style.fontWeight = 'bold';
-        toast.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
-        toast.style.textAlign = 'center';
-        toast.innerText = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.style.transition = 'opacity 0.5s ease';
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    }
-    window.customAlert = customAlert;
 
     let activeHandler = null, gridLayer = null, isGridVisible = false, searchMarker = null;
     let mtnGridLayer = null, isMtnGridVisible = false;
@@ -871,20 +839,6 @@
         polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } },
         marker: {}
     };
-
-    // EXPORTACIONES PARA MÓDULO DE LA NUBE
-    window.getProjectName = () => projectName;
-    window.map = map;
-    window.drawnItems = drawnItems;
-    window.drawOptions = drawOptions;
-    window.getMarkerIconObj = getMarkerIconObj;
-    window.updateMarkerBuffer = updateMarkerBuffer;
-    window.updateMarkerLabel = updateMarkerLabel;
-    window.updateMarkerCone = updateMarkerCone;
-    window.attachChartListener = attachChartListener;
-    window.updateLayerTree = updateLayerTree;
-    window.toggleMenu = toggleMenu;
-    window.searchMarker = searchMarker;
 
     function renderChart(layer, id) {
         setTimeout(() => {
@@ -1510,7 +1464,7 @@
         
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
-        layer.feature.properties.faction = projectName; 
+        layer.feature.properties.faction = projectName; // Se asocia al proyecto actual
         layer.isHidden = false;
         
         if (e.layerType === 'marker') {
@@ -1652,9 +1606,11 @@
         const modal = document.getElementById('edit-modal');
         document.getElementById('edit-name-input').value = layer.feature.properties.layerName || '';
         
+        // --- Dinámica del Dropdown de Bando/Grupo ---
         const factionSelect = document.getElementById('edit-faction-input');
         const currentFaction = layer.feature.properties.faction || projectName;
         
+        // Verifica si la carpeta ya existe en las opciones, si no, la añade temporalmente
         let factionExists = Array.from(factionSelect.options).some(opt => opt.value === currentFaction);
         if (!factionExists) {
             const newOpt = document.createElement('option');
@@ -1663,6 +1619,7 @@
             factionSelect.appendChild(newOpt);
         }
         factionSelect.value = currentFaction;
+        // --- Fin dinámica Dropdown ---
 
         const isShape = (layer instanceof L.Polyline);
         const isMarker = (layer instanceof L.Marker);
@@ -1774,7 +1731,7 @@
     function printImage(src, title, captureId = null) {
         const printWin = window.open('', '_blank');
         if (!printWin) {
-            customAlert("Permite las ventanas emergentes para poder imprimir.");
+            alert("Por favor, permite las ventanas emergentes en tu navegador para poder imprimir.");
             return;
         }
 
@@ -2350,7 +2307,7 @@
         }
 
         if (!navigator.geolocation) {
-            customAlert("Tu navegador no soporta la geolocalización.");
+            alert("Tu navegador no soporta la geolocalización.");
             return;
         }
 
@@ -2395,7 +2352,7 @@
                 if (err.code === 2) msg = "Ubicación no disponible (comprueba si tienes cobertura GPS).";
                 if (err.code === 3) msg = "Se agotó el tiempo de espera al intentar localizarte.";
                 
-                customAlert(msg);
+                alert(msg);
                 
                 if (btn) {
                     btn.innerHTML = originalText;
@@ -2680,15 +2637,7 @@
         toggleMenu(); 
         
         const factions = new Set();
-        
-        factions.add("General");
-        factions.add("Rojo");
-        factions.add("Azul");
-        factions.add("Organizacion");
-        factions.add("Neutral");
-        
         factions.add(projectName); 
-        
         drawnItems.eachLayer(layer => {
             const fac = layer.feature?.properties?.faction;
             if (fac) factions.add(fac);
@@ -2696,19 +2645,10 @@
 
         const select = document.getElementById('rename-folder-select');
         select.innerHTML = '';
-        
-        const factionDisplayNames = {
-            'General': '🏳️ General',
-            'Rojo': '🔴 Bando Rojo',
-            'Azul': '🔵 Bando Azul',
-            'Organizacion': '⚙️ Organización',
-            'Neutral': '⚪ Neutral / Civil'
-        };
-        
         factions.forEach(fac => {
             const opt = document.createElement('option');
             opt.value = fac;
-            opt.text = factionDisplayNames[fac] || ('📁 ' + fac);
+            opt.text = '📁 ' + fac;
             select.appendChild(opt);
         });
         
@@ -2834,7 +2774,7 @@
                 }
                 if (searchMarker) map.removeLayer(searchMarker);
                 updateLayerTree(); toggleMenu(); 
-            } catch (err) { customAlert("Error al cargar el proyecto."); }
+            } catch (err) { alert("Error al cargar el proyecto."); }
         };
         reader.readAsText(file);
         event.target.value = ''; 
@@ -2981,7 +2921,7 @@
                 updateLayerTree(); toggleMenu(); 
             } catch (err) { 
                 console.error(err);
-                customAlert("Error al procesar el archivo. Asegúrate de que sea KML o GPX."); 
+                alert("Error al procesar el archivo. Asegúrate de que sea un formato KML o GPX válido."); 
             }
         };
         reader.readAsText(file);
@@ -3384,149 +3324,7 @@
     }
     
     initMobileMode(); 
-</script>
 
-<!-- MÓDULO DE PERSISTENCIA EN LA NUBE (FIREBASE) -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    let db, auth, appId, userId = null;
-
-    try {
-        const firebaseConfig = {
-            apiKey: "AIzaSyDIy8yd_3z85TUYADDVRI6lDo9-jJvYsVo",
-            authDomain: "airsoftmaps-3bc14.firebaseapp.com",
-            projectId: "airsoftmaps-3bc14",
-            storageBucket: "airsoftmaps-3bc14.firebasestorage.app",
-            messagingSenderId: "198929323056",
-            appId: "1:198929323056:web:96653efbc97f6f919249f5"
-        };
-        appId = 'airsoftmaps-3bc14';
-        
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) { userId = user.uid; }
-        });
-
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-        initAuth();
-    } catch(e) {
-        console.error("Error al inicializar la base de datos:", e);
-    }
-
-    window.guardarNube = async () => {
-        if (!userId || !db) return window.customAlert("❌ Conexión a la nube no disponible en este momento.");
-        
-        const btn = document.activeElement;
-        const originalText = btn ? btn.innerHTML : '☁️ Guardar en Nube';
-        if (btn) btn.innerHTML = "⏳ Guardando...";
-
-        const projectNameLocal = window.getProjectName();
-        
-        const data = {
-            view: { center: window.map.getCenter(), zoom: window.map.getZoom() },
-            features: window.drawnItems.toGeoJSON(),
-            updatedAt: new Date().toISOString()
-        };
-
-        try {
-            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'projects', projectNameLocal);
-            await setDoc(docRef, data);
-            window.customAlert("✅ Proyecto guardado en la nube correctamente.");
-        } catch (e) {
-            console.error(e);
-            window.customAlert("❌ Error al guardar en la nube.");
-        } finally {
-            if (btn) btn.innerHTML = originalText;
-        }
-    };
-
-    window.cargarNube = async () => {
-        if (!userId || !db) return window.customAlert("❌ Conexión a la nube no disponible en este momento.");
-        
-        const btn = document.activeElement;
-        const originalText = btn ? btn.innerHTML : '☁️ Cargar de Nube';
-        if (btn) btn.innerHTML = "⏳ Cargando...";
-
-        const projectNameLocal = window.getProjectName();
-
-        try {
-            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'projects', projectNameLocal);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                
-                if (data.view) window.map.setView(data.view.center, data.view.zoom);
-                if (data.features) {
-                    window.drawnItems.eachLayer(l => { 
-                        if(l.bufferCircle) window.map.removeLayer(l.bufferCircle); 
-                        if(l.conePolygon) window.map.removeLayer(l.conePolygon);
-                    });
-                    window.drawnItems.clearLayers();
-                    
-                    L.geoJSON(data.features, {
-                        pointToLayer: function (feature, latlng) {
-                            const color = feature.properties.color || '#e74c3c';
-                            const iconType = feature.properties.iconType || 'punto';
-                            return L.marker(latlng, { icon: window.getMarkerIconObj(color, iconType) });
-                        },
-                        style: function (feature) {
-                            let styleOpt = {};
-                            if (feature.geometry.type === 'LineString') styleOpt = Object.assign({}, window.drawOptions.polyline.shapeOptions);
-                            if (feature.geometry.type === 'Polygon') styleOpt = Object.assign({}, window.drawOptions.polygon.shapeOptions);
-                            
-                            if (feature.properties.color) styleOpt.color = feature.properties.color;
-                            if (feature.properties.weight) styleOpt.weight = feature.properties.weight;
-                            if (feature.properties.fillOpacity) styleOpt.fillOpacity = feature.properties.fillOpacity;
-                            return styleOpt;
-                        },
-                        onEachFeature: function (feature, layer) {
-                            window.drawnItems.addLayer(layer);
-                            const id = L.stamp(layer);
-                            layer.isHidden = false;
-                            
-                            if(!feature.properties.faction) layer.feature.properties.faction = projectNameLocal;
-
-                            const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
-                                <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
-                                <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
-                            </div>`;
-                            layer.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
-                            if (layer instanceof L.Marker) {
-                                window.updateMarkerBuffer(layer);
-                                window.updateMarkerLabel(layer);
-                                window.updateMarkerCone(layer);
-                            }
-                            if (feature.properties.chartData) window.attachChartListener(layer, id);
-                        }
-                    });
-                }
-                if (window.searchMarker) window.map.removeLayer(window.searchMarker);
-                window.updateLayerTree(); 
-                window.toggleMenu();
-                window.customAlert("✅ Proyecto cargado de la nube con éxito.");
-            } else {
-                window.customAlert("⚠️ No se encontró este proyecto en la nube.");
-            }
-        } catch (e) {
-            console.error(e);
-            window.customAlert("❌ Error al cargar de la nube.");
-        } finally {
-            if (btn) btn.innerHTML = originalText;
-        }
-    };
 </script>
 </body>
 </html>
