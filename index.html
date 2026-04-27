@@ -2520,12 +2520,32 @@
     }
  
     function toggleLocation() {
-        if (userLocMarker) {
-            map.removeLayer(userLocMarker);
-            if (userLocCircle) map.removeLayer(userLocCircle);
-            userLocMarker = null;
-            userLocCircle = null;
-            return;
+        const btn = document.querySelector('button[title="Mi Ubicación"]');
+
+        if (locWatchId !== null) {
+            if (!window.isFollowingUser) {
+                // If tracking but panned away, clicking again re-centers and follows
+                window.isFollowingUser = true;
+                if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 });
+                if (btn) { btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
+                return;
+            } else {
+                // If already tracking and following, clicking stops completely
+                navigator.geolocation.clearWatch(locWatchId);
+                locWatchId = null;
+                window.isFollowingUser = false;
+                if (userLocMarker) map.removeLayer(userLocMarker);
+                if (userLocCircle) map.removeLayer(userLocCircle);
+                userLocMarker = null;
+                userLocCircle = null;
+                if (btn) { 
+                    btn.innerHTML = '🎯'; 
+                    btn.style.color = ''; 
+                    btn.style.borderColor = 'var(--ign-blue)';
+                    btn.classList.remove('active'); 
+                }
+                return;
+            }
         }
 
         if (!navigator.geolocation) {
@@ -2533,38 +2553,59 @@
             return;
         }
 
-        const btn = document.querySelector('button[title="Mi Ubicación"]');
-        const originalText = btn ? btn.innerHTML : '🎯';
-        
         if (btn) {
             btn.innerHTML = "⏳";
             btn.style.opacity = "0.7";
         }
 
-        navigator.geolocation.getCurrentPosition(
+        window.isFollowingUser = true;
+
+        locWatchId = navigator.geolocation.watchPosition(
             (pos) => {
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
                 const acc = pos.coords.accuracy;
+                const heading = pos.coords.heading; 
+                const speed = pos.coords.speed; 
 
-                map.flyTo([lat, lng], 17, { duration: 1.5 });
+                if (window.isFollowingUser) {
+                    map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom());
+                }
 
-                if (userLocMarker) map.removeLayer(userLocMarker);
-                if (userLocCircle) map.removeLayer(userLocCircle);
-
-                userLocCircle = L.circle([lat, lng], {
-                    radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15
-                }).addTo(map);
-
-                userLocMarker = L.circleMarker([lat, lng], { 
-                    radius: 6, color: '#fff', weight: 2, fillColor: '#0d6efd', fillOpacity: 1 
-                }).addTo(map);
-
-                userLocMarker.bindPopup(`<b>Tu ubicación</b><br>Margen de error: ${Math.round(acc)}m`).openPopup();
-
-                if (btn) {
-                    btn.innerHTML = originalText;
+                if (btn && btn.innerHTML === "⏳") {
+                    btn.innerHTML = "🚶‍♂️"; 
                     btn.style.opacity = "1";
+                    btn.style.color = "var(--success)"; 
+                    btn.style.borderColor = "var(--success)";
+                }
+
+                if (!userLocCircle) {
+                    userLocCircle = L.circle([lat, lng], {
+                        radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15
+                    }).addTo(map);
+                } else {
+                    userLocCircle.setLatLng([lat, lng]);
+                    userLocCircle.setRadius(acc);
+                }
+
+                if (!userLocMarker) {
+                    userLocMarker = L.circleMarker([lat, lng], { 
+                        radius: 6, color: '#fff', weight: 2, fillColor: '#0d6efd', fillOpacity: 1 
+                    }).addTo(map);
+                    
+                } else {
+                    userLocMarker.setLatLng([lat, lng]);
+                }
+                
+                let popupContent = `<div style="text-align:center; font-size:12px;"><b>Tu ubicación (En Vivo)</b><br>Margen: ${Math.round(acc)}m`;
+                if (speed !== null && speed >= 0) popupContent += `<br>Vel: ${(speed * 3.6).toFixed(1)} km/h`;
+                if (heading !== null && !isNaN(heading)) popupContent += `<br>Rumbo: ${Math.round(heading)}°`;
+                popupContent += `</div>`;
+                
+                if(!userLocMarker.getPopup()) {
+                    userLocMarker.bindPopup(popupContent);
+                } else {
+                    userLocMarker.setPopupContent(popupContent);
                 }
             },
             (err) => {
@@ -2574,16 +2615,33 @@
                 if (err.code === 2) msg = "Ubicación no disponible (comprueba si tienes cobertura GPS).";
                 if (err.code === 3) msg = "Se agotó el tiempo de espera al intentar localizarte.";
                 
-                window.customAlert("Error", msg);
+                window.customAlert("Error GPS", msg);
                 
                 if (btn) {
-                    btn.innerHTML = originalText;
+                    btn.innerHTML = '🎯';
                     btn.style.opacity = "1";
+                    btn.style.color = '';
+                    btn.style.borderColor = 'var(--ign-blue)';
                 }
+                if (locWatchId !== null) {
+                    navigator.geolocation.clearWatch(locWatchId);
+                    locWatchId = null;
+                }
+                window.isFollowingUser = false;
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     }
+
+    // Desactivar el auto-seguimiento si el usuario arrastra el mapa manualmente
+    map.on('dragstart', () => { 
+        window.isFollowingUser = false; 
+        const btn = document.querySelector('button[title="Mi Ubicación"]');
+        if (btn && locWatchId !== null) {
+            btn.style.color = 'var(--ign-gold)'; // Se pone amarillo para indicar que sigue rastreando pero no centra
+            btn.style.borderColor = 'var(--ign-gold)';
+        }
+    });
 
     function toggleMtnGrid() {
         isMtnGridVisible = !isMtnGridVisible;
