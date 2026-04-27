@@ -2836,81 +2836,89 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                let text = e.target.result;
-                text = text.replace(/xmlns(:\w+)?="[^"]*"/g, ''); 
-                text = text.replace(/(<\/?)(\w+:)/g, '$1');       
-
+                const text = e.target.result;
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(text, "text/xml");
+
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    throw new Error("Invalid XML file");
+                }
                 
                 if (file.name.toLowerCase().endsWith('.kml')) {
-                    const placemarks = xmlDoc.getElementsByTagName('Placemark');
+                    const placemarks = xmlDoc.getElementsByTagNameNS('*', 'Placemark');
                     Array.from(placemarks).forEach(p => {
-                        const name = p.getElementsByTagName('name')[0]?.textContent || 'Punto KML';
+                        const nameNode = p.getElementsByTagNameNS('*', 'name')[0];
+                        const name = nameNode ? nameNode.textContent.trim() : 'Punto KML';
                         
-                        const points = p.getElementsByTagName('Point');
+                        const points = p.getElementsByTagNameNS('*', 'Point');
                         Array.from(points).forEach(pt => {
-                            let coordsText = pt.getElementsByTagName('coordinates')[0]?.textContent.trim();
-                            if (coordsText) { 
-                                let coords = coordsText.split(','); 
-                                if(coords.length >= 2) addImportedLayer(L.marker([parseFloat(coords[1]), parseFloat(coords[0])]), name, 'marker', fileName); 
+                            let coordsNode = pt.getElementsByTagNameNS('*', 'coordinates')[0];
+                            if (coordsNode) {
+                                let coordsText = coordsNode.textContent.trim();
+                                let coords = coordsText.split(/\s*,\s*/);
+                                if(coords.length >= 2) {
+                                    addImportedLayer(L.marker([parseFloat(coords[1]), parseFloat(coords[0])]), name, 'marker', fileName);
+                                }
                             }
                         });
                         
-                        const lines = p.getElementsByTagName('LineString');
+                        const lines = p.getElementsByTagNameNS('*', 'LineString');
                         Array.from(lines).forEach(ln => {
-                            let coordsText = ln.getElementsByTagName('coordinates')[0]?.textContent.trim();
-                            if (coordsText) {
-                                let latlngs = coordsText.split(/\s+/).map(c => { 
-                                    let pts = c.split(','); return [parseFloat(pts[1]), parseFloat(pts[0])]; 
+                            let coordsNode = ln.getElementsByTagNameNS('*', 'coordinates')[0];
+                            if (coordsNode) {
+                                let latlngs = coordsNode.textContent.trim().split(/\s+/).map(c => {
+                                    let pts = c.split(/\s*,\s*/); return [parseFloat(pts[1]), parseFloat(pts[0])];
                                 }).filter(ll => !isNaN(ll[0]) && !isNaN(ll[1]));
                                 if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName);
                             }
                         });
 
-                        const tracks = p.getElementsByTagName('Track');
+                        const tracks = p.getElementsByTagNameNS('*', 'Track');
                         Array.from(tracks).forEach(trk => {
-                            const coords = trk.getElementsByTagName('coord');
+                            const coords = trk.getElementsByTagNameNS('*', 'coord');
                             let latlngs = [];
                             Array.from(coords).forEach(c => {
-                                let pts = c.textContent.trim().split(/\s+/); 
+                                let pts = c.textContent.trim().split(/\s+/);
                                 if (pts.length >= 2) latlngs.push([parseFloat(pts[1]), parseFloat(pts[0])]);
                             });
                             if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName);
                         });
                         
-                        const polys = p.getElementsByTagName('Polygon');
+                        const polys = p.getElementsByTagNameNS('*', 'Polygon');
                         Array.from(polys).forEach(poly => {
-                            let coordsText = poly.getElementsByTagName('coordinates')[0]?.textContent.trim();
-                            if (coordsText) {
-                                let latlngs = coordsText.split(/\s+/).map(c => { 
-                                    let pts = c.split(','); return [parseFloat(pts[1]), parseFloat(pts[0])]; 
+                            let coordsNode = poly.getElementsByTagNameNS('*', 'coordinates')[0];
+                            if (coordsNode) {
+                                let latlngs = coordsNode.textContent.trim().split(/\s+/).map(c => {
+                                    let pts = c.split(/\s*,\s*/); return [parseFloat(pts[1]), parseFloat(pts[0])];
                                 }).filter(ll => !isNaN(ll[0]) && !isNaN(ll[1]));
                                 if (latlngs.length > 2) addImportedLayer(L.polygon(latlngs, drawOptions.polygon.shapeOptions), name, 'polygon', fileName);
                             }
                         });
                     });
                 } else if (file.name.toLowerCase().endsWith('.gpx')) {
-                    const wpts = xmlDoc.getElementsByTagName('wpt');
+                    const wpts = xmlDoc.getElementsByTagNameNS('*', 'wpt');
                     Array.from(wpts).forEach(w => {
-                        const name = w.getElementsByTagName('name')[0]?.textContent || 'Punto GPX';
+                        const nameNode = w.getElementsByTagNameNS('*', 'name')[0];
+                        const name = nameNode ? nameNode.textContent.trim() : 'Punto GPX';
                         const lat = parseFloat(w.getAttribute('lat')), lon = parseFloat(w.getAttribute('lon'));
                         if(!isNaN(lat) && !isNaN(lon)) addImportedLayer(L.marker([lat, lon]), name, 'marker', fileName);
                     });
                     
-                    const trks = xmlDoc.getElementsByTagName('trk');
+                    const trks = xmlDoc.getElementsByTagNameNS('*', 'trk');
                     Array.from(trks).forEach(t => {
-                        const name = t.getElementsByTagName('name')[0]?.textContent || 'Ruta GPX';
-                        const trkpts = t.getElementsByTagName('trkpt');
+                        const nameNode = t.getElementsByTagNameNS('*', 'name')[0];
+                        const name = nameNode ? nameNode.textContent.trim() : 'Ruta GPX';
+                        const trkpts = t.getElementsByTagNameNS('*', 'trkpt');
                         const latlngs = [];
                         Array.from(trkpts).forEach(pt => { latlngs.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]); });
                         if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName);
                     });
 
-                    const rtes = xmlDoc.getElementsByTagName('rte');
+                    const rtes = xmlDoc.getElementsByTagNameNS('*', 'rte');
                     Array.from(rtes).forEach(t => {
-                        const name = t.getElementsByTagName('name')[0]?.textContent || 'Ruta GPX';
-                        const rtepts = t.getElementsByTagName('rtept');
+                        const nameNode = t.getElementsByTagNameNS('*', 'name')[0];
+                        const name = nameNode ? nameNode.textContent.trim() : 'Ruta GPX';
+                        const rtepts = t.getElementsByTagNameNS('*', 'rtept');
                         const latlngs = [];
                         Array.from(rtepts).forEach(pt => { latlngs.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]); });
                         if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName);
