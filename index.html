@@ -2709,8 +2709,29 @@
     }
 
     function guardarProyecto() {
-        const data = { view: { center: map.getCenter(), zoom: map.getZoom() }, features: drawnItems.toGeoJSON() };
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+        const geojsonData = drawnItems.toGeoJSON();
+        
+        // --- PARCHE DE COMPATIBILIDAD EXTERNA (iTAK / ATAK / Google Earth) ---
+        geojsonData.features.forEach((feature, index) => {
+            if (feature && feature.properties) {
+                // 1. iTAK necesita un 'id' en la raíz del feature para indexarlo en su base de datos y permitir su edición
+                feature.id = "am_" + Date.now() + "_" + index; 
+                
+                // 2. Mapear nuestra variable interna 'layerName' a la propiedad estándar universal 'name' y 'title'
+                feature.properties.name = feature.properties.layerName || 'Elemento';
+                feature.properties.title = feature.properties.layerName || 'Elemento';
+                
+                // 3. Añadir descripciones y metadatos estándar (SimpleStyle Spec)
+                feature.properties.description = feature.properties.faction ? "Grupo/Bando: " + feature.properties.faction : "";
+                feature.properties['marker-color'] = feature.properties.color || '#e74c3c';
+                feature.properties['stroke'] = feature.properties.color || '#2ecc71';
+            }
+        });
+        // ----------------------------------------------------------------------
+
+        geojsonData.view = { center: map.getCenter(), zoom: map.getZoom() };
+        
+        const blob = new Blob([JSON.stringify(geojsonData, null, 2)], {type: "application/json"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = projectName.replace(/[^a-z0-9_-]/gi, '_') + ".json";
@@ -2729,13 +2750,16 @@
             try {
                 const data = JSON.parse(e.target.result);
                 if (data.view) map.setView(data.view.center, data.view.zoom);
-                if (data.features) {
+                
+                const geojsonFeatures = data.type === "FeatureCollection" ? data : data.features;
+                
+                if (geojsonFeatures) {
                     drawnItems.eachLayer(l => { 
                         if(l.bufferCircle) map.removeLayer(l.bufferCircle); 
                         if(l.conePolygon) map.removeLayer(l.conePolygon);
                     });
                     drawnItems.clearLayers();
-                    L.geoJSON(data.features, {
+                    L.geoJSON(geojsonFeatures, {
                         pointToLayer: function (feature, latlng) {
                             const color = feature.properties.color || '#e74c3c';
                             const iconType = feature.properties.iconType || 'punto';
@@ -2791,8 +2815,13 @@
     function exportKML() {
         let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n<name>' + escapeXML(projectName) + '</name>\n';
         drawnItems.eachLayer(layer => {
+            const id = L.stamp(layer);
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
-            kml += `<Placemark><name>${name}</name>`;
+            const desc = escapeXML(layer.feature?.properties?.faction ? "Bando: " + layer.feature.properties.faction : "");
+            
+            // Añadido 'id' al Placemark y etiqueta 'description' para iTAK
+            kml += `<Placemark id="am_${id}"><name>${name}</name><description>${desc}</description>`;
+            
             if (layer instanceof L.Marker) {
                 const ll = layer.getLatLng(); kml += `<Point><coordinates>${ll.lng},${ll.lat},0</coordinates></Point>`;
             } else if (layer instanceof L.Polygon) {
@@ -2815,11 +2844,13 @@
         gpx += `<metadata><name>${escapeXML(projectName)}</name></metadata>\n`;
         drawnItems.eachLayer(layer => {
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
+            const desc = escapeXML(layer.feature?.properties?.faction ? "Bando: " + layer.feature.properties.faction : "");
+            
             if (layer instanceof L.Marker) {
-                const ll = layer.getLatLng(); gpx += `<wpt lat="${ll.lat}" lon="${ll.lng}"><name>${name}</name></wpt>\n`;
+                const ll = layer.getLatLng(); gpx += `<wpt lat="${ll.lat}" lon="${ll.lng}"><name>${name}</name><desc>${desc}</desc></wpt>\n`;
             } else if (layer instanceof L.Polyline) {
                 const lls = (layer instanceof L.Polygon) ? layer.getLatLngs()[0] : layer.getLatLngs();
-                gpx += `<trk><name>${name}</name><trkseg>\n`;
+                gpx += `<trk><name>${name}</name><desc>${desc}</desc><trkseg>\n`;
                 lls.forEach(ll => { gpx += `<trkpt lat="${ll.lat}" lon="${ll.lng}"></trkpt>\n`; });
                 if (layer instanceof L.Polygon) gpx += `<trkpt lat="${lls[0].lat}" lon="${lls[0].lng}"></trkpt>\n`;
                 gpx += `</trkseg></trk>\n`;
