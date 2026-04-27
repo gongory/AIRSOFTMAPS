@@ -292,9 +292,9 @@
 
 <!-- Modal para Notificaciones / Alertas Globales -->
 <div id="alert-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:4000; align-items:center; justify-content:center;">
-    <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;">
+    <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center; white-space: pre-wrap;">
         <h3 id="alert-modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:18px;">Notificación</h3>
-        <p id="alert-modal-msg" style="font-size: 14px; color: #475569; margin-bottom: 20px;"></p>
+        <p id="alert-modal-msg" style="font-size: 13px; color: #475569; margin-bottom: 20px; line-height: 1.4;"></p>
         <div style="display:flex; justify-content:center;">
             <button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="document.getElementById('alert-modal').style.display='none'">Aceptar</button>
         </div>
@@ -331,7 +331,7 @@
         <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nombre</label>
         <input type="text" id="edit-name-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;">
 
-        <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Bando / Grupo</label>
+        <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Bando</label>
         <select id="edit-faction-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;">
             <option value="General">🏳️ General</option>
             <option value="Rojo">🔴 Bando Rojo</option>
@@ -339,6 +339,9 @@
             <option value="Organizacion">⚙️ Organización</option>
             <option value="Neutral">⚪ Neutral / Civil</option>
         </select>
+
+        <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grupo</label>
+        <input type="text" id="edit-group-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: Escuadra Alfa">
 
         <div id="edit-style-options" style="display:none;">
             <label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Color</label>
@@ -551,14 +554,14 @@
             </div>
             
             <div style="display:flex; gap:8px; margin-bottom: 10px;">
-                <button class="btn-outline" style="margin-bottom:0;" onclick="guardarEnNube()">☁️ Guardar Nube</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="guardarEnNube(this)">☁️ Guardar Nube</button>
                 <button class="btn-outline" style="margin-bottom:0;" onclick="abrirNube()">☁️ Cargar Nube</button>
             </div>
             
             <div style="display:flex; gap:8px; margin-bottom: 10px;">
                 <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar Local (JSON)</button>
                 <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar Local</button>
-                <input type="file" id="file-loader" style="display:none;" accept=".json" onchange="cargarProyecto(event)">
+                <input type="file" id="file-loader" style="position:absolute; width:0; height:0; opacity:0;" accept=".json,application/json,*/*" onchange="cargarProyecto(event)">
             </div>
 
             <div style="border-top: 1px dashed #cbd5e0; margin-top: 15px; padding-top: 10px;">
@@ -568,7 +571,7 @@
                     <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportGPX()">⬇️ Exportar GPX</button>
                 </div>
                 <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="document.getElementById('kml-gpx-loader').click()">⬆️ Importar Archivo</button>
-                <input type="file" id="kml-gpx-loader" style="display:none;" accept=".kml,.gpx" onchange="importKMLGPX(event)">
+                <input type="file" id="kml-gpx-loader" style="position:absolute; width:0; height:0; opacity:0;" accept=".kml,.gpx,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,*/*" onchange="importKMLGPX(event)">
                 <p style="font-size: 10px; color: #64748b; margin: 8px 0 0 0; text-align: center;">Formatos compatibles: Google Earth (.kml) y Garmin (.gpx)<br><i>(Extrae puntos, rutas y áreas estándar)</i></p>
             </div>
         </div>
@@ -824,18 +827,19 @@
             renderCloudProjects();
         }, (error) => {
             console.error("Error listening to projects: ", error);
+            window.listenError = error.message;
         });
     }
 
-    window.guardarEnNube = async function() {
+    // SE HA ACTUALIZADO PARA RECIBIR EL BOTÓN DE FORMA SEGURA Y MOSTRAR ALERTAS EXACTAS
+    window.guardarEnNube = async function(btn) {
         if (!currentUser) {
-            window.customAlert("Error", "No estás autenticado en la nube. Espera un momento y vuelve a intentarlo.");
+            window.customAlert("Error de Conexión", "No se pudo conectar a tu Firebase.\n\nCausas probables:\n1. Falta activar 'Anónimo' en Firebase > Authentication.\n2. Estás probando esto desde un dominio bloqueado por Firebase.\n\nDetalle técnico: " + (window.authError || "Cargando o bloqueado."));
             return;
         }
         
-        const btn = event.currentTarget;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ Guardando...";
+        const originalText = btn.innerText;
+        btn.innerText = "⏳ Guardando...";
         btn.disabled = true;
 
         const geojsonData = window.drawnItems.toGeoJSON();
@@ -845,7 +849,12 @@
                 feature.id = "am_" + Date.now() + "_" + index; 
                 feature.properties.name = feature.properties.layerName || 'Elemento';
                 feature.properties.title = feature.properties.layerName || 'Elemento';
-                feature.properties.description = feature.properties.faction ? "Grupo/Bando: " + feature.properties.faction : "";
+                
+                let desc = "";
+                if (feature.properties.faction) desc += "Bando: " + feature.properties.faction;
+                if (feature.properties.grupo) desc += (desc ? " | " : "") + "Grupo: " + feature.properties.grupo;
+                feature.properties.description = desc;
+                
                 feature.properties['marker-color'] = feature.properties.color || '#e74c3c';
                 feature.properties['stroke'] = feature.properties.color || '#2ecc71';
             }
@@ -862,17 +871,26 @@
                 data: projectDataStr,
                 updatedAt: Date.now()
             });
-            window.customAlert("Éxito", "El proyecto se ha guardado en la nube correctamente.");
+            window.customAlert("Éxito", "El proyecto se ha guardado en tu base de datos Firebase correctamente.");
         } catch (e) {
             console.error(e);
-            window.customAlert("Error", "No se pudo guardar el proyecto en la nube.");
+            window.customAlert("Error de Permisos (Reglas)", "No se pudo guardar el proyecto en tu base de datos.\n\nCausa probable: Las 'Reglas' de Firestore Database en Firebase no permiten escribir datos (o no has creado la base de datos aún).\n\nDetalle: " + e.message);
         } finally {
-            btn.innerHTML = originalText;
+            btn.innerText = originalText;
             btn.disabled = false;
         }
     };
 
     window.abrirNube = function() {
+        if (!currentUser) {
+            window.customAlert("Error de Conexión", "No estás autenticado en Firebase.\n\nDetalle técnico: " + (window.authError || "Conectando o bloqueado."));
+            return;
+        }
+        if (window.listenError) {
+             window.customAlert("Error de Permisos", "No tienes permisos para leer datos.\n\nRevisa la pestaña 'Reglas' de tu Firestore en Firebase.\n\nDetalle: " + window.listenError);
+             return;
+        }
+        
         document.getElementById('cloud-modal').style.display = 'flex';
         renderCloudProjects();
     };
@@ -882,7 +900,7 @@
         if (!list) return;
         
         if (cloudProjects.length === 0) {
-            list.innerHTML = '<p style="font-size:12px; color:#64748b; text-align:center; padding-top: 20px;">No hay proyectos guardados en la nube.</p>';
+            list.innerHTML = '<p style="font-size:12px; color:#64748b; text-align:center; padding-top: 20px;">No hay proyectos guardados en tu nube de Firebase.</p>';
             return;
         }
         
@@ -908,10 +926,10 @@
             const data = JSON.parse(proj.data);
             window.procesarDatosCargados(data, proj.name);
             document.getElementById('cloud-modal').style.display = 'none';
-            window.customAlert("Éxito", "Proyecto cargado desde la nube.");
+            window.customAlert("Éxito", "Proyecto cargado desde tu base de datos.");
         } catch (e) {
             console.error(e);
-            window.customAlert("Error", "Los datos del proyecto están corruptos o hubo un error al leerlos.");
+            window.customAlert("Error", "Los datos del proyecto en la nube están corruptos.");
         }
     };
 </script>
@@ -1666,6 +1684,7 @@
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
         layer.feature.properties.faction = window.projectName; // Se asocia al proyecto actual
+        layer.feature.properties.grupo = "";
         layer.isHidden = false;
         
         if (e.layerType === 'marker') {
@@ -1806,6 +1825,7 @@
 
         const modal = document.getElementById('edit-modal');
         document.getElementById('edit-name-input').value = layer.feature.properties.layerName || '';
+        document.getElementById('edit-group-input').value = layer.feature.properties.grupo || '';
         
         // --- Dinámica del Dropdown de Bando/Grupo ---
         const factionSelect = document.getElementById('edit-faction-input');
@@ -1857,6 +1877,7 @@
             modal.style.display = 'none';
             const newName = document.getElementById('edit-name-input').value.trim() || layer.feature.properties.layerName;
             layer.feature.properties.faction = document.getElementById('edit-faction-input').value;
+            layer.feature.properties.grupo = document.getElementById('edit-group-input').value.trim();
             
             if (newName !== layer.feature.properties.layerName) {
                 const oldName = layer.feature.properties.layerName;
@@ -2974,7 +2995,12 @@
                 feature.id = "am_" + Date.now() + "_" + index; 
                 feature.properties.name = feature.properties.layerName || 'Elemento';
                 feature.properties.title = feature.properties.layerName || 'Elemento';
-                feature.properties.description = feature.properties.faction ? "Grupo/Bando: " + feature.properties.faction : "";
+                
+                let desc = "";
+                if (feature.properties.faction) desc += "Bando: " + feature.properties.faction;
+                if (feature.properties.grupo) desc += (desc ? " | " : "") + "Grupo: " + feature.properties.grupo;
+                feature.properties.description = desc;
+                
                 feature.properties['marker-color'] = feature.properties.color || '#e74c3c';
                 feature.properties['stroke'] = feature.properties.color || '#2ecc71';
             }
@@ -3018,7 +3044,11 @@
         drawnItems.eachLayer(layer => {
             const id = L.stamp(layer);
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
-            const desc = escapeXML(layer.feature?.properties?.faction ? "Bando: " + layer.feature.properties.faction : "");
+            
+            let rawDesc = "";
+            if (layer.feature?.properties?.faction) rawDesc += "Bando: " + layer.feature.properties.faction;
+            if (layer.feature?.properties?.grupo) rawDesc += (rawDesc ? " | " : "") + "Grupo: " + layer.feature.properties.grupo;
+            const desc = escapeXML(rawDesc);
             
             // Añadido 'id' al Placemark y etiqueta 'description' para iTAK
             kml += `<Placemark id="am_${id}"><name>${name}</name><description>${desc}</description>`;
@@ -3045,7 +3075,11 @@
         gpx += `<metadata><name>${escapeXML(window.projectName)}</name></metadata>\n`;
         drawnItems.eachLayer(layer => {
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
-            const desc = escapeXML(layer.feature?.properties?.faction ? "Bando: " + layer.feature.properties.faction : "");
+            
+            let rawDesc = "";
+            if (layer.feature?.properties?.faction) rawDesc += "Bando: " + layer.feature.properties.faction;
+            if (layer.feature?.properties?.grupo) rawDesc += (rawDesc ? " | " : "") + "Grupo: " + layer.feature.properties.grupo;
+            const desc = escapeXML(rawDesc);
             
             if (layer instanceof L.Marker) {
                 const ll = layer.getLatLng(); gpx += `<wpt lat="${ll.lat}" lon="${ll.lng}"><name>${name}</name><desc>${desc}</desc></wpt>\n`;
@@ -3171,6 +3205,7 @@
     function addImportedLayer(layer, name, type, folderName) {
         const id = L.stamp(layer);
         layer.feature = { type: 'Feature', properties: { layerName: name, faction: folderName || window.projectName } };
+        layer.feature.properties.grupo = "";
         layer.isHidden = false;
         
         let baseText = 'Importado';
@@ -3301,6 +3336,7 @@
         newMarker.feature = { type: 'Feature', properties: {} };
         newMarker.feature.properties.layerName = name;
         newMarker.feature.properties.faction = window.projectName;
+        newMarker.feature.properties.grupo = "";
         newMarker.isHidden = false;
         newMarker.feature.properties.color = color;
         newMarker.feature.properties.iconType = 'punto';
