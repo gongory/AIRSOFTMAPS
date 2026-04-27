@@ -617,6 +617,16 @@
 
             <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Opacidad Capa Secundaria</label>
             <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4" style="width:100%; margin-bottom: 0;" oninput="changeLayer()">
+            
+            <!-- OFFLINE BUTTON -->
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #cbd5e0;">
+                <label style="font-size: 10px; font-weight: bold; color: var(--success); display: block; margin-bottom: 4px;">Modo Avión / Sin Cobertura</label>
+                <button class="btn-outline" id="btn-offline" style="margin-bottom: 5px; border-color: var(--success); color: var(--success);" onclick="window.downloadOfflineMap()">⬇️ Descargar Zona Actual</button>
+                <div id="offline-progress" style="display:none; font-size:11px; font-weight:bold; color:#475569; text-align:center; width:100%; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+                    <div id="offline-bar" style="width:0%; background:var(--success); color:white; padding:2px 0; transition: width 0.3s;">0%</div>
+                </div>
+                <p style="font-size: 9px; color: #64748b; margin: 4px 0 0 0; text-align: center;">Descarga el trozo de mapa actual para usarlo sin internet en el monte.</p>
+            </div>
         </div>
  
         <button class="btn-outline" id="toggleGridMenuBtn" onclick="toggleGridGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
@@ -759,18 +769,15 @@
     </div>
 </div>
  
-<!-- SCRIPTS EXTERNOS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-<!-- LÓGICA DE FIREBASE Y NUBE -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // PON AQUÍ TUS DATOS DE FIREBASE CUANDO LO LLEVES A TU SERVIDOR:
     const miConfiguracionFirebase = {
         apiKey: "AIzaSyDIy8yd_3z85TUYADDVRI6lDo9-jJvYsVo",
         authDomain: "airsoftmaps-3bc14.firebaseapp.com",
@@ -780,7 +787,6 @@
         appId: "1:198929323056:web:96653efbc97f6f919249f5"
     };
 
-    // (El código de abajo usa tus datos si los pones, o la conexión interna del visor para que funcione aquí)
     const firebaseConfig = Object.keys(miConfiguracionFirebase).length > 0 ? miConfiguracionFirebase : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {});
 
     const app = initializeApp(firebaseConfig);
@@ -836,7 +842,6 @@
         });
     }
 
-    // SE HA ACTUALIZADO PARA RECIBIR EL BOTÓN DE FORMA SEGURA Y MOSTRAR ALERTAS EXACTAS
     window.guardarEnNube = async function(btn) {
         if (!currentUser) {
             window.customAlert("Error de Conexión", "No se pudo conectar a tu Firebase.\n\nCausas probables:\n1. Falta activar 'Anónimo' en Firebase > Authentication.\n2. Estás probando esto desde un dominio bloqueado por Firebase.\n\nDetalle técnico: " + (window.authError || "Cargando o bloqueado."));
@@ -939,7 +944,6 @@
     };
 </script>
 
-<!-- LÓGICA PRINCIPAL DE LA APP -->
 <script>
     // Variables globales para compartirlas con el módulo de Firebase
     window.projectName = "Proyecto_AirsoftMaps";
@@ -954,6 +958,64 @@
     if (L.Draw && L.Draw.Polyline) {
         L.Draw.Polyline.prototype._onTouch = function () {};
     }
+
+    // OFFLINE TILE LAYER OVERRIDE
+    L.TileLayer.prototype.createTile = function (coords, done) {
+        const tile = document.createElement('img');
+        L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile));
+        L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile));
+        if (this.options.crossOrigin || this.options.crossOrigin === '') {
+            tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin;
+        }
+        tile.alt = ''; tile.setAttribute('role', 'presentation');
+        const url = this.getTileUrl(coords);
+        if ('caches' in window) {
+            caches.open('airsoftmaps-offline').then(cache => {
+                cache.match(url).then(response => {
+                    if (response) { response.blob().then(blob => { tile.src = URL.createObjectURL(blob); }); } 
+                    else { tile.src = url; fetch(url).then(netRes => { if (netRes.ok) cache.put(url, netRes.clone()); }).catch(() => {}); }
+                });
+            });
+        } else { tile.src = url; }
+        return tile;
+    };
+
+    window.downloadOfflineMap = async function() {
+        if (!('caches' in window)) { window.customAlert("Error", "Tu navegador no soporta almacenamiento offline avanzado."); return; }
+        const btn = document.getElementById('btn-offline');
+        const progressContainer = document.getElementById('offline-progress');
+        const progressBar = document.getElementById('offline-bar');
+        btn.disabled = true; progressContainer.style.display = 'block'; progressBar.style.width = '0%'; progressBar.innerText = 'Calculando...';
+        const bounds = window.map.getBounds(); const currentZoom = window.map.getZoom(); const maxZoom = Math.min(currentZoom + 2, 18);
+        let urlsToCache = []; const layers = [];
+        window.map.eachLayer(l => { if (l instanceof L.TileLayer) layers.push(l); });
+        for (let z = currentZoom; z <= maxZoom; z++) {
+            const nwPoint = window.map.project(bounds.getNorthWest(), z).divideBy(256).floor();
+            const sePoint = window.map.project(bounds.getSouthEast(), z).divideBy(256).floor();
+            for (let x = nwPoint.x; x <= sePoint.x; x++) {
+                for (let y = nwPoint.y; y <= sePoint.y; y++) {
+                    layers.forEach(layer => { urlsToCache.push(layer.getTileUrl({x: x, y: y, z: z})); });
+                }
+            }
+        }
+        if (urlsToCache.length > 2500) {
+            window.customAlert("Área demasiado grande", `Estás intentando descargar ${urlsToCache.length} fragmentos de mapa. Haz un poco de zoom para reducir el terreno.`);
+            btn.disabled = false; progressContainer.style.display = 'none'; return;
+        }
+        try {
+            const cache = await caches.open('airsoftmaps-offline'); let downloaded = 0;
+            for (let i = 0; i < urlsToCache.length; i += 15) {
+                const batch = urlsToCache.slice(i, i + 15);
+                await Promise.all(batch.map(async url => {
+                    try { const match = await cache.match(url); if (!match) { const res = await fetch(url); if (res.ok) await cache.put(url, res); } } catch(e) {}
+                }));
+                downloaded += batch.length; const pct = Math.round((downloaded / urlsToCache.length) * 100);
+                progressBar.style.width = pct + '%'; progressBar.innerText = pct + '%';
+            }
+            window.customAlert("¡Descarga Completada!", `Se han guardado ${urlsToCache.length} cuadrículas del mapa en el disco de tu dispositivo.\n\nYa puedes poner el móvil en Modo Avión.`);
+        } catch (err) { window.customAlert("Error de Descarga", "Ocurrió un error al guardar el mapa: " + err.message);
+        } finally { btn.disabled = false; setTimeout(() => { progressContainer.style.display = 'none'; }, 3000); }
+    };
 
     let activeHandler = null, gridLayer = null, isGridVisible = false, searchMarker = null;
     let mtnGridLayer = null, isMtnGridVisible = false;
@@ -1333,7 +1395,7 @@
                 }
                 
                 if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-                    typeIcon = layer.feature.properties.isAutoRoute ? '🗺️' : '📏';
+                    typeIcon = layer.feature?.properties?.isAutoRoute ? '🗺️' : '📏';
                 }
                 if (layer instanceof L.Polygon) typeIcon = '🔲';
 
@@ -1631,18 +1693,18 @@
                 iconSize: [32, 32], iconAnchor: [16, 16]
             });
         }
-        if (!type || type === 'punto') {
-            return L.divIcon({
-                className: 'custom-colored-marker',
-                html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
-                iconSize: [20, 20], iconAnchor: [10, 10]
-            });
-        }
         if (type === 'bandera') {
             return L.divIcon({
                 className: 'custom-colored-marker',
                 html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">🚩</div>`,
                 iconSize: [28, 28], iconAnchor: [14, 14]
+            });
+        }
+        if (!type || type === 'punto') {
+            return L.divIcon({
+                className: 'custom-colored-marker',
+                html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);"></div>`,
+                iconSize: [20, 20], iconAnchor: [10, 10]
             });
         }
         return L.divIcon({
