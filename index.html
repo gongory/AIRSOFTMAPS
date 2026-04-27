@@ -2519,18 +2519,38 @@
         }
     }
  
+    let orientationHandlerActive = false;
+
+    function handleDeviceOrientation(event) {
+        let heading = null;
+        if (event.webkitCompassHeading !== undefined) {
+            heading = event.webkitCompassHeading; 
+        } else if (event.absolute === true && event.alpha !== null) {
+            heading = 360 - event.alpha; 
+        } else if (event.alpha !== null) {
+            heading = 360 - event.alpha; 
+        }
+        
+        if (heading !== null) {
+            window.currentDeviceHeading = heading;
+            const arrow = document.getElementById('user-dir-arrow');
+            if (arrow) {
+                arrow.style.transform = `rotate(${heading}deg)`;
+                arrow.style.display = 'block';
+            }
+        }
+    }
+
     function toggleLocation() {
         const btn = document.querySelector('button[title="Mi Ubicación"]');
 
         if (locWatchId !== null) {
             if (!window.isFollowingUser) {
-                // If tracking but panned away, clicking again re-centers and follows
                 window.isFollowingUser = true;
                 if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 });
                 if (btn) { btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
                 return;
             } else {
-                // If already tracking and following, clicking stops completely
                 navigator.geolocation.clearWatch(locWatchId);
                 locWatchId = null;
                 window.isFollowingUser = false;
@@ -2538,6 +2558,11 @@
                 if (userLocCircle) map.removeLayer(userLocCircle);
                 userLocMarker = null;
                 userLocCircle = null;
+                
+                window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
+                window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                orientationHandlerActive = false;
+
                 if (btn) { 
                     btn.innerHTML = '🎯'; 
                     btn.style.color = ''; 
@@ -2559,6 +2584,23 @@
         }
 
         window.isFollowingUser = true;
+
+        if (!orientationHandlerActive) {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                            orientationHandlerActive = true;
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                orientationHandlerActive = true;
+            }
+        }
 
         locWatchId = navigator.geolocation.watchPosition(
             (pos) => {
@@ -2589,10 +2631,15 @@
                 }
 
                 if (!userLocMarker) {
-                    userLocMarker = L.circleMarker([lat, lng], { 
-                        radius: 6, color: '#fff', weight: 2, fillColor: '#0d6efd', fillOpacity: 1 
-                    }).addTo(map);
-                    
+                    const userIcon = L.divIcon({
+                        className: 'custom-user-marker',
+                        html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
+                                   <div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid rgba(13, 110, 253, 0.9); transform-origin: 50% 100%; margin-left: -6px; margin-top: -16px; filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.5)); transform: rotate(${window.currentDeviceHeading || 0}deg); pointer-events: none; transition: transform 0.1s linear;"></div>
+                               </div>`,
+                        iconSize: [18, 18],
+                        iconAnchor: [9, 9]
+                    });
+                    userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
                 } else {
                     userLocMarker.setLatLng([lat, lng]);
                 }
