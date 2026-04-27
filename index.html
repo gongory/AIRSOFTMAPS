@@ -560,8 +560,8 @@
             
             <div style="display:flex; gap:8px; margin-bottom: 10px;">
                 <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar Local (JSON)</button>
-                <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar Local</button>
-                <input type="file" id="file-loader" style="position:absolute; width:0; height:0; opacity:0;" accept=".json,application/json,*/*" onchange="cargarProyecto(event)">
+                <label class="btn-outline" for="file-loader" style="margin-bottom:0; cursor:pointer;">📂 Cargar Local</label>
+                <input type="file" id="file-loader" style="position:absolute; width:0; height:0; opacity:0; z-index:-1;" onchange="cargarProyecto(event)">
             </div>
 
             <div style="border-top: 1px dashed #cbd5e0; margin-top: 15px; padding-top: 10px;">
@@ -570,8 +570,8 @@
                     <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportKML()">⬇️ Exportar KML</button>
                     <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportGPX()">⬇️ Exportar GPX</button>
                 </div>
-                <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="document.getElementById('kml-gpx-loader').click()">⬆️ Importar Archivo</button>
-                <input type="file" id="kml-gpx-loader" style="position:absolute; width:0; height:0; opacity:0;" accept=".kml,.gpx,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,*/*" onchange="importKMLGPX(event)">
+                <label class="btn-outline" for="kml-gpx-loader" style="margin-bottom:0; font-size: 11px; cursor:pointer;">⬆️ Importar Archivo</label>
+                <input type="file" id="kml-gpx-loader" style="position:absolute; width:0; height:0; opacity:0; z-index:-1;" onchange="importKMLGPX(event)">
                 <p style="font-size: 10px; color: #64748b; margin: 8px 0 0 0; text-align: center;">Formatos compatibles: Google Earth (.kml) y Garmin (.gpx)<br><i>(Extrae puntos, rutas y áreas estándar)</i></p>
             </div>
         </div>
