@@ -510,10 +510,14 @@
         </div>
     </div>
 </div>
- 
-<div id="drawing-actions" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; gap: 10px; width: max-content; justify-content: center;">
-    <button id="undo-point-btn" onclick="undoLastPoint()" style="background: var(--ign-gold); color: var(--ign-blue); border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">↩️ Deshacer Punto</button>
-    <button id="cancel-crop-btn" onclick="stopDrawing()" style="background: var(--danger); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer;">✕ Cancelar Acción (Esc)</button>
+
+<div id="drawing-actions" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 10px; width: max-content;">
+    <div id="auto-route-info" style="display:none; background: rgba(255,255,255,0.95); padding: 8px 16px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: 800; color: var(--ign-blue); font-size: 13px; border: 2px solid var(--ign-gold);"></div>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="undo-point-btn" onclick="undoLastPoint()" style="background: var(--ign-gold); color: var(--ign-blue); border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">↩️ Deshacer Punto</button>
+        <button id="finish-route-btn" onclick="finishAutoRoute()" style="background: var(--success); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">✅ Finalizar Ruta</button>
+        <button id="cancel-crop-btn" onclick="stopDrawing()" style="background: var(--danger); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer;">✕ Cancelar Acción (Esc)</button>
+    </div>
 </div>
 
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
@@ -722,9 +726,10 @@
             </div>
             <div class="edit-tools-grid" style="margin-bottom: 0;">
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('marker')">📍 Marcador</button>
-                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polyline')">📏 Medir/Ruta</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polyline')">📏 Ruta Manual</button>
+                <button class="btn-outline" style="margin-bottom: 0; grid-column: span 2; border-color: var(--info); color: var(--info);" onclick="enableTool('auto-route')">🗺️ Ruta Inteligente</button>
                 <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polygon')">🔲 Área</button>
-                <button class="btn-outline" style="margin-bottom: 0;" id="btn-compass" onclick="toggleCompass()">🧭 Rosa Vientos</button>
+                <button class="btn-outline" style="margin-bottom: 0;" id="btn-compass" onclick="toggleCompass()">🧭 Brújula</button>
                 <button class="btn-outline" id="toggleLegendBtn" style="margin-bottom: 0; border-style: dashed; grid-column: span 2;" onclick="toggleMapLegend()">📋 Leyenda</button>
             </div>
         </div>
@@ -1327,7 +1332,9 @@
                     labelBtnHtml = `<button style="background:none; border:none; cursor:pointer; font-size:14px; padding:0 5px; opacity:${labelOpacity};" onclick="toggleMarkerLabel(${id})" title="Mostrar/Ocultar Nombre en Mapa">🏷️</button>`;
                 }
                 
-                if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) typeIcon = '📏';
+                if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+                    typeIcon = layer.feature.properties.isAutoRoute ? '🗺️' : '📏';
+                }
                 if (layer instanceof L.Polygon) typeIcon = '🔲';
 
                 html += `<div class="layer-item">
@@ -1406,6 +1413,11 @@
             if (layer.isHidden) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
             else layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
         }
+        if (layer.endMarker) {
+            layer.endMarker.isHidden = layer.isHidden;
+            if (layer.isHidden) layer.endMarker.setOpacity(0);
+            else layer.endMarker.setOpacity(1);
+        }
         
         updateLayerTree();
     }
@@ -1454,6 +1466,11 @@
                 layer.bufferCircle.isHidden = layer.isHidden;
                 if (layer.isHidden) layer.bufferCircle.setStyle({ opacity: 0, fillOpacity: 0 });
                 else layer.bufferCircle.setStyle({ opacity: 1, fillOpacity: 0.15 });
+            }
+            if (layer.endMarker) {
+                layer.endMarker.isHidden = layer.isHidden;
+                if (layer.isHidden) layer.endMarker.setOpacity(0);
+                else layer.endMarker.setOpacity(1);
             }
         });
         updateLayerTree();
@@ -1621,6 +1638,13 @@
                 iconSize: [20, 20], iconAnchor: [10, 10]
             });
         }
+        if (type === 'bandera') {
+            return L.divIcon({
+                className: 'custom-colored-marker',
+                html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">🚩</div>`,
+                iconSize: [28, 28], iconAnchor: [14, 14]
+            });
+        }
         return L.divIcon({
             className: 'custom-colored-marker',
             html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${tacticalIcons[type] || '📍'}</div>`,
@@ -1629,23 +1653,74 @@
     }
     
     function undoLastPoint() {
-        if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') activeHandler.deleteLastVertex();
+        if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') {
+            activeHandler.deleteLastVertex();
+        } else if (autoRoutePoints && autoRoutePoints.length > 0) {
+            autoRoutePoints.pop();
+            autoRouteLayer.clearLayers();
+            autoRoutePoints.forEach(p => L.circleMarker(p, {radius: 5, color: '#2ecc71', fillColor: '#fff', fillOpacity: 1}).addTo(autoRouteLayer));
+            
+            if (autoRoutePoints.length > 1) {
+                const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';');
+                fetch(`https://router.project-osrm.org/route/v1/foot/${coordsStr}?geometries=geojson&overview=full`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code === 'Ok' && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                        const lineColor = document.getElementById('drawColor').value || '#2ecc71';
+                        const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
+                        currentAutoRouteLine = L.polyline(autoRouteCoordinates, { color: lineColor, weight: lineWeight, dashArray: '5, 10' }).addTo(autoRouteLayer);
+                        
+                        const dist = route.distance;
+                        const distText = dist > 1000 ? (dist/1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
+                        const timeMinutes = Math.round(route.duration / 60);
+                        const timeHours = Math.floor(timeMinutes / 60);
+                        const remMin = timeMinutes % 60;
+                        const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                        
+                        const infoDiv = document.getElementById('auto-route-info');
+                        if(infoDiv) {
+                            infoDiv.style.display = 'block';
+                            infoDiv.innerHTML = `📏 Dist: ${distText} | ⏱️ Aprox: ${timeText}`;
+                        }
+                    }
+                }).catch(err => console.error(err));
+            } else {
+                autoRouteCoordinates = [];
+                currentAutoRouteLine = null;
+                const infoDiv = document.getElementById('auto-route-info');
+                if(infoDiv) infoDiv.style.display = 'none';
+            }
+        }
     }
 
     function enableTool(type) {
         stopDrawing(); 
         toggleMenu(); 
         
+        document.getElementById('drawing-actions').style.display = 'flex';
+        document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon' || type === 'auto-route') ? 'block' : 'none';
+        
+        const finishBtn = document.getElementById('finish-route-btn');
+        if (finishBtn) finishBtn.style.display = (type === 'auto-route') ? 'block' : 'none';
+
         if (type === 'delete') {
-            document.getElementById('drawing-actions').style.display = 'flex';
             document.getElementById('cancel-crop-btn').innerText = "✕ Salir";
-            document.getElementById('undo-point-btn').style.display = 'none';
             drawnItems.eachLayer(layer => layer.on('click', deleteClickHandler));
             return;
+        } else {
+            document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar Acción (Esc)";
         }
 
-        document.getElementById('drawing-actions').style.display = 'flex';
-        document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon') ? 'block' : 'none';
+        if (type === 'auto-route') {
+            autoRoutePoints = [];
+            autoRouteCoordinates = [];
+            autoRouteLayer.addTo(map);
+            map.on('click', handleAutoRouteClick);
+            document.getElementById('map-container').style.cursor = 'crosshair';
+            return;
+        }
         
         if (type === 'marker') {
             drawOptions.marker.icon = getMarkerIconObj(document.getElementById('markerColor').value || '#e74c3c', 'punto');
@@ -1659,6 +1734,24 @@
         if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, drawOptions.polygon);
 
         if (activeHandler) activeHandler.enable();
+    }
+
+    function stopDrawing() {
+        if (activeHandler) { activeHandler.disable(); activeHandler = null; }
+        drawnItems.eachLayer(layer => layer.off('click', deleteClickHandler));
+        document.getElementById('drawing-actions').style.display = 'none';
+
+        // Limpieza Ruta Inteligente
+        map.off('click', handleAutoRouteClick);
+        if (typeof autoRouteLayer !== 'undefined') {
+            autoRouteLayer.clearLayers();
+            map.removeLayer(autoRouteLayer);
+        }
+        if (typeof currentAutoRouteLine !== 'undefined') currentAutoRouteLine = null;
+        document.getElementById('map-container').style.cursor = '';
+        
+        const infoDiv = document.getElementById('auto-route-info');
+        if(infoDiv) infoDiv.style.display = 'none';
     }
 
     function askName(title, defaultText) {
@@ -1678,13 +1771,14 @@
         const layer = e.layer;
         const id = L.stamp(layer);
         
-        let defaultName = e.layerType === 'marker' ? 'Marcador' : (e.layerType === 'polyline' ? 'Ruta' : 'Área');
+        let defaultName = e.layerType === 'marker' ? 'Marcador' : (e.layerType === 'polyline' ? (layer.isAutoRoute ? 'Ruta Inteligente' : 'Ruta') : 'Área');
         const layerName = await askName(`Nombre para ${defaultName}:`, defaultName);
         
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
         layer.feature.properties.faction = window.projectName; // Se asocia al proyecto actual
         layer.feature.properties.grupo = "";
+        layer.feature.properties.isAutoRoute = layer.isAutoRoute || false;
         layer.isHidden = false;
         
         if (e.layerType === 'marker') {
@@ -1748,12 +1842,29 @@
         } 
         else if (e.layerType === 'polyline') {
             const latlngs = layer.getLatLngs();
+
+            if (layer.isAutoRoute) {
+                const endPt = latlngs[latlngs.length - 1];
+                layer.endMarker = L.marker(endPt, { 
+                    icon: getMarkerIconObj(layer.feature.properties.color || '#2ecc71', 'bandera'),
+                    zIndexOffset: 1000
+                }).addTo(map);
+                
+                const originalSetPopupContent = layer.setPopupContent.bind(layer);
+                layer.setPopupContent = function(content) {
+                    originalSetPopupContent(content);
+                    if (layer.endMarker) layer.endMarker.setPopupContent(content);
+                };
+                layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) renderChart(layer, id); });
+            }
+
             let distance = 0;
             for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i+1]);
             const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
             
             baseText = `<div><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b><br>Desnivel: <i>...</i></div>`;
             layer.bindPopup(baseText + actionBtns).openPopup();
+            if (layer.endMarker) layer.endMarker.bindPopup(baseText + actionBtns);
             
             try {
                 let samplePoints = latlngs;
@@ -1893,6 +2004,10 @@
                 layer.setStyle({ color: newColor, weight: newWeight });
                 layer.options.color = newColor; layer.options.weight = newWeight;
                 layer.feature.properties.color = newColor; layer.feature.properties.weight = newWeight;
+                
+                if (layer.endMarker) {
+                    layer.endMarker.setIcon(getMarkerIconObj(newColor, 'bandera'));
+                }
             } else if (isMarker) {
                 const newColor = document.getElementById('edit-color-input').value;
                 const newIconType = document.getElementById('edit-icon-input').value;
@@ -1929,15 +2044,10 @@
         if (layer) {
             if (layer.bufferCircle) map.removeLayer(layer.bufferCircle);
             if (layer.conePolygon) map.removeLayer(layer.conePolygon);
+            if (layer.endMarker) map.removeLayer(layer.endMarker);
             drawnItems.removeLayer(layer);
             updateLayerTree();
         }
-    }
-
-    function stopDrawing() {
-        if (activeHandler) { activeHandler.disable(); activeHandler = null; }
-        drawnItems.eachLayer(layer => layer.off('click', deleteClickHandler));
-        document.getElementById('drawing-actions').style.display = 'none';
     }
 
     function openImageModal(src) {
@@ -3048,6 +3158,7 @@
             drawnItems.eachLayer(l => { 
                 if(l.bufferCircle) map.removeLayer(l.bufferCircle); 
                 if(l.conePolygon) map.removeLayer(l.conePolygon);
+                if(l.endMarker) map.removeLayer(l.endMarker);
             });
             drawnItems.clearLayers();
             L.geoJSON(geojsonFeatures, {
@@ -3070,6 +3181,23 @@
                     drawnItems.addLayer(layer);
                     const id = L.stamp(layer);
                     layer.isHidden = false;
+                    layer.isAutoRoute = feature.properties.isAutoRoute || false;
+                    
+                    if (layer.isAutoRoute && layer instanceof L.Polyline) {
+                        const latlngs = layer.getLatLngs();
+                        const endPt = latlngs[latlngs.length - 1];
+                        layer.endMarker = L.marker(endPt, { 
+                            icon: getMarkerIconObj(feature.properties.color || '#2ecc71', 'bandera'),
+                            zIndexOffset: 1000
+                        }).addTo(map);
+                        
+                        const originalSetPopupContent = layer.setPopupContent.bind(layer);
+                        layer.setPopupContent = function(content) {
+                            originalSetPopupContent(content);
+                            if (layer.endMarker) layer.endMarker.setPopupContent(content);
+                        };
+                        layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) renderChart(layer, id); });
+                    }
                     
                     if(!feature.properties.faction) layer.feature.properties.faction = window.projectName;
 
@@ -3078,6 +3206,8 @@
                         <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
                     </div>`;
                     layer.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
+                    if (layer.endMarker) layer.endMarker.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
+                    
                     if (layer instanceof L.Marker) {
                         updateMarkerBuffer(layer);
                         updateMarkerLabel(layer);
@@ -3706,6 +3836,80 @@
     
     initMobileMode(); 
 
+    // --- FUNCIONES DE RUTA INTELIGENTE ---
+    let autoRoutePoints = [];
+    let autoRouteLayer = L.featureGroup();
+    let currentAutoRouteLine = null;
+    let autoRouteCoordinates = [];
+
+    async function handleAutoRouteClick(e) {
+        autoRoutePoints.push(e.latlng);
+        L.circleMarker(e.latlng, {radius: 5, color: '#2ecc71', fillColor: '#fff', fillOpacity: 1}).addTo(autoRouteLayer);
+
+        if (autoRoutePoints.length > 1) {
+            const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';');
+            try {
+                // Usamos el motor público OSRM en modo peatón (foot)
+                const response = await fetch(`https://router.project-osrm.org/route/v1/foot/${coordsStr}?geometries=geojson&overview=full`);
+                const data = await response.json();
+
+                if (data.code === 'Ok' && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    const geojsonCoords = route.geometry.coordinates;
+                    autoRouteCoordinates = geojsonCoords.map(c => [c[1], c[0]]); // Invertir Lng/Lat a Lat/Lng
+
+                    if (currentAutoRouteLine) {
+                        autoRouteLayer.removeLayer(currentAutoRouteLine);
+                    }
+
+                    const lineColor = document.getElementById('drawColor').value || '#2ecc71';
+                    const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
+
+                    currentAutoRouteLine = L.polyline(autoRouteCoordinates, {
+                        color: lineColor,
+                        weight: lineWeight,
+                        dashArray: '5, 10'
+                    }).addTo(autoRouteLayer);
+                    
+                    const dist = route.distance;
+                    const distText = dist > 1000 ? (dist/1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
+                    const timeMinutes = Math.round(route.duration / 60);
+                    const timeHours = Math.floor(timeMinutes / 60);
+                    const remMin = timeMinutes % 60;
+                    const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                    
+                    const infoDiv = document.getElementById('auto-route-info');
+                    if(infoDiv) {
+                        infoDiv.style.display = 'block';
+                        infoDiv.innerHTML = `📏 Dist: ${distText} | ⏱️ Aprox: ${timeText}`;
+                    }
+                } else {
+                    window.customAlert("Atención", "No se encontró un camino conectable entre esos puntos.");
+                }
+            } catch (error) {
+                console.error("Error fetching route:", error);
+                window.customAlert("Error", "No se pudo calcular la ruta. Comprueba tu conexión a Internet o intenta con puntos más cercanos.");
+            }
+        }
+    }
+
+    function finishAutoRoute() {
+        if (autoRouteCoordinates.length > 1) {
+            const lineColor = document.getElementById('drawColor').value || '#2ecc71';
+            const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
+
+            const finalPolyline = L.polyline(autoRouteCoordinates, {
+                color: lineColor,
+                weight: lineWeight
+            });
+            finalPolyline.isAutoRoute = true; // <- Esta es la línea clave que faltaba
+            
+            // Al disparar este evento, pasa por tu lógica original: pide el nombre, calcula desniveles y lo añade al Gestor de Capas
+            map.fire(L.Draw.Event.CREATED, { layer: finalPolyline, layerType: 'polyline' });
+        } else {
+            stopDrawing();
+        }
+    }
 </script>
 </body>
 </html>
