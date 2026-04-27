@@ -290,6 +290,30 @@
     </div>
 </div>
 
+<!-- Modal para Notificaciones / Alertas Globales -->
+<div id="alert-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:4000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;">
+        <h3 id="alert-modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:18px;">Notificación</h3>
+        <p id="alert-modal-msg" style="font-size: 14px; color: #475569; margin-bottom: 20px;"></p>
+        <div style="display:flex; justify-content:center;">
+            <button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="document.getElementById('alert-modal').style.display='none'">Aceptar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Proyectos de la Nube -->
+<div id="cloud-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:20px; border-radius:12px; width:320px; box-shadow:0 4px 20px rgba(0,0,0,0.3); max-height: 80vh; display: flex; flex-direction: column;">
+        <h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px; text-align: center;">☁️ Mis Proyectos (Nube)</h3>
+        <div id="cloud-project-list" style="flex:1; overflow-y:auto; margin-bottom: 15px; border: 1px solid #cbd5e0; border-radius: 8px; padding: 5px; min-height: 100px;">
+            <p style="font-size:12px; color:#64748b; text-align:center; padding-top: 20px;">Cargando nube...</p>
+        </div>
+        <div style="display:flex; justify-content:flex-end;">
+            <button style="padding:8px 15px; border-radius:6px; border:1px solid #cbd5e0; background:white; color:#475569; cursor:pointer; font-weight:bold; width:100%;" onclick="document.getElementById('cloud-modal').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+</div>
+
 <div id="confirm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;">
         <h3 style="margin-top:0; margin-bottom:15px; color:var(--danger); font-size:18px;">⚠️ Nuevo Proyecto</h3>
@@ -527,8 +551,13 @@
             </div>
             
             <div style="display:flex; gap:8px; margin-bottom: 10px;">
-                <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar (JSON)</button>
-                <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar (JSON)</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="guardarEnNube()">☁️ Guardar Nube</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="abrirNube()">☁️ Cargar Nube</button>
+            </div>
+            
+            <div style="display:flex; gap:8px; margin-bottom: 10px;">
+                <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar Local (JSON)</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="document.getElementById('file-loader').click()">📂 Cargar Local</button>
                 <input type="file" id="file-loader" style="display:none;" accept=".json" onchange="cargarProyecto(event)">
             </div>
 
@@ -722,11 +751,164 @@
     </div>
 </div>
  
+<!-- SCRIPTS EXTERNOS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
- 
+
+<!-- LÓGICA DE FIREBASE Y NUBE -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // PON AQUÍ TUS DATOS DE FIREBASE CUANDO LO LLEVES A TU SERVIDOR:
+    const miConfiguracionFirebase = {
+        apiKey: "AIzaSyDIy8yd_3z85TUYADDVRI6lDo9-jJvYsVo",
+        authDomain: "airsoftmaps-3bc14.firebaseapp.com",
+        projectId: "airsoftmaps-3bc14",
+        storageBucket: "airsoftmaps-3bc14.firebasestorage.app",
+        messagingSenderId: "198929323056",
+        appId: "1:198929323056:web:96653efbc97f6f919249f5"
+    };
+
+    // (El código de abajo usa tus datos si los pones, o la conexión interna del visor para que funcione aquí)
+    const firebaseConfig = Object.keys(miConfiguracionFirebase).length > 0 ? miConfiguracionFirebase : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {});
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        } catch (e) {
+            console.error("Firebase auth error", e);
+        }
+    };
+    initAuth();
+
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user) {
+            listenToProjects();
+        } else if (unsubscribeProjects) {
+            unsubscribeProjects();
+            unsubscribeProjects = null;
+        }
+    });
+
+    function listenToProjects() {
+        if (!currentUser) return;
+        const projectsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'projects');
+        unsubscribeProjects = onSnapshot(projectsRef, (snapshot) => {
+            cloudProjects = [];
+            snapshot.forEach(doc => {
+                cloudProjects.push({ id: doc.id, ...doc.data() });
+            });
+            renderCloudProjects();
+        }, (error) => {
+            console.error("Error listening to projects: ", error);
+        });
+    }
+
+    window.guardarEnNube = async function() {
+        if (!currentUser) {
+            window.customAlert("Error", "No estás autenticado en la nube. Espera un momento y vuelve a intentarlo.");
+            return;
+        }
+        
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⏳ Guardando...";
+        btn.disabled = true;
+
+        const geojsonData = window.drawnItems.toGeoJSON();
+        
+        geojsonData.features.forEach((feature, index) => {
+            if (feature && feature.properties) {
+                feature.id = "am_" + Date.now() + "_" + index; 
+                feature.properties.name = feature.properties.layerName || 'Elemento';
+                feature.properties.title = feature.properties.layerName || 'Elemento';
+                feature.properties.description = feature.properties.faction ? "Grupo/Bando: " + feature.properties.faction : "";
+                feature.properties['marker-color'] = feature.properties.color || '#e74c3c';
+                feature.properties['stroke'] = feature.properties.color || '#2ecc71';
+            }
+        });
+
+        geojsonData.view = { center: window.map.getCenter(), zoom: window.map.getZoom() };
+        const projectDataStr = JSON.stringify(geojsonData);
+        
+        const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', window.projectName.replace(/[^a-z0-9_-]/gi, '_'));
+        
+        try {
+            await setDoc(docRef, { 
+                name: window.projectName,
+                data: projectDataStr,
+                updatedAt: Date.now()
+            });
+            window.customAlert("Éxito", "El proyecto se ha guardado en la nube correctamente.");
+        } catch (e) {
+            console.error(e);
+            window.customAlert("Error", "No se pudo guardar el proyecto en la nube.");
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    };
+
+    window.abrirNube = function() {
+        document.getElementById('cloud-modal').style.display = 'flex';
+        renderCloudProjects();
+    };
+
+    function renderCloudProjects() {
+        const list = document.getElementById('cloud-project-list');
+        if (!list) return;
+        
+        if (cloudProjects.length === 0) {
+            list.innerHTML = '<p style="font-size:12px; color:#64748b; text-align:center; padding-top: 20px;">No hay proyectos guardados en la nube.</p>';
+            return;
+        }
+        
+        let html = '';
+        cloudProjects.sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0)).forEach(proj => {
+            const dateStr = proj.updatedAt ? new Date(proj.updatedAt).toLocaleString('es-ES') : 'Desconocido';
+            html += `<div style="padding: 8px; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-weight:bold; font-size:13px; color:#003366;">${proj.name}</div>
+                    <div style="font-size:10px; color:#64748b;">${dateStr}</div>
+                </div>
+                <button style="padding:4px 8px; font-size:12px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="window.cargarDesdeNube('${proj.id}')">Cargar</button>
+            </div>`;
+        });
+        list.innerHTML = html;
+    }
+
+    window.cargarDesdeNube = function(docId) {
+        const proj = cloudProjects.find(p => p.id === docId);
+        if (!proj) return;
+        
+        try {
+            const data = JSON.parse(proj.data);
+            window.procesarDatosCargados(data, proj.name);
+            document.getElementById('cloud-modal').style.display = 'none';
+            window.customAlert("Éxito", "Proyecto cargado desde la nube.");
+        } catch (e) {
+            console.error(e);
+            window.customAlert("Error", "Los datos del proyecto están corruptos o hubo un error al leerlos.");
+        }
+    };
+</script>
+
+<!-- LÓGICA PRINCIPAL DE LA APP -->
 <script>
+    // Variables globales para compartirlas con el módulo de Firebase
+    window.projectName = "Proyecto_AirsoftMaps";
+    
+    window.customAlert = function(title, msg) {
+        document.getElementById('alert-modal-title').innerText = title;
+        document.getElementById('alert-modal-msg').innerText = msg;
+        document.getElementById('alert-modal').style.display = 'flex';
+    };
+
     // Parche FIX MOBILE: Evita que Leaflet.draw duplique el punto por eventos touch y cierre la ruta/área al 2º clic
     if (L.Draw && L.Draw.Polyline) {
         L.Draw.Polyline.prototype._onTouch = function () {};
@@ -734,7 +916,6 @@
 
     let activeHandler = null, gridLayer = null, isGridVisible = false, searchMarker = null;
     let mtnGridLayer = null, isMtnGridVisible = false;
-    let projectName = "Proyecto_AirsoftMaps";
     let scaleControlObj = null;
     let isLegendVisible = false;
     let isZoomLocked = false;
@@ -830,9 +1011,11 @@
     currentOverlay.setOpacity(0.4);
  
     const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false, zoomSnap: 0, tap: false });
+    window.map = map;
     L.control.zoom({ position: 'topleft' }).addTo(map);
  
     const drawnItems = new L.FeatureGroup().addTo(map);
+    window.drawnItems = drawnItems;
 
     const drawOptions = {
         polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } },
@@ -1069,7 +1252,7 @@
         
         const factions = {};
         layers.forEach(layer => {
-            const faction = layer.feature?.properties?.faction || projectName;
+            const faction = layer.feature?.properties?.faction || window.projectName;
             if (!factions[faction]) factions[faction] = [];
             factions[faction].push(layer);
         });
@@ -1201,7 +1384,7 @@
     }
 
     function toggleFactionVisibility(factionName) {
-        const layers = drawnItems.getLayers().filter(l => (l.feature?.properties?.faction || projectName) === factionName);
+        const layers = drawnItems.getLayers().filter(l => (l.feature?.properties?.faction || window.projectName) === factionName);
         if (layers.length === 0) return;
         
         const hideAll = !layers.every(l => l.isHidden);
@@ -1464,7 +1647,7 @@
         
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
-        layer.feature.properties.faction = projectName; // Se asocia al proyecto actual
+        layer.feature.properties.faction = window.projectName; // Se asocia al proyecto actual
         layer.isHidden = false;
         
         if (e.layerType === 'marker') {
@@ -1608,7 +1791,7 @@
         
         // --- Dinámica del Dropdown de Bando/Grupo ---
         const factionSelect = document.getElementById('edit-faction-input');
-        const currentFaction = layer.feature.properties.faction || projectName;
+        const currentFaction = layer.feature.properties.faction || window.projectName;
         
         // Verifica si la carpeta ya existe en las opciones, si no, la añade temporalmente
         let factionExists = Array.from(factionSelect.options).some(opt => opt.value === currentFaction);
@@ -1731,7 +1914,7 @@
     function printImage(src, title, captureId = null) {
         const printWin = window.open('', '_blank');
         if (!printWin) {
-            alert("Por favor, permite las ventanas emergentes en tu navegador para poder imprimir.");
+            window.customAlert("Atención", "Por favor, permite las ventanas emergentes en tu navegador para poder imprimir.");
             return;
         }
 
@@ -2307,7 +2490,7 @@
         }
 
         if (!navigator.geolocation) {
-            alert("Tu navegador no soporta la geolocalización.");
+            window.customAlert("Error", "Tu navegador no soporta la geolocalización.");
             return;
         }
 
@@ -2352,7 +2535,7 @@
                 if (err.code === 2) msg = "Ubicación no disponible (comprueba si tienes cobertura GPS).";
                 if (err.code === 3) msg = "Se agotó el tiempo de espera al intentar localizarte.";
                 
-                alert(msg);
+                window.customAlert("Error", msg);
                 
                 if (btn) {
                     btn.innerHTML = originalText;
@@ -2637,7 +2820,7 @@
         toggleMenu(); 
         
         const factions = new Set();
-        factions.add(projectName); 
+        factions.add(window.projectName); 
         drawnItems.eachLayer(layer => {
             const fac = layer.feature?.properties?.faction;
             if (fac) factions.add(fac);
@@ -2668,14 +2851,14 @@
         
         if (newName && newName !== oldName) {
             drawnItems.eachLayer(layer => {
-                if ((layer.feature?.properties?.faction || projectName) === oldName) {
+                if ((layer.feature?.properties?.faction || window.projectName) === oldName) {
                     layer.feature.properties.faction = newName;
                 }
             });
             
-            if (projectName === oldName) {
-                projectName = newName;
-                document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
+            if (window.projectName === oldName) {
+                window.projectName = newName;
+                document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
             }
             
             updateLayerTree(); 
@@ -2691,8 +2874,8 @@
         window.acceptConfirmModal = async function() {
             document.getElementById('confirm-modal').style.display = 'none';
             const name = await askName("Nombre del nuevo proyecto:", "Nuevo_Proyecto");
-            projectName = name.trim() || "Nuevo_Proyecto";
-            document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
+            window.projectName = name.trim() || "Nuevo_Proyecto";
+            document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
 
             drawnItems.eachLayer(l => { 
                 if(l.bufferCircle) map.removeLayer(l.bufferCircle); 
@@ -2708,33 +2891,83 @@
         window.closeConfirmModal = function() { document.getElementById('confirm-modal').style.display = 'none'; toggleMenu(); };
     }
 
+    // --- FUNCIÓN CENTRALIZADA PARA CARGAR DATOS (LOCAL O NUBE) ---
+    window.procesarDatosCargados = function(data, fileName) {
+        window.projectName = fileName;
+        document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
+
+        if (data.view) map.setView(data.view.center, data.view.zoom);
+        
+        const geojsonFeatures = data.type === "FeatureCollection" ? data : data.features;
+        
+        if (geojsonFeatures) {
+            drawnItems.eachLayer(l => { 
+                if(l.bufferCircle) map.removeLayer(l.bufferCircle); 
+                if(l.conePolygon) map.removeLayer(l.conePolygon);
+            });
+            drawnItems.clearLayers();
+            L.geoJSON(geojsonFeatures, {
+                pointToLayer: function (feature, latlng) {
+                    const color = feature.properties.color || '#e74c3c';
+                    const iconType = feature.properties.iconType || 'punto';
+                    return L.marker(latlng, { icon: getMarkerIconObj(color, iconType) });
+                },
+                style: function (feature) {
+                    let styleOpt = {};
+                    if (feature.geometry.type === 'LineString') styleOpt = Object.assign({}, drawOptions.polyline.shapeOptions);
+                    if (feature.geometry.type === 'Polygon') styleOpt = Object.assign({}, drawOptions.polygon.shapeOptions);
+                    
+                    if (feature.properties.color) styleOpt.color = feature.properties.color;
+                    if (feature.properties.weight) styleOpt.weight = feature.properties.weight;
+                    if (feature.properties.fillOpacity) styleOpt.fillOpacity = feature.properties.fillOpacity;
+                    return styleOpt;
+                },
+                onEachFeature: function (feature, layer) {
+                    drawnItems.addLayer(layer);
+                    const id = L.stamp(layer);
+                    layer.isHidden = false;
+                    
+                    if(!feature.properties.faction) layer.feature.properties.faction = window.projectName;
+
+                    const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
+                        <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
+                        <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
+                    </div>`;
+                    layer.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
+                    if (layer instanceof L.Marker) {
+                        updateMarkerBuffer(layer);
+                        updateMarkerLabel(layer);
+                        updateMarkerCone(layer);
+                    }
+                    if (feature.properties.chartData) attachChartListener(layer, id);
+                }
+            });
+        }
+        if (searchMarker) map.removeLayer(searchMarker);
+        updateLayerTree(); toggleMenu(); 
+    };
+
     function guardarProyecto() {
         const geojsonData = drawnItems.toGeoJSON();
         
         // --- PARCHE DE COMPATIBILIDAD EXTERNA (iTAK / ATAK / Google Earth) ---
         geojsonData.features.forEach((feature, index) => {
             if (feature && feature.properties) {
-                // 1. iTAK necesita un 'id' en la raíz del feature para indexarlo en su base de datos y permitir su edición
                 feature.id = "am_" + Date.now() + "_" + index; 
-                
-                // 2. Mapear nuestra variable interna 'layerName' a la propiedad estándar universal 'name' y 'title'
                 feature.properties.name = feature.properties.layerName || 'Elemento';
                 feature.properties.title = feature.properties.layerName || 'Elemento';
-                
-                // 3. Añadir descripciones y metadatos estándar (SimpleStyle Spec)
                 feature.properties.description = feature.properties.faction ? "Grupo/Bando: " + feature.properties.faction : "";
                 feature.properties['marker-color'] = feature.properties.color || '#e74c3c';
                 feature.properties['stroke'] = feature.properties.color || '#2ecc71';
             }
         });
-        // ----------------------------------------------------------------------
 
         geojsonData.view = { center: map.getCenter(), zoom: map.getZoom() };
         
         const blob = new Blob([JSON.stringify(geojsonData, null, 2)], {type: "application/json"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = projectName.replace(/[^a-z0-9_-]/gi, '_') + ".json";
+        a.href = url; a.download = window.projectName.replace(/[^a-z0-9_-]/gi, '_') + ".json";
         a.click(); URL.revokeObjectURL(url);
     }
 
@@ -2742,63 +2975,13 @@
         const file = event.target.files[0];
         if (!file) return;
         
-        projectName = file.name.replace('.json', '');
-        document.getElementById('app-title').innerText = "AirsoftMaps - " + projectName;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                if (data.view) map.setView(data.view.center, data.view.zoom);
-                
-                const geojsonFeatures = data.type === "FeatureCollection" ? data : data.features;
-                
-                if (geojsonFeatures) {
-                    drawnItems.eachLayer(l => { 
-                        if(l.bufferCircle) map.removeLayer(l.bufferCircle); 
-                        if(l.conePolygon) map.removeLayer(l.conePolygon);
-                    });
-                    drawnItems.clearLayers();
-                    L.geoJSON(geojsonFeatures, {
-                        pointToLayer: function (feature, latlng) {
-                            const color = feature.properties.color || '#e74c3c';
-                            const iconType = feature.properties.iconType || 'punto';
-                            return L.marker(latlng, { icon: getMarkerIconObj(color, iconType) });
-                        },
-                        style: function (feature) {
-                            let styleOpt = {};
-                            if (feature.geometry.type === 'LineString') styleOpt = Object.assign({}, drawOptions.polyline.shapeOptions);
-                            if (feature.geometry.type === 'Polygon') styleOpt = Object.assign({}, drawOptions.polygon.shapeOptions);
-                            
-                            if (feature.properties.color) styleOpt.color = feature.properties.color;
-                            if (feature.properties.weight) styleOpt.weight = feature.properties.weight;
-                            if (feature.properties.fillOpacity) styleOpt.fillOpacity = feature.properties.fillOpacity;
-                            return styleOpt;
-                        },
-                        onEachFeature: function (feature, layer) {
-                            drawnItems.addLayer(layer);
-                            const id = L.stamp(layer);
-                            layer.isHidden = false;
-                            
-                            if(!feature.properties.faction) layer.feature.properties.faction = projectName;
-
-                            const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;">
-                                <button onclick="editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button>
-                                <button onclick="removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
-                            </div>`;
-                            layer.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
-                            if (layer instanceof L.Marker) {
-                                updateMarkerBuffer(layer);
-                                updateMarkerLabel(layer);
-                                updateMarkerCone(layer);
-                            }
-                            if (feature.properties.chartData) attachChartListener(layer, id);
-                        }
-                    });
-                }
-                if (searchMarker) map.removeLayer(searchMarker);
-                updateLayerTree(); toggleMenu(); 
-            } catch (err) { alert("Error al cargar el proyecto."); }
+                const fileName = file.name.replace('.json', '');
+                window.procesarDatosCargados(data, fileName);
+            } catch (err) { window.customAlert("Error", "Error al cargar el proyecto local."); }
         };
         reader.readAsText(file);
         event.target.value = ''; 
@@ -2813,7 +2996,7 @@
     }
 
     function exportKML() {
-        let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n<name>' + escapeXML(projectName) + '</name>\n';
+        let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n<name>' + escapeXML(window.projectName) + '</name>\n';
         drawnItems.eachLayer(layer => {
             const id = L.stamp(layer);
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
@@ -2836,12 +3019,12 @@
             kml += `</Placemark>\n`;
         });
         kml += '</Document>\n</kml>';
-        downloadFile(kml, projectName.replace(/[^a-z0-9_-]/gi, '_') + '.kml', 'application/vnd.google-earth.kml+xml');
+        downloadFile(kml, window.projectName.replace(/[^a-z0-9_-]/gi, '_') + '.kml', 'application/vnd.google-earth.kml+xml');
     }
 
     function exportGPX() {
         let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps">\n';
-        gpx += `<metadata><name>${escapeXML(projectName)}</name></metadata>\n`;
+        gpx += `<metadata><name>${escapeXML(window.projectName)}</name></metadata>\n`;
         drawnItems.eachLayer(layer => {
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
             const desc = escapeXML(layer.feature?.properties?.faction ? "Bando: " + layer.feature.properties.faction : "");
@@ -2857,7 +3040,7 @@
             }
         });
         gpx += '</gpx>';
-        downloadFile(gpx, projectName.replace(/[^a-z0-9_-]/gi, '_') + '.gpx', 'application/gpx+xml');
+        downloadFile(gpx, window.projectName.replace(/[^a-z0-9_-]/gi, '_') + '.gpx', 'application/gpx+xml');
     }
 
     function importKMLGPX(event) {
@@ -2960,7 +3143,7 @@
                 updateLayerTree(); toggleMenu(); 
             } catch (err) { 
                 console.error(err);
-                alert("Error al procesar el archivo. Asegúrate de que sea un formato KML o GPX válido."); 
+                window.customAlert("Error", "Error al procesar el archivo. Asegúrate de que sea un formato KML o GPX válido."); 
             }
         };
         reader.readAsText(file);
@@ -2969,7 +3152,7 @@
 
     function addImportedLayer(layer, name, type, folderName) {
         const id = L.stamp(layer);
-        layer.feature = { type: 'Feature', properties: { layerName: name, faction: folderName || projectName } };
+        layer.feature = { type: 'Feature', properties: { layerName: name, faction: folderName || window.projectName } };
         layer.isHidden = false;
         
         let baseText = 'Importado';
@@ -3099,7 +3282,7 @@
         
         newMarker.feature = { type: 'Feature', properties: {} };
         newMarker.feature.properties.layerName = name;
-        newMarker.feature.properties.faction = projectName;
+        newMarker.feature.properties.faction = window.projectName;
         newMarker.isHidden = false;
         newMarker.feature.properties.color = color;
         newMarker.feature.properties.iconType = 'punto';
