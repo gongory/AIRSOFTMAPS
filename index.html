@@ -774,6 +774,18 @@
 
     // (El código de abajo usa tus datos si los pones, o la conexión interna del visor para que funcione aquí)
     const firebaseConfig = Object.keys(miConfiguracionFirebase).length > 0 ? miConfiguracionFirebase : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {});
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'airsoftmaps-app';
+
+    let currentUser = null;
+    let unsubscribeProjects = null;
+    let cloudProjects = [];
+
+    const initAuth = async () => {
+        try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
@@ -781,6 +793,7 @@
             }
         } catch (e) {
             console.error("Firebase auth error", e);
+            window.authError = e.message;
         }
     };
     initAuth();
