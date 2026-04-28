@@ -532,6 +532,16 @@
                         if (allyMarkers[id]) { window.alliesLayer.removeLayer(allyMarkers[id]); delete allyMarkers[id]; }
                         return;
                     }
+
+                    const factionNames = { '#3498db': '🔵 Bando Azul', '#e74c3c': '🔴 Bando Rojo', '#2ecc71': '🟢 Bando Verde', '#f1c40f': '🟡 Bando Amarillo', '#1e293b': '⚫ PMC / Mercenarios' };
+                    const fName = factionNames[data.color] || 'Aliado';
+                    let distText = "--";
+                    if (window.userLocMarker) {
+                        const dist = window.userLocMarker.getLatLng().distanceTo(L.latLng(data.lat, data.lng));
+                        distText = dist > 1000 ? (dist/1000).toFixed(2) + " km" : Math.round(dist) + " m";
+                    }
+                    const popupHtml = `<div style="text-align:center; font-size:12px;"><b>${data.alias}</b><br><span style="color:#64748b;">${fName}</span><br>A <b>${distText}</b> de tu posición</div>`;
+
                     if (allyMarkers[id]) {
                         allyMarkers[id].setLatLng([data.lat, data.lng]);
                         const arrow = allyMarkers[id].getElement().querySelector('.ally-arrow');
@@ -540,6 +550,8 @@
                         const label = allyMarkers[id].getElement().querySelector('.ally-label');
                         if (circle) { circle.style.backgroundColor = data.color; circle.style.borderColor = data.color; }
                         if (label) { label.style.borderColor = data.color; label.innerText = data.alias; }
+                        
+                        if (allyMarkers[id].getPopup()) { allyMarkers[id].setPopupContent(popupHtml); }
                     } else {
                         const allyIcon = L.divIcon({
                             className: 'custom-ally-marker',
@@ -547,7 +559,7 @@
                             iconSize: [20, 20], iconAnchor: [10, 10]
                         });
                         allyMarkers[id] = L.marker([data.lat, data.lng], { icon: allyIcon, zIndexOffset: 900 })
-                            .bindPopup(`<b>${data.alias}</b><br>Actualizado hace instantes.`)
+                            .bindPopup(popupHtml)
                             .addTo(window.alliesLayer);
                     }
                 });
