@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AirsoftMaps - Edición y Personalización</title>
  
-    <!-- Iconos para PWA / Pantalla de Inicio (Android, iOS, PC) -->
     <link rel="icon" type="image/x-icon" href="AirsoftMaps.ico">
     <link rel="apple-touch-icon" href="AirsoftMaps.ico">
     
-    <!-- Etiquetas para comportamiento como App Nativa -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="AirsoftMaps">
@@ -273,7 +271,6 @@
     </div>
 </div>
  
-<!-- MODALES -->
 <div id="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);"><h3 id="modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">Nombrar elemento</h3><input type="text" id="modal-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><div style="display:flex; justify-content:flex-end; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="window.closeModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="window.confirmModal()">Aceptar</button></div></div></div>
 
 <div id="alert-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:4000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center; white-space: pre-wrap;"><h3 id="alert-modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:18px;">Notificación</h3><p id="alert-modal-msg" style="font-size: 13px; color: #475569; margin-bottom: 20px; line-height: 1.4;"></p><div style="display:flex; justify-content:center;"><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="document.getElementById('alert-modal').style.display='none'">Aceptar</button></div></div></div>
@@ -542,11 +539,11 @@
                         const circle = allyMarkers[id].getElement().querySelector('.ally-circle');
                         const label = allyMarkers[id].getElement().querySelector('.ally-label');
                         if (circle) { circle.style.backgroundColor = data.color; circle.style.borderColor = data.color; }
-                        if (label) label.style.borderColor = data.color;
+                        if (label) { label.style.borderColor = data.color; label.innerText = data.alias; }
                     } else {
                         const allyIcon = L.divIcon({
                             className: 'custom-ally-marker',
-                            html: `<div style="position: relative; width: 16px; height: 16px;"><div class="ally-circle" style="position:absolute; width: 100%; height: 100%; background-color: ${data.color}; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); z-index:2;"></div><div class="ally-arrow" style="position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 14px solid rgba(255,255,255,0.8); transform-origin: 50% 100%; margin-left: -5px; margin-top: -14px; transform: rotate(${data.heading}deg); z-index:1; filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.5));"></div><div class="ally-label" style="position: absolute; top: 22px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.9); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 900; color: #333; border: 2px solid ${data.color}; z-index:3; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${data.alias}</div></div>`,
+                            html: `<div style="position: relative; width: 16px; height: 16px;"><div class="ally-circle" style="position:absolute; width: 100%; height: 100%; background-color: ${data.color}; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); z-index:2;"></div><div class="ally-arrow" style="position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 14px solid rgba(255,255,255,0.8); transform-origin: 50% 100%; margin-left: -5px; margin-top: -14px; transform: rotate(${data.heading}deg); z-index:1; filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.5));"></div><div class="ally-label grid-label" style="position: absolute; top: -24px; left: 50%; transform: translateX(-50%); border-color: ${data.color}; color: #333; z-index:3;">${data.alias}</div></div>`,
                             iconSize: [20, 20], iconAnchor: [10, 10]
                         });
                         allyMarkers[id] = L.marker([data.lat, data.lng], { icon: allyIcon, zIndexOffset: 900 })
@@ -1842,7 +1839,7 @@
                 }
                 if(drawnItems.getLayers().length > 0) map.fitBounds(drawnItems.getBounds());
                 updateLayerTree(); window.toggleMenu(); 
-            } catch (err) { window.customAlert("Error", "Error procesando archivo."); }
+            } catch (err) { window.customAlert("Error", "Error busqueda"); }
         };
         reader.readAsText(file); event.target.value = '';
     };
@@ -1865,7 +1862,7 @@
 
     window.buscarLugar = async function() {
         const q = document.getElementById('searchInput').value.trim(); if (!q) return;
-        const type = document.getElementById('gridType').value; let foundLat = null, foundLon = null, popupText = "Busqueda: " + q;
+        const type = document.getElementById('gridType').value; let foundLat = null, foundLon = null, popupText = "Búsqueda: " + q;
         if (type === 'decimal') { const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/); if (coordMatch) { const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]); if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { foundLat = lat; foundLon = lon; } } } 
         else if (type === 'dms') { const parts = q.match(/(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([NS])[,;\s]*(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([EWO])/i); if (parts) { let lat = parseFloat(parts[1]) + parseFloat(parts[2])/60 + parseFloat(parts[3])/3600; if (parts[4].toUpperCase() === 'S') lat = -lat; let lon = parseFloat(parts[5]) + parseFloat(parts[6])/60 + parseFloat(parts[7])/3600; if (parts[8].toUpperCase() === 'W' || parts[8].toUpperCase() === 'O') lon = -lon; foundLat = lat; foundLon = lon; } } 
         else if (type === 'utm') { const parts = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i); if (parts) { const zone = parseInt(parts[1]); const band = parts[2] ? parts[2].toUpperCase() : 'N'; const x = parseFloat(parts[3]); const y = parseFloat(parts[4]); const isSouth = "CDEFGHJKLM".includes(band); const ll = utmToLatLon(zone, x, y, isSouth); if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; } } } 
@@ -1875,7 +1872,7 @@
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`); const data = await res.json();
             if (data[0]) { foundLat = parseFloat(data[0].lat); foundLon = parseFloat(data[0].lon); popupText = data[0].display_name.split(',')[0]; addEditableMarkerFromSearch(foundLat, foundLon, popupText); }
-        } catch (error) { console.error("Error busqueda"); }
+        } catch (error) { console.error("Error en la búsqueda"); }
     };
 
     async function addEditableMarkerFromSearch(lat, lon, name) {
@@ -1885,7 +1882,7 @@
         newMarker.feature = { type: 'Feature', properties: {} }; newMarker.feature.properties.layerName = name; newMarker.feature.properties.faction = window.projectName; newMarker.feature.properties.grupo = ""; newMarker.isHidden = false; newMarker.feature.properties.color = color; newMarker.feature.properties.iconType = 'punto'; newMarker.feature.properties.bufferRadius = 0; newMarker.feature.properties.showLabel = false; newMarker.feature.properties.coneEnabled = false; newMarker.feature.properties.coneAngle = 0; newMarker.feature.properties.coneSpread = 60; newMarker.feature.properties.coneDist = 100; newMarker.feature.properties.coneColor = color;
         
         const type = document.getElementById('gridType').value; let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}`;
-        if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`; else if (type === 'utm') { const u = latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Tactica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
+        if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`; else if (type === 'utm') { const u = latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
         
         let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button></div>`;
         let baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
@@ -1944,14 +1941,22 @@
 
     window.changeLayer = function() {
         const bVal = document.getElementById('baseLayer').value;
+        const oVal = document.getElementById('overlayLayer').value;
         const op = parseFloat(document.getElementById('overlayOpacity').value);
+
         if (currentBase) map.removeLayer(currentBase);
         if (currentOverlay) map.removeLayer(currentOverlay);
+
         currentBase = baseLayers[bVal]; map.addLayer(currentBase);
-        currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(op);
-        if (bVal === 'mtn') map.addLayer(currentOverlay);
+
+        if (oVal !== 'none') {
+            currentOverlay = baseLayers[oVal];
+            currentOverlay.setOpacity(op);
+            map.addLayer(currentOverlay);
+        } else { currentOverlay = null; }
     };
 
+    // --- VARIABLES GLOBALES DEL GPS ---
     window.isFollowingUser = false;
     window.currentDeviceHeading = 0;
     let locWatchId = null;
@@ -1961,65 +1966,196 @@
 
     function handleDeviceOrientation(event) {
         let heading = null;
-        if (event.webkitCompassHeading !== undefined) { heading = event.webkitCompassHeading; } 
-        else if (event.absolute === true && event.alpha !== null) { heading = 360 - event.alpha; } 
-        else if (event.alpha !== null) { heading = 360 - event.alpha; }
+        if (event.webkitCompassHeading !== undefined) {
+            heading = event.webkitCompassHeading; 
+        } else if (event.absolute === true && event.alpha !== null) {
+            heading = 360 - event.alpha; 
+        } else if (event.alpha !== null) {
+            heading = 360 - event.alpha; 
+        }
+        
         if (heading !== null) {
             window.currentDeviceHeading = heading;
             const arrow = document.getElementById('user-dir-arrow');
-            if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; }
+            if (arrow) {
+                arrow.style.transform = `rotate(${heading}deg)`;
+                arrow.style.display = 'block';
+            }
         }
     }
 
     window.toggleLocation = function() {
         try {
             const btn = document.querySelector('button[title="Mi Ubicación"]');
+
             if (locWatchId !== null) {
                 if (!window.isFollowingUser) {
                     window.isFollowingUser = true;
                     if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 });
-                    if (btn) { btn.innerHTML = "🚶‍♂️"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; btn.style.opacity = "1"; }
+                    if (btn) { 
+                        btn.innerHTML = "🚶‍♂️"; 
+                        btn.style.color = "var(--success)"; 
+                        btn.style.borderColor = "var(--success)"; 
+                        btn.style.opacity = "1";
+                    }
                     return;
                 } else {
                     navigator.geolocation.clearWatch(locWatchId);
-                    locWatchId = null; window.isFollowingUser = false;
+                    locWatchId = null;
+                    window.isFollowingUser = false;
+                    
                     if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; window.userLocMarker = null; }
                     if (userLocCircle) { map.removeLayer(userLocCircle); userLocCircle = null; }
-                    try { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true); } catch(e) {}
+                    
+                    try {
+                        window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
+                        window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                    } catch(e) {}
                     orientationHandlerActive = false;
-                    if (btn) { btn.innerHTML = '🎯'; btn.style.color = ''; btn.style.borderColor = 'var(--ign-blue)'; btn.style.opacity = '1'; btn.classList.remove('active'); }
+
+                    if (btn) { 
+                        btn.innerHTML = '🎯'; 
+                        btn.style.color = ''; 
+                        btn.style.borderColor = 'var(--ign-blue)';
+                        btn.style.opacity = '1';
+                        btn.classList.remove('active'); 
+                    }
                     return;
                 }
             }
-            if (!navigator.geolocation) { window.customAlert("Error", "GPS no soportado."); return; }
-            if (btn) { btn.innerHTML = "⏳"; btn.style.opacity = "0.7"; }
+
+            if (!navigator.geolocation) {
+                window.customAlert("Error", "Tu navegador no soporta la geolocalización.");
+                return;
+            }
+
+            if (btn) {
+                btn.innerHTML = "⏳";
+                btn.style.opacity = "0.7";
+            }
+
             window.isFollowingUser = true;
+
             if (!orientationHandlerActive) {
                 try {
                     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                        DeviceOrientationEvent.requestPermission().then(state => { if (state === 'granted') { window.addEventListener('deviceorientation', handleDeviceOrientation, true); orientationHandlerActive = true; } }).catch(err => { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); orientationHandlerActive = true; });
-                    } else { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); window.addEventListener('deviceorientation', handleDeviceOrientation, true); orientationHandlerActive = true; }
+                        DeviceOrientationEvent.requestPermission()
+                            .then(permissionState => {
+                                if (permissionState === 'granted') {
+                                    window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                                    orientationHandlerActive = true;
+                                }
+                            })
+                            .catch(err => {
+                                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                                orientationHandlerActive = true;
+                            });
+                    } else {
+                        window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                        window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                        orientationHandlerActive = true;
+                    }
                 } catch(e) {}
             }
-            locWatchId = navigator.geolocation.watchPosition((pos) => {
-                try {
-                    const lat = pos.coords.latitude, lng = pos.coords.longitude, acc = pos.coords.accuracy;
-                    if (window.isFollowingUser) { map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom()); }
-                    if (btn && btn.innerHTML === "⏳") { btn.innerHTML = "🚶‍♂️"; btn.style.opacity = "1"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
-                    if (!userLocCircle) { userLocCircle = L.circle([lat, lng], { radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15 }).addTo(map); } else { userLocCircle.setLatLng([lat, lng]); userLocCircle.setRadius(acc); }
-                    if (!userLocMarker) {
-                        const userIcon = L.divIcon({ className: 'custom-user-marker', html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:none; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid rgba(13, 110, 253, 0.9); transform-origin: 50% 100%; margin-left: -6px; margin-top: -16px; transform: rotate(${window.currentDeviceHeading || 0}deg); pointer-events: none;"></div></div>`, iconSize: [18, 18], iconAnchor: [9, 9] });
-                        userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map); window.userLocMarker = userLocMarker;
-                    } else { userLocMarker.setLatLng([lat, lng]); }
-                } catch(err) {}
-            }, (err) => { window.customAlert("Error GPS", "Señal debil."); if (btn) { btn.innerHTML = '🎯'; btn.style.opacity = "1"; btn.style.color = ''; btn.style.borderColor = 'var(--ign-blue)'; } locWatchId = null; window.isFollowingUser = false; }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-        } catch(globalErr) {}
+
+            locWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    try {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        const acc = pos.coords.accuracy;
+                        const heading = pos.coords.heading; 
+                        const speed = pos.coords.speed; 
+
+                        if (window.isFollowingUser) {
+                            map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom());
+                        }
+
+                        if (btn && btn.innerHTML === "⏳") {
+                            btn.innerHTML = "🚶‍♂️"; 
+                            btn.style.opacity = "1";
+                            btn.style.color = "var(--success)"; 
+                            btn.style.borderColor = "var(--success)";
+                        }
+
+                        if (!userLocCircle) {
+                            userLocCircle = L.circle([lat, lng], {
+                                radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15
+                            }).addTo(map);
+                        } else {
+                            userLocCircle.setLatLng([lat, lng]);
+                            userLocCircle.setRadius(acc);
+                        }
+
+                        if (!userLocMarker) {
+                            const userIcon = L.divIcon({
+                                className: 'custom-user-marker',
+                                html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
+                                           <div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid rgba(13, 110, 253, 0.9); transform-origin: 50% 100%; margin-left: -6px; margin-top: -16px; filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.5)); transform: rotate(${window.currentDeviceHeading || 0}deg); pointer-events: none; transition: transform 0.1s linear;"></div>
+                                       </div>`,
+                                iconSize: [18, 18],
+                                iconAnchor: [9, 9]
+                            });
+                            userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+                            window.userLocMarker = userLocMarker;
+                        } else {
+                            userLocMarker.setLatLng([lat, lng]);
+                        }
+                        
+                        let popupContent = `<div style="text-align:center; font-size:12px;"><b>Tu ubicación (En Vivo)</b><br>Margen: ${Math.round(acc)}m`;
+                        if (speed !== null && speed >= 0) popupContent += `<br>Vel: ${(speed * 3.6).toFixed(1)} km/h`;
+                        if (heading !== null && !isNaN(heading)) popupContent += `<br>Rumbo: ${Math.round(heading)}°`;
+                        popupContent += `</div>`;
+                        
+                        if(!userLocMarker.getPopup()) {
+                            userLocMarker.bindPopup(popupContent);
+                        } else {
+                            userLocMarker.setPopupContent(popupContent);
+                        }
+                    } catch(err) {
+                        console.error("Error al actualizar marcador GPS:", err);
+                    }
+                },
+                (err) => {
+                    console.error("Error GPS:", err);
+                    let msg = "No se pudo obtener la ubicación.";
+                    if (err.code === 1) msg = "Permiso denegado.";
+                    if (err.code === 2) msg = "Ubicación no disponible (comprueba si tienes cobertura GPS).";
+                    if (err.code === 3) msg = "Se agotó el tiempo de espera al intentar localizarte.";
+                    
+                    window.customAlert("Error GPS", msg);
+                    
+                    if (btn) {
+                        btn.innerHTML = '🎯';
+                        btn.style.opacity = "1";
+                        btn.style.color = '';
+                        btn.style.borderColor = 'var(--ign-blue)';
+                    }
+                    if (locWatchId !== null) {
+                        navigator.geolocation.clearWatch(locWatchId);
+                        locWatchId = null;
+                    }
+                    window.isFollowingUser = false;
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        } catch(globalErr) {
+            console.error("Error global en el botón de ubicación:", globalErr);
+        }
     };
 
-    map.on('dragstart', () => { if (locWatchId !== null) { window.isFollowingUser = false; const btn = document.querySelector('button[title="Mi Ubicación"]'); if (btn) { btn.innerHTML = '🚶‍♂️'; btn.style.color = 'var(--ign-gold)'; btn.style.borderColor = 'var(--ign-gold)'; btn.style.opacity = "1"; } } });
-    
-    window.confirmConfirmModal = function() { if(window.acceptConfirmModal) window.acceptConfirmModal(); };
-    window.closeConfirmModal = function() { document.getElementById('confirm-modal').style.display = 'none'; };
+    map.on('dragstart', () => { 
+        if (locWatchId !== null) {
+            window.isFollowingUser = false; 
+            const btn = document.querySelector('button[title="Mi Ubicación"]');
+            if (btn) {
+                btn.innerHTML = '🚶‍♂️';
+                btn.style.color = 'var(--ign-gold)';
+                btn.style.borderColor = 'var(--ign-gold)';
+                btn.style.opacity = "1";
+            }
+        }
+    });
 </script>
 </body>
 </html>
