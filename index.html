@@ -1844,151 +1844,177 @@
     }
 
     window.toggleLocation = function() {
-        const btn = document.querySelector('button[title="Mi Ubicación"]');
+        try {
+            const btn = document.querySelector('button[title="Mi Ubicación"]');
 
-        if (locWatchId !== null) {
-            if (!window.isFollowingUser) {
-                window.isFollowingUser = true;
-                if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 });
-                if (btn) { btn.innerHTML = "🚶‍♂️"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
-                return;
-            } else {
-                navigator.geolocation.clearWatch(locWatchId);
-                locWatchId = null;
-                window.isFollowingUser = false;
-                if (userLocMarker) map.removeLayer(userLocMarker);
-                if (userLocCircle) map.removeLayer(userLocCircle);
-                userLocMarker = null;
-                userLocCircle = null;
-                
-                window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
-                window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
-                orientationHandlerActive = false;
-
-                if (btn) { 
-                    btn.innerHTML = '🎯'; 
-                    btn.style.color = ''; 
-                    btn.style.borderColor = 'var(--ign-blue)';
-                    btn.classList.remove('active'); 
-                }
-                return;
-            }
-        }
-
-        if (!navigator.geolocation) {
-            window.customAlert("Error", "Tu navegador no soporta la geolocalización.");
-            return;
-        }
-
-        if (btn) {
-            btn.innerHTML = "⏳";
-            btn.style.opacity = "0.7";
-        }
-
-        window.isFollowingUser = true;
-
-        if (!orientationHandlerActive) {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            window.addEventListener('deviceorientation', handleDeviceOrientation, true);
-                            orientationHandlerActive = true;
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
-                window.addEventListener('deviceorientation', handleDeviceOrientation, true);
-                orientationHandlerActive = true;
-            }
-        }
-
-        locWatchId = navigator.geolocation.watchPosition(
-            (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                const acc = pos.coords.accuracy;
-                const heading = pos.coords.heading; 
-                const speed = pos.coords.speed; 
-
-                if (window.isFollowingUser) {
-                    map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom());
-                }
-
-                if (btn && btn.innerHTML === "⏳") {
-                    btn.innerHTML = "🚶‍♂️"; 
-                    btn.style.opacity = "1";
-                    btn.style.color = "var(--success)"; 
-                    btn.style.borderColor = "var(--success)";
-                }
-
-                if (!userLocCircle) {
-                    userLocCircle = L.circle([lat, lng], {
-                        radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15
-                    }).addTo(map);
+            if (locWatchId !== null) {
+                if (!window.isFollowingUser) {
+                    // Volver a centrar y seguir
+                    window.isFollowingUser = true;
+                    if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 });
+                    if (btn) { 
+                        btn.innerHTML = "🚶‍♂️"; 
+                        btn.style.color = "var(--success)"; 
+                        btn.style.borderColor = "var(--success)"; 
+                        btn.style.opacity = "1";
+                    }
+                    return;
                 } else {
-                    userLocCircle.setLatLng([lat, lng]);
-                    userLocCircle.setRadius(acc);
-                }
-
-                if (!userLocMarker) {
-                    const userIcon = L.divIcon({
-                        className: 'custom-user-marker',
-                        html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
-                                   <div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid rgba(13, 110, 253, 0.9); transform-origin: 50% 100%; margin-left: -6px; margin-top: -16px; filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.5)); transform: rotate(${window.currentDeviceHeading || 0}deg); pointer-events: none; transition: transform 0.1s linear;"></div>
-                               </div>`,
-                        iconSize: [18, 18],
-                        iconAnchor: [9, 9]
-                    });
-                    userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
-                    window.userLocMarker = userLocMarker;
-                } else {
-                    userLocMarker.setLatLng([lat, lng]);
-                }
-                
-                let popupContent = `<div style="text-align:center; font-size:12px;"><b>Tu ubicación (En Vivo)</b><br>Margen: ${Math.round(acc)}m`;
-                if (speed !== null && speed >= 0) popupContent += `<br>Vel: ${(speed * 3.6).toFixed(1)} km/h`;
-                if (heading !== null && !isNaN(heading)) popupContent += `<br>Rumbo: ${Math.round(heading)}°`;
-                popupContent += `</div>`;
-                
-                if(!userLocMarker.getPopup()) {
-                    userLocMarker.bindPopup(popupContent);
-                } else {
-                    userLocMarker.setPopupContent(popupContent);
-                }
-            },
-            (err) => {
-                console.error("Error GPS:", err);
-                let msg = "No se pudo obtener la ubicación.";
-                if (err.code === 1) msg = "Permiso denegado.";
-                if (err.code === 2) msg = "Ubicación no disponible (comprueba si tienes cobertura GPS).";
-                if (err.code === 3) msg = "Se agotó el tiempo de espera al intentar localizarte.";
-                
-                window.customAlert("Error GPS", msg);
-                
-                if (btn) {
-                    btn.innerHTML = '🎯';
-                    btn.style.opacity = "1";
-                    btn.style.color = '';
-                    btn.style.borderColor = 'var(--ign-blue)';
-                }
-                if (locWatchId !== null) {
+                    // Apagar el GPS completamente
                     navigator.geolocation.clearWatch(locWatchId);
                     locWatchId = null;
+                    window.isFollowingUser = false;
+                    
+                    if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; window.userLocMarker = null; }
+                    if (userLocCircle) { map.removeLayer(userLocCircle); userLocCircle = null; }
+                    
+                    try {
+                        window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
+                        window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                    } catch(e) {}
+                    orientationHandlerActive = false;
+
+                    if (btn) { 
+                        btn.innerHTML = '🎯'; 
+                        btn.style.color = ''; 
+                        btn.style.borderColor = 'var(--ign-blue)';
+                        btn.style.opacity = '1';
+                        btn.classList.remove('active'); 
+                    }
+                    return;
                 }
-                window.isFollowingUser = false;
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
+            }
+
+            if (!navigator.geolocation) {
+                window.customAlert("Error", "Tu navegador no soporta la geolocalización.");
+                return;
+            }
+
+            if (btn) {
+                btn.innerHTML = "⏳";
+                btn.style.opacity = "0.7";
+            }
+
+            window.isFollowingUser = true;
+
+            if (!orientationHandlerActive) {
+                try {
+                    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        DeviceOrientationEvent.requestPermission()
+                            .then(permissionState => {
+                                if (permissionState === 'granted') {
+                                    window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                                    orientationHandlerActive = true;
+                                }
+                            })
+                            .catch(err => {
+                                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                                orientationHandlerActive = true;
+                            });
+                    } else {
+                        window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                        window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                        orientationHandlerActive = true;
+                    }
+                } catch(e) {}
+            }
+
+            locWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    try {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        const acc = pos.coords.accuracy;
+                        const heading = pos.coords.heading; 
+                        const speed = pos.coords.speed; 
+
+                        if (window.isFollowingUser) {
+                            map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom());
+                        }
+
+                        if (btn && btn.innerHTML === "⏳") {
+                            btn.innerHTML = "🚶‍♂️"; 
+                            btn.style.opacity = "1";
+                            btn.style.color = "var(--success)"; 
+                            btn.style.borderColor = "var(--success)";
+                        }
+
+                        if (!userLocCircle) {
+                            userLocCircle = L.circle([lat, lng], {
+                                radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15
+                            }).addTo(map);
+                        } else {
+                            userLocCircle.setLatLng([lat, lng]);
+                            userLocCircle.setRadius(acc);
+                        }
+
+                        if (!userLocMarker) {
+                            const userIcon = L.divIcon({
+                                className: 'custom-user-marker',
+                                html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
+                                           <div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid rgba(13, 110, 253, 0.9); transform-origin: 50% 100%; margin-left: -6px; margin-top: -16px; filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.5)); transform: rotate(${window.currentDeviceHeading || 0}deg); pointer-events: none; transition: transform 0.1s linear;"></div>
+                                       </div>`,
+                                iconSize: [18, 18],
+                                iconAnchor: [9, 9]
+                            });
+                            userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+                            window.userLocMarker = userLocMarker;
+                        } else {
+                            userLocMarker.setLatLng([lat, lng]);
+                        }
+                        
+                        let popupContent = `<div style="text-align:center; font-size:12px;"><b>Tu ubicación (En Vivo)</b><br>Margen: ${Math.round(acc)}m`;
+                        if (speed !== null && speed >= 0) popupContent += `<br>Vel: ${(speed * 3.6).toFixed(1)} km/h`;
+                        if (heading !== null && !isNaN(heading)) popupContent += `<br>Rumbo: ${Math.round(heading)}°`;
+                        popupContent += `</div>`;
+                        
+                        if(!userLocMarker.getPopup()) {
+                            userLocMarker.bindPopup(popupContent);
+                        } else {
+                            userLocMarker.setPopupContent(popupContent);
+                        }
+                    } catch(err) {
+                        console.error("Error al actualizar marcador GPS:", err);
+                    }
+                },
+                (err) => {
+                    console.error("Error GPS:", err);
+                    let msg = "No se pudo obtener la ubicación.";
+                    if (err.code === 1) msg = "Permiso denegado.";
+                    if (err.code === 2) msg = "Ubicación no disponible (comprueba si tienes cobertura GPS).";
+                    if (err.code === 3) msg = "Se agotó el tiempo de espera al intentar localizarte.";
+                    
+                    window.customAlert("Error GPS", msg);
+                    
+                    if (btn) {
+                        btn.innerHTML = '🎯';
+                        btn.style.opacity = "1";
+                        btn.style.color = '';
+                        btn.style.borderColor = 'var(--ign-blue)';
+                    }
+                    if (locWatchId !== null) {
+                        navigator.geolocation.clearWatch(locWatchId);
+                        locWatchId = null;
+                    }
+                    window.isFollowingUser = false;
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        } catch(globalErr) {
+            console.error("Error global en el botón de ubicación:", globalErr);
+        }
     };
 
     map.on('dragstart', () => { 
-        window.isFollowingUser = false; 
-        const btn = document.querySelector('button[title="Mi Ubicación"]');
-        if (btn && locWatchId !== null) {
-            btn.style.color = 'var(--ign-gold)';
-            btn.style.borderColor = 'var(--ign-gold)';
+        if (locWatchId !== null) {
+            window.isFollowingUser = false; 
+            const btn = document.querySelector('button[title="Mi Ubicación"]');
+            if (btn) {
+                btn.innerHTML = '🚶‍♂️';
+                btn.style.color = 'var(--ign-gold)';
+                btn.style.borderColor = 'var(--ign-gold)';
+                btn.style.opacity = "1";
+            }
         }
     });
 
