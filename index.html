@@ -133,7 +133,6 @@
             <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 12px; font-size:16px;" onclick="window.toggleLocation()" title="Mi Ubicación">🎯</button>
         </div>
 
-        <!-- RADAR ALIADO -->
         <button class="btn-outline" id="toggleLiveBtn" onclick="window.toggleGroup('live-group-container')" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between; border-color: #9b59b6; color: #9b59b6;">
             <span>📡 Radar Aliado (Live)</span><span>▼</span>
         </button>
@@ -197,7 +196,6 @@
             <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Opacidad Capa Secundaria</label>
             <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4" style="width:100%; margin-bottom: 0;" oninput="window.changeLayer()">
             
-            <!-- MODO OFFLINE -->
             <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #cbd5e0;">
                 <label style="font-size: 10px; font-weight: bold; color: var(--success); display: block; margin-bottom: 4px;">Modo Avión / Sin Cobertura</label>
                 <button class="btn-outline" id="btn-offline" style="margin-bottom: 5px; border-color: var(--success); color: var(--success);" onclick="window.downloadOfflineMap()">⬇️ Descargar Zona Actual</button>
@@ -274,7 +272,7 @@
 
 <div id="cloud-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:320px; box-shadow:0 4px 20px rgba(0,0,0,0.3); max-height: 80vh; display: flex; flex-direction: column;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px; text-align: center;">☁️ Mis Proyectos (Nube)</h3><div id="cloud-project-list" style="flex:1; overflow-y:auto; margin-bottom: 15px; border: 1px solid #cbd5e0; border-radius: 8px; padding: 5px; min-height: 100px;"><p style="font-size:12px; color:#64748b; text-align:center; padding-top: 20px;">Cargando nube...</p></div><div style="display:flex; justify-content:flex-end;"><button style="padding:8px 15px; border-radius:6px; border:1px solid #cbd5e0; background:white; color:#475569; cursor:pointer; font-weight:bold; width:100%;" onclick="document.getElementById('cloud-modal').style.display='none'">Cerrar</button></div></div></div>
 
-<div id="confirm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--danger); font-size:18px;">⚠️ Nuevo Proyecto</h3><p style="font-size: 14px; color: #475569; margin-bottom: 20px;">¿Estás seguro? Se borrarán todos los marcadores y rutas.</p><div style="display:flex; justify-content:center; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid #cbd5e0; background:white; color:#475569; cursor:pointer; font-weight:bold;" onclick="window.closeConfirmModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--danger); color:white; cursor:pointer; font-weight:bold;" onclick="window.acceptConfirmModal()">Sí, borrar todo</button></div></div></div>
+<div id="confirm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--danger); font-size:18px;">⚠️ Confirmación</h3><p style="font-size: 14px; color: #475569; margin-bottom: 20px;"></p><div style="display:flex; justify-content:center; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid #cbd5e0; background:white; color:#475569; cursor:pointer; font-weight:bold;" onclick="window.closeConfirmModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--danger); color:white; cursor:pointer; font-weight:bold;" onclick="window.acceptConfirmModal()">Confirmar</button></div></div></div>
 
 <div id="edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:340px; box-shadow:0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Editar Elemento</h3><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nombre</label><input type="text" id="edit-name-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Bando</label><select id="edit-faction-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="General">🏳️ General</option><option value="Rojo">🔴 Bando Rojo</option><option value="Azul">🔵 Bando Azul</option><option value="Organizacion">⚙️ Organización</option><option value="Neutral">⚪ Neutral / Civil</option></select><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grupo</label><input type="text" id="edit-group-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: Escuadra Alfa"><div id="edit-style-options" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Color</label><select id="edit-color-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="#2ecc71">Verde</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#f1c40f">Amarillo</option><option value="#9b59b6">Morado</option><option value="#34495e">Oscuro</option></select><div id="edit-marker-specifics" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Icono Militar</label><select id="edit-icon-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="punto">🔴 Punto normal</option><option value="base">⛺ Base / Campamento</option><option value="objetivo">🎯 Objetivo</option><option value="bandera">🚩 Bandera / Respawn</option><option value="combate">⚔️ Zona de Combate</option><option value="defensa">🛡️ Punto Defensivo</option><option value="vehiculo">🚁 Vehículo / Extracción</option><option value="medico">🏥 Médico / Hospital</option><option value="radio">📡 Comunicaciones</option><option value="hq">🌟 HQ / Mando</option><option value="suministros">📦 Suministros / Munición</option><option value="sniper">🔭 Francotirador / Observación</option><option value="peligro">⚠️ Peligro / Minas</option><option value="encuentro">🤝 Punto de Encuentro</option><option value="obstaculo">🧱 Obstáculo / Muro</option><option value="agua">💧 Punto de Agua</option><option value="images_2">📡 Radar personalizado</option></select><label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;"><input type="checkbox" id="edit-show-label-input" style="width:16px; height:16px;"> Mostrar nombre en el mapa</label><label style="font-size: 12px; font-weight: bold; color: var(--ign-gold); display:block; margin-bottom:4px;">⭕ Radio de Acción (metros)</label><input type="number" id="edit-buffer-input" min="0" step="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: 50 o vacío para ninguno"><div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #cbd5e0;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer;"><input type="checkbox" id="edit-cone-enable" style="width:16px; height:16px;" onchange="document.getElementById('edit-cone-options').style.display = this.checked ? 'block' : 'none';"> 🔦 Mostrar Cono de Visión</label><div id="edit-cone-options" style="display:none; margin-left: 24px;"><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Color del Cono</label><select id="edit-cone-color-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e0; margin-bottom:8px; box-sizing:border-box; font-size:13px;"><option value="#f1c40f">Amarillo</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#2ecc71">Verde</option><option value="#9b59b6">Morado</option><option value="#ffffff">Blanco</option><option value="#34495e">Oscuro</option></select><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Orientación (0° N - 180° S)</label><div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;"><input type="range" id="edit-cone-angle-range" min="0" max="360" value="0" style="flex:1;" oninput="document.getElementById('edit-cone-angle-val').innerText = this.value + '°'"><span id="edit-cone-angle-val" style="font-size:11px; width:30px; font-weight:bold; color:var(--ign-blue);">0°</span></div><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Apertura</label><div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;"><input type="range" id="edit-cone-spread-range" min="10" max="180" value="60" style="flex:1;" oninput="document.getElementById('edit-cone-spread-val').innerText = this.value + '°'"><span id="edit-cone-spread-val" style="font-size:11px; width:30px; font-weight:bold; color:var(--ign-blue);">60°</span></div><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Alcance Visual (metros)</label><input type="number" id="edit-cone-dist" min="10" step="10" value="100" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e0; box-sizing:border-box; font-size:13px;"></div></div></div><div id="edit-shape-specifics" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grosor</label><select id="edit-weight-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><option value="2">Fina</option><option value="4">Normal</option><option value="6">Gruesa</option><option value="8">Muy Gruesa</option><option value="12">Extra Gruesa</option></select></div></div><div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="window.closeEditModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="window.confirmEditModal()">Guardar Cambios</button></div></div></div>
 
@@ -433,11 +431,43 @@
             const dateStr = proj.updatedAt ? new Date(proj.updatedAt).toLocaleString('es-ES') : 'Desconocido';
             html += `<div style="padding: 8px; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
                 <div><div style="font-weight:bold; font-size:13px; color:#003366;">${proj.name}</div><div style="font-size:10px; color:#64748b;">${dateStr}</div></div>
-                <button style="padding:4px 8px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="window.cargarDesdeNube('${proj.id}')">Cargar</button>
+                <div style="display:flex; gap:5px;">
+                    <button style="padding:4px 8px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="window.cargarDesdeNube('${proj.id}')">Cargar</button>
+                    <button style="padding:4px 8px; background:var(--danger); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="window.eliminarDeNube('${proj.id}', '${proj.name.replace(/'/g, "\\'")}')" title="Eliminar de la nube">🗑️</button>
+                </div>
             </div>`;
         });
         list.innerHTML = html;
     }
+
+    window.eliminarDeNube = function(docId, projName) {
+        if (!currentUser) return;
+        
+        const modal = document.getElementById('confirm-modal');
+        const p = modal.querySelector('p');
+        const h3 = modal.querySelector('h3');
+        
+        h3.innerText = "🗑️ Eliminar de la Nube";
+        h3.style.color = "var(--danger)";
+        p.innerText = `¿Estás seguro de que quieres borrar permanentemente el proyecto "${projName}"? Esta acción no se puede deshacer.`;
+        
+        modal.style.display = 'flex';
+        
+        window.acceptConfirmModal = async function() {
+            modal.style.display = 'none';
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', docId);
+                await deleteDoc(docRef);
+                window.customAlert("Eliminado", "Proyecto borrado correctamente.");
+            } catch (e) {
+                window.customAlert("Error", "No se pudo borrar: " + e.message);
+            }
+        };
+        
+        window.closeConfirmModal = function() {
+            modal.style.display = 'none';
+        };
+    };
 
     window.cargarDesdeNube = function(docId) {
         const proj = cloudProjects.find(p => p.id === docId);
@@ -568,7 +598,7 @@
             const se = window.map.project(bounds.getSouthEast(), z).divideBy(256).floor();
             for (let x = nw.x; x <= se.x; x++) for (let y = nw.y; y <= se.y; y++) layers.forEach(l => urls.push(l.getTileUrl({x,y,z})));
         }
-        if (urls.length > 2500) { btn.disabled = false; prog.style.display = 'none'; return window.customAlert("Área muy grande", "Haz un poco de zoom (máx 2500 celdas)."); }
+        if (urls.length > 2500) { btn.disabled = false; prog.style.display = 'none'; return window.customAlert("Area muy grande", "Haz un poco de zoom (max 2500 celdas)."); }
         try {
             const cache = await caches.open('airsoftmaps-offline'); let done = 0;
             for (let i = 0; i < urls.length; i += 15) {
@@ -577,7 +607,7 @@
                 done += batch.length; const pct = Math.round((done/urls.length)*100);
                 bar.style.width = pct+'%'; bar.innerText = pct+'%';
             }
-            window.customAlert("Éxito", "Mapa guardado. Puedes poner el Modo Avión.");
+            window.customAlert("Exito", "Mapa guardado. Puedes poner el Modo Avion.");
         } catch (e) {} finally { btn.disabled = false; setTimeout(() => prog.style.display = 'none', 3000); }
     };
 
@@ -620,7 +650,7 @@
     let activeHandler = null, isLegendVisible = false, isZoomLocked = false;
     let scaleControlObj = null;
 
-    // INYECCIÓN DE VARIABLES GLOBALES DE BUSQUEDA
+    // INYECCION DE VARIABLES GLOBALES DE BUSQUEDA
     window.searchMarker = null; 
 
     window.renderChart = function(layer, id) {
@@ -719,7 +749,7 @@
         if (!isLegendVisible) return;
         const content = document.getElementById('legend-content');
         const layers = drawnItems.getLayers();
-        if (layers.length === 0) { content.innerHTML = '<div style="color:#64748b; font-style:italic;">Mapa vacío</div>'; return; }
+        if (layers.length === 0) { content.innerHTML = '<div style="color:#64748b; font-style:italic;">Mapa vacio</div>'; return; }
 
         const uniqueTypes = new Map();
         layers.forEach(layer => {
@@ -1634,16 +1664,22 @@
     };
 
     window.nuevoProyecto = function() {
-        window.toggleMenu(); document.getElementById('confirm-modal').style.display = 'flex';
+        window.toggleMenu(); 
+        const modal = document.getElementById('confirm-modal');
+        modal.querySelector('h3').innerText = "⚠️ Nuevo Proyecto";
+        modal.querySelector('h3').style.color = "var(--danger)";
+        modal.querySelector('p').innerText = "¿Estás seguro? Se borrarán todos los marcadores y rutas.";
+        modal.style.display = 'flex';
+        
         window.acceptConfirmModal = async function() {
-            document.getElementById('confirm-modal').style.display = 'none';
+            modal.style.display = 'none';
             const name = await askName("Nombre del nuevo proyecto:", "Nuevo_Proyecto");
             window.projectName = name.trim() || "Nuevo_Proyecto"; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
             drawnItems.eachLayer(l => { if(l.bufferCircle) map.removeLayer(l.bufferCircle); if(l.conePolygon) map.removeLayer(l.conePolygon); });
             drawnItems.clearLayers(); document.getElementById('gallery').innerHTML = ''; if (window.searchMarker) map.removeLayer(window.searchMarker); window.searchMarker = null;
-            window.stopDrawing(); updateLayerTree(); map.setView([40.4167, -3.7037], 6); window.toggleMenu(); 
+            window.stopDrawing(); updateLayerTree(); map.setView([40.4167, -3.7037], 6); 
         };
-        window.closeConfirmModal = function() { document.getElementById('confirm-modal').style.display = 'none'; window.toggleMenu(); };
+        window.closeConfirmModal = function() { modal.style.display = 'none'; };
     };
 
     window.procesarDatosCargados = function(data, fileName) {
@@ -1708,15 +1744,15 @@
                             }
                             if (props.chartData) window.attachChartListener(layer, id);
                         } catch(err) {
-                            console.error("Error aislando elemento corrupto:", err);
+                            console.error("Elemento corrupto ignorado:", err);
                         }
                     }
                 });
             }
             if (window.searchMarker) map.removeLayer(window.searchMarker); window.searchMarker = null;
-            updateLayerTree(); window.toggleMenu(); 
+            updateLayerTree(); 
         } catch(err) {
-            console.error("Error general procesando datos (ignorado de forma segura):", err);
+            console.error("Error cargando datos:", err);
         }
     };
 
@@ -1743,7 +1779,7 @@
                 const fileName = file.name.replace('.json', ''); 
                 window.procesarDatosCargados(data, fileName); 
             } catch (err) { 
-                window.customAlert("Error", "El archivo seleccionado no es un formato válido o está gravemente dañado."); 
+                window.customAlert("Error", "Archivo local no valido."); 
             } 
         };
         reader.readAsText(file); event.target.value = ''; 
@@ -1782,7 +1818,7 @@
         reader.onload = function(e) {
             try {
                 const text = e.target.result; const xmlDoc = new DOMParser().parseFromString(text, "text/xml");
-                if (xmlDoc.getElementsByTagName('parsererror').length > 0) throw new Error("Invalid XML file");
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) throw new Error("XML no valido");
                 if (file.name.toLowerCase().endsWith('.kml')) {
                     Array.from(xmlDoc.getElementsByTagNameNS('*', 'Placemark')).forEach(p => {
                         const nameNode = p.getElementsByTagNameNS('*', 'name')[0]; const name = nameNode ? nameNode.textContent.trim() : 'Punto KML';
@@ -1798,7 +1834,7 @@
                 }
                 if(drawnItems.getLayers().length > 0) map.fitBounds(drawnItems.getBounds());
                 updateLayerTree(); window.toggleMenu(); 
-            } catch (err) { window.customAlert("Error", "Error al procesar el archivo. Asegúrate de que sea un formato KML o GPX válido."); }
+            } catch (err) { window.customAlert("Error", "Error procesando archivo."); }
         };
         reader.readAsText(file); event.target.value = '';
     };
@@ -1821,7 +1857,7 @@
 
     window.buscarLugar = async function() {
         const q = document.getElementById('searchInput').value.trim(); if (!q) return;
-        const type = document.getElementById('gridType').value; let foundLat = null, foundLon = null, popupText = "Búsqueda: " + q;
+        const type = document.getElementById('gridType').value; let foundLat = null, foundLon = null, popupText = "Busqueda: " + q;
         if (type === 'decimal') { const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/); if (coordMatch) { const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]); if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { foundLat = lat; foundLon = lon; } } } 
         else if (type === 'dms') { const parts = q.match(/(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([NS])[,;\s]*(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([EWO])/i); if (parts) { let lat = parseFloat(parts[1]) + parseFloat(parts[2])/60 + parseFloat(parts[3])/3600; if (parts[4].toUpperCase() === 'S') lat = -lat; let lon = parseFloat(parts[5]) + parseFloat(parts[6])/60 + parseFloat(parts[7])/3600; if (parts[8].toUpperCase() === 'W' || parts[8].toUpperCase() === 'O') lon = -lon; foundLat = lat; foundLon = lon; } } 
         else if (type === 'utm') { const parts = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i); if (parts) { const zone = parseInt(parts[1]); const band = parts[2] ? parts[2].toUpperCase() : 'N'; const x = parseFloat(parts[3]); const y = parseFloat(parts[4]); const isSouth = "CDEFGHJKLM".includes(band); const ll = utmToLatLon(zone, x, y, isSouth); if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; } } } 
@@ -1831,7 +1867,7 @@
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`); const data = await res.json();
             if (data[0]) { foundLat = parseFloat(data[0].lat); foundLon = parseFloat(data[0].lon); popupText = data[0].display_name.split(',')[0]; addEditableMarkerFromSearch(foundLat, foundLon, popupText); }
-        } catch (error) { console.error("Error en la búsqueda"); }
+        } catch (error) { console.error("Error busqueda"); }
     };
 
     async function addEditableMarkerFromSearch(lat, lon, name) {
@@ -1841,7 +1877,7 @@
         newMarker.feature = { type: 'Feature', properties: {} }; newMarker.feature.properties.layerName = name; newMarker.feature.properties.faction = window.projectName; newMarker.feature.properties.grupo = ""; newMarker.isHidden = false; newMarker.feature.properties.color = color; newMarker.feature.properties.iconType = 'punto'; newMarker.feature.properties.bufferRadius = 0; newMarker.feature.properties.showLabel = false; newMarker.feature.properties.coneEnabled = false; newMarker.feature.properties.coneAngle = 0; newMarker.feature.properties.coneSpread = 60; newMarker.feature.properties.coneDist = 100; newMarker.feature.properties.coneColor = color;
         
         const type = document.getElementById('gridType').value; let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}`;
-        if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`; else if (type === 'utm') { const u = latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
+        if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`; else if (type === 'utm') { const u = latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Tactica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
         
         let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button></div>`;
         let baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
@@ -1900,22 +1936,14 @@
 
     window.changeLayer = function() {
         const bVal = document.getElementById('baseLayer').value;
-        const oVal = document.getElementById('overlayLayer').value;
         const op = parseFloat(document.getElementById('overlayOpacity').value);
-
         if (currentBase) map.removeLayer(currentBase);
         if (currentOverlay) map.removeLayer(currentOverlay);
-
         currentBase = baseLayers[bVal]; map.addLayer(currentBase);
-
-        if (oVal !== 'none') {
-            currentOverlay = baseLayers[oVal];
-            currentOverlay.setOpacity(op);
-            map.addLayer(currentOverlay);
-        } else { currentOverlay = null; }
+        currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(op);
+        if (bVal === 'mtn') map.addLayer(currentOverlay);
     };
 
-    // --- VARIABLES GLOBALES DEL GPS ---
     window.isFollowingUser = false;
     window.currentDeviceHeading = 0;
     let locWatchId = null;
@@ -1925,198 +1953,65 @@
 
     function handleDeviceOrientation(event) {
         let heading = null;
-        if (event.webkitCompassHeading !== undefined) {
-            heading = event.webkitCompassHeading; 
-        } else if (event.absolute === true && event.alpha !== null) {
-            heading = 360 - event.alpha; 
-        } else if (event.alpha !== null) {
-            heading = 360 - event.alpha; 
-        }
-        
+        if (event.webkitCompassHeading !== undefined) { heading = event.webkitCompassHeading; } 
+        else if (event.absolute === true && event.alpha !== null) { heading = 360 - event.alpha; } 
+        else if (event.alpha !== null) { heading = 360 - event.alpha; }
         if (heading !== null) {
             window.currentDeviceHeading = heading;
             const arrow = document.getElementById('user-dir-arrow');
-            if (arrow) {
-                arrow.style.transform = `rotate(${heading}deg)`;
-                arrow.style.display = 'block';
-            }
+            if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; }
         }
     }
 
     window.toggleLocation = function() {
         try {
             const btn = document.querySelector('button[title="Mi Ubicación"]');
-
             if (locWatchId !== null) {
                 if (!window.isFollowingUser) {
-                    // Volver a centrar y seguir
                     window.isFollowingUser = true;
                     if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 });
-                    if (btn) { 
-                        btn.innerHTML = "🚶‍♂️"; 
-                        btn.style.color = "var(--success)"; 
-                        btn.style.borderColor = "var(--success)"; 
-                        btn.style.opacity = "1";
-                    }
+                    if (btn) { btn.innerHTML = "🚶‍♂️"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; btn.style.opacity = "1"; }
                     return;
                 } else {
-                    // Apagar el GPS completamente
                     navigator.geolocation.clearWatch(locWatchId);
-                    locWatchId = null;
-                    window.isFollowingUser = false;
-                    
+                    locWatchId = null; window.isFollowingUser = false;
                     if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; window.userLocMarker = null; }
                     if (userLocCircle) { map.removeLayer(userLocCircle); userLocCircle = null; }
-                    
-                    try {
-                        window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
-                        window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
-                    } catch(e) {}
+                    try { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true); } catch(e) {}
                     orientationHandlerActive = false;
-
-                    if (btn) { 
-                        btn.innerHTML = '🎯'; 
-                        btn.style.color = ''; 
-                        btn.style.borderColor = 'var(--ign-blue)';
-                        btn.style.opacity = '1';
-                        btn.classList.remove('active'); 
-                    }
+                    if (btn) { btn.innerHTML = '🎯'; btn.style.color = ''; btn.style.borderColor = 'var(--ign-blue)'; btn.style.opacity = '1'; btn.classList.remove('active'); }
                     return;
                 }
             }
-
-            if (!navigator.geolocation) {
-                window.customAlert("Error", "Tu navegador no soporta la geolocalización.");
-                return;
-            }
-
-            if (btn) {
-                btn.innerHTML = "⏳";
-                btn.style.opacity = "0.7";
-            }
-
+            if (!navigator.geolocation) { window.customAlert("Error", "GPS no soportado."); return; }
+            if (btn) { btn.innerHTML = "⏳"; btn.style.opacity = "0.7"; }
             window.isFollowingUser = true;
-
             if (!orientationHandlerActive) {
                 try {
                     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                        DeviceOrientationEvent.requestPermission()
-                            .then(permissionState => {
-                                if (permissionState === 'granted') {
-                                    window.addEventListener('deviceorientation', handleDeviceOrientation, true);
-                                    orientationHandlerActive = true;
-                                }
-                            })
-                            .catch(err => {
-                                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
-                                orientationHandlerActive = true;
-                            });
-                    } else {
-                        window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
-                        window.addEventListener('deviceorientation', handleDeviceOrientation, true);
-                        orientationHandlerActive = true;
-                    }
+                        DeviceOrientationEvent.requestPermission().then(state => { if (state === 'granted') { window.addEventListener('deviceorientation', handleDeviceOrientation, true); orientationHandlerActive = true; } }).catch(err => { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); orientationHandlerActive = true; });
+                    } else { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); window.addEventListener('deviceorientation', handleDeviceOrientation, true); orientationHandlerActive = true; }
                 } catch(e) {}
             }
-
-            locWatchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    try {
-                        const lat = pos.coords.latitude;
-                        const lng = pos.coords.longitude;
-                        const acc = pos.coords.accuracy;
-                        const heading = pos.coords.heading; 
-                        const speed = pos.coords.speed; 
-
-                        if (window.isFollowingUser) {
-                            map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom());
-                        }
-
-                        if (btn && btn.innerHTML === "⏳") {
-                            btn.innerHTML = "🚶‍♂️"; 
-                            btn.style.opacity = "1";
-                            btn.style.color = "var(--success)"; 
-                            btn.style.borderColor = "var(--success)";
-                        }
-
-                        if (!userLocCircle) {
-                            userLocCircle = L.circle([lat, lng], {
-                                radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15
-                            }).addTo(map);
-                        } else {
-                            userLocCircle.setLatLng([lat, lng]);
-                            userLocCircle.setRadius(acc);
-                        }
-
-                        if (!userLocMarker) {
-                            const userIcon = L.divIcon({
-                                className: 'custom-user-marker',
-                                html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
-                                           <div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid rgba(13, 110, 253, 0.9); transform-origin: 50% 100%; margin-left: -6px; margin-top: -16px; filter: drop-shadow(0 -1px 2px rgba(0,0,0,0.5)); transform: rotate(${window.currentDeviceHeading || 0}deg); pointer-events: none; transition: transform 0.1s linear;"></div>
-                                       </div>`,
-                                iconSize: [18, 18],
-                                iconAnchor: [9, 9]
-                            });
-                            userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
-                            window.userLocMarker = userLocMarker;
-                        } else {
-                            userLocMarker.setLatLng([lat, lng]);
-                        }
-                        
-                        let popupContent = `<div style="text-align:center; font-size:12px;"><b>Tu ubicación (En Vivo)</b><br>Margen: ${Math.round(acc)}m`;
-                        if (speed !== null && speed >= 0) popupContent += `<br>Vel: ${(speed * 3.6).toFixed(1)} km/h`;
-                        if (heading !== null && !isNaN(heading)) popupContent += `<br>Rumbo: ${Math.round(heading)}°`;
-                        popupContent += `</div>`;
-                        
-                        if(!userLocMarker.getPopup()) {
-                            userLocMarker.bindPopup(popupContent);
-                        } else {
-                            userLocMarker.setPopupContent(popupContent);
-                        }
-                    } catch(err) {
-                        console.error("Error al actualizar marcador GPS:", err);
-                    }
-                },
-                (err) => {
-                    console.error("Error GPS:", err);
-                    let msg = "No se pudo obtener la ubicación.";
-                    if (err.code === 1) msg = "Permiso denegado.";
-                    if (err.code === 2) msg = "Ubicación no disponible (comprueba si tienes cobertura GPS).";
-                    if (err.code === 3) msg = "Se agotó el tiempo de espera al intentar localizarte.";
-                    
-                    window.customAlert("Error GPS", msg);
-                    
-                    if (btn) {
-                        btn.innerHTML = '🎯';
-                        btn.style.opacity = "1";
-                        btn.style.color = '';
-                        btn.style.borderColor = 'var(--ign-blue)';
-                    }
-                    if (locWatchId !== null) {
-                        navigator.geolocation.clearWatch(locWatchId);
-                        locWatchId = null;
-                    }
-                    window.isFollowingUser = false;
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        } catch(globalErr) {
-            console.error("Error global en el botón de ubicación:", globalErr);
-        }
+            locWatchId = navigator.geolocation.watchPosition((pos) => {
+                try {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude, acc = pos.coords.accuracy;
+                    if (window.isFollowingUser) { map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom()); }
+                    if (btn && btn.innerHTML === "⏳") { btn.innerHTML = "🚶‍♂️"; btn.style.opacity = "1"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
+                    if (!userLocCircle) { userLocCircle = L.circle([lat, lng], { radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15 }).addTo(map); } else { userLocCircle.setLatLng([lat, lng]); userLocCircle.setRadius(acc); }
+                    if (!userLocMarker) {
+                        const userIcon = L.divIcon({ className: 'custom-user-marker', html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:none; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid rgba(13, 110, 253, 0.9); transform-origin: 50% 100%; margin-left: -6px; margin-top: -16px; transform: rotate(${window.currentDeviceHeading || 0}deg); pointer-events: none;"></div></div>`, iconSize: [18, 18], iconAnchor: [9, 9] });
+                        userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map); window.userLocMarker = userLocMarker;
+                    } else { userLocMarker.setLatLng([lat, lng]); }
+                } catch(err) {}
+            }, (err) => { window.customAlert("Error GPS", "Señal debil."); if (btn) { btn.innerHTML = '🎯'; btn.style.opacity = "1"; btn.style.color = ''; btn.style.borderColor = 'var(--ign-blue)'; } locWatchId = null; window.isFollowingUser = false; }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        } catch(globalErr) {}
     };
 
-    map.on('dragstart', () => { 
-        if (locWatchId !== null) {
-            window.isFollowingUser = false; 
-            const btn = document.querySelector('button[title="Mi Ubicación"]');
-            if (btn) {
-                btn.innerHTML = '🚶‍♂️';
-                btn.style.color = 'var(--ign-gold)';
-                btn.style.borderColor = 'var(--ign-gold)';
-                btn.style.opacity = "1";
-            }
-        }
-    });
+    map.on('dragstart', () => { if (locWatchId !== null) { window.isFollowingUser = false; const btn = document.querySelector('button[title="Mi Ubicación"]'); if (btn) { btn.innerHTML = '🚶‍♂️'; btn.style.color = 'var(--ign-gold)'; btn.style.borderColor = 'var(--ign-gold)'; btn.style.opacity = "1"; } } });
+    
+    window.confirmConfirmModal = function() { if(window.acceptConfirmModal) window.acceptConfirmModal(); };
+    window.closeConfirmModal = function() { document.getElementById('confirm-modal').style.display = 'none'; };
 </script>
 </body>
 </html>
