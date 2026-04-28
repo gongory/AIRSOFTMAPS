@@ -424,10 +424,13 @@
         const proj = cloudProjects.find(p => p.id === docId);
         if (!proj) return;
         try {
-            const data = JSON.parse(proj.data);
+            const data = typeof proj.data === 'string' ? JSON.parse(proj.data) : proj.data;
             window.procesarDatosCargados(data, proj.name);
             document.getElementById('cloud-modal').style.display = 'none';
-        } catch (e) { window.customAlert("Error", "Datos corruptos."); }
+        } catch (e) { 
+            console.error("Error al cargar de nube:", e);
+            window.customAlert("Error", "Datos corruptos o formato inválido."); 
+        }
     };
 
     // RADAR ALIADO
@@ -597,6 +600,9 @@
     let autoRoutePoints = [], autoRouteLayer = L.featureGroup(), currentAutoRouteLine = null, autoRouteCoordinates = [];
     let activeHandler = null, isLegendVisible = false, isZoomLocked = false;
     let scaleControlObj = null;
+
+    // INYECCIÓN DE VARIABLES GLOBALES DE BUSQUEDA
+    window.searchMarker = null; 
 
     window.renderChart = function(layer, id) {
         setTimeout(() => {
@@ -833,7 +839,8 @@
     window.toggleMarkerLabel = function(id) {
         const layer = drawnItems.getLayer(id);
         if (!layer || !(layer instanceof L.Marker)) return;
-        layer.feature.properties.showLabel = !layer.feature.properties.showLabel;
+        const props = layer.feature?.properties || {};
+        props.showLabel = !props.showLabel;
         updateMarkerLabel(layer); updateLayerTree();
     };
 
@@ -879,7 +886,7 @@
         if (layer && layer.conePolygon) {
             map.removeLayer(layer.conePolygon);
             layer.conePolygon = null;
-            layer.feature.properties.coneEnabled = false;
+            if (layer.feature && layer.feature.properties) layer.feature.properties.coneEnabled = false;
             updateLayerTree();
         }
     };
@@ -912,11 +919,13 @@
 
     function updateMarkerCone(layer) {
         if (!(layer instanceof L.Marker)) return;
-        const enabled = layer.feature.properties.coneEnabled;
-        if (enabled) {
-            const radius = layer.feature.properties.coneDist; const angle = layer.feature.properties.coneAngle; const spread = layer.feature.properties.coneSpread;
+        const props = layer.feature?.properties || {};
+        if (props.coneEnabled) {
+            const radius = parseFloat(props.coneDist) || 100; 
+            const angle = parseFloat(props.coneAngle) || 0; 
+            const spread = parseFloat(props.coneSpread) || 60;
             const latlngs = getConeLatLngs(layer.getLatLng(), radius, angle, spread);
-            const coneColor = layer.feature.properties.coneColor || layer.feature.properties.color;
+            const coneColor = props.coneColor || props.color || '#f1c40f';
             if (layer.conePolygon) { layer.conePolygon.setLatLngs(latlngs); layer.conePolygon.setStyle({color: coneColor}); } 
             else {
                 layer.conePolygon = L.polygon(latlngs, { color: coneColor, weight: 1, fillOpacity: 0.2, interactive: false, dashArray: '4, 4' }).addTo(map);
@@ -928,8 +937,10 @@
 
     function updateMarkerLabel(layer) {
         if (!(layer instanceof L.Marker)) return;
-        if (layer.feature.properties.showLabel) {
-            layer.bindTooltip(layer.feature.properties.layerName, { permanent: true, direction: 'top', offset: [0, -10], className: 'grid-label' }).openTooltip();
+        const props = layer.feature?.properties || {};
+        if (props.showLabel) {
+            const title = props.layerName || 'Marcador';
+            layer.bindTooltip(title, { permanent: true, direction: 'top', offset: [0, -10], className: 'grid-label' }).openTooltip();
             if (layer.isHidden) layer.getTooltip().setOpacity(0);
         } else { layer.unbindTooltip(); }
     }
@@ -1610,53 +1621,84 @@
             const name = await askName("Nombre del nuevo proyecto:", "Nuevo_Proyecto");
             window.projectName = name.trim() || "Nuevo_Proyecto"; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
             drawnItems.eachLayer(l => { if(l.bufferCircle) map.removeLayer(l.bufferCircle); if(l.conePolygon) map.removeLayer(l.conePolygon); });
-            drawnItems.clearLayers(); document.getElementById('gallery').innerHTML = ''; if (searchMarker) map.removeLayer(searchMarker);
+            drawnItems.clearLayers(); document.getElementById('gallery').innerHTML = ''; if (window.searchMarker) map.removeLayer(window.searchMarker); window.searchMarker = null;
             window.stopDrawing(); updateLayerTree(); map.setView([40.4167, -3.7037], 6); window.toggleMenu(); 
         };
         window.closeConfirmModal = function() { document.getElementById('confirm-modal').style.display = 'none'; window.toggleMenu(); };
     };
 
     window.procesarDatosCargados = function(data, fileName) {
-        window.projectName = fileName; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
-        if (data.view) map.setView(data.view.center, data.view.zoom);
-        const geojsonFeatures = data.type === "FeatureCollection" ? data : data.features;
-        if (geojsonFeatures) {
-            drawnItems.eachLayer(l => { if(l.bufferCircle) map.removeLayer(l.bufferCircle); if(l.conePolygon) map.removeLayer(l.conePolygon); if(l.endMarker) map.removeLayer(l.endMarker); });
-            drawnItems.clearLayers();
-            L.geoJSON(geojsonFeatures, {
-                pointToLayer: function (feature, latlng) {
-                    const color = feature.properties.color || '#e74c3c'; const iconType = feature.properties.iconType || 'punto';
-                    return L.marker(latlng, { icon: getMarkerIconObj(color, iconType) });
-                },
-                style: function (feature) {
-                    let styleOpt = {};
-                    if (feature.geometry.type === 'LineString') styleOpt = Object.assign({}, drawOptions.polyline.shapeOptions);
-                    if (feature.geometry.type === 'Polygon') styleOpt = Object.assign({}, drawOptions.polygon.shapeOptions);
-                    if (feature.properties.color) styleOpt.color = feature.properties.color;
-                    if (feature.properties.weight) styleOpt.weight = feature.properties.weight;
-                    if (feature.properties.fillOpacity) styleOpt.fillOpacity = feature.properties.fillOpacity;
-                    return styleOpt;
-                },
-                onEachFeature: function (feature, layer) {
-                    drawnItems.addLayer(layer); const id = L.stamp(layer); layer.isHidden = false; layer.isAutoRoute = feature.properties.isAutoRoute || false;
-                    if (layer.isAutoRoute && layer instanceof L.Polyline) {
-                        const latlngs = layer.getLatLngs();
-                        layer.endMarker = L.marker(latlngs[latlngs.length - 1], { icon: getMarkerIconObj(feature.properties.color || '#2ecc71', 'bandera'), zIndexOffset: 1000 }).addTo(map);
-                        const originalSetPopupContent = layer.setPopupContent.bind(layer);
-                        layer.setPopupContent = function(content) { originalSetPopupContent(content); if (layer.endMarker) layer.endMarker.setPopupContent(content); };
-                        layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) window.renderChart(layer, id); });
+        try {
+            window.projectName = fileName; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
+            if (data.view) map.setView(data.view.center, data.view.zoom);
+            const geojsonFeatures = data.type === "FeatureCollection" ? data : (data.features ? data : { type: "FeatureCollection", features: [] });
+            
+            if (geojsonFeatures && geojsonFeatures.features) {
+                drawnItems.eachLayer(l => { 
+                    if(l.bufferCircle) map.removeLayer(l.bufferCircle); 
+                    if(l.conePolygon) map.removeLayer(l.conePolygon); 
+                    if(l.endMarker) map.removeLayer(l.endMarker); 
+                });
+                drawnItems.clearLayers();
+                
+                L.geoJSON(geojsonFeatures, {
+                    pointToLayer: function (feature, latlng) {
+                        const props = feature.properties || {};
+                        const color = props.color || '#e74c3c'; 
+                        const iconType = props.iconType || 'punto';
+                        return L.marker(latlng, { icon: getMarkerIconObj(color, iconType) });
+                    },
+                    style: function (feature) {
+                        let styleOpt = {};
+                        const props = feature.properties || {};
+                        if (feature.geometry.type === 'LineString') styleOpt = Object.assign({}, drawOptions.polyline.shapeOptions);
+                        if (feature.geometry.type === 'Polygon') styleOpt = Object.assign({}, drawOptions.polygon.shapeOptions);
+                        if (props.color) styleOpt.color = props.color;
+                        if (props.weight) styleOpt.weight = props.weight;
+                        if (props.fillOpacity) styleOpt.fillOpacity = props.fillOpacity;
+                        return styleOpt;
+                    },
+                    onEachFeature: function (feature, layer) {
+                        try {
+                            const props = feature.properties || {};
+                            feature.properties = props; 
+                            drawnItems.addLayer(layer); 
+                            const id = L.stamp(layer); 
+                            layer.isHidden = false; 
+                            layer.isAutoRoute = props.isAutoRoute || false;
+                            
+                            if (layer.isAutoRoute && layer instanceof L.Polyline) {
+                                const latlngs = layer.getLatLngs();
+                                let endPt = latlngs[latlngs.length - 1];
+                                if (Array.isArray(endPt)) endPt = endPt[endPt.length - 1]; 
+                                if (endPt) {
+                                    layer.endMarker = L.marker(endPt, { icon: getMarkerIconObj(props.color || '#2ecc71', 'bandera'), zIndexOffset: 1000 }).addTo(map);
+                                    const originalSetPopupContent = layer.setPopupContent.bind(layer);
+                                    layer.setPopupContent = function(content) { originalSetPopupContent(content); if (layer.endMarker) layer.endMarker.setPopupContent(content); };
+                                    layer.endMarker.on('popupopen', () => { if (props.chartData) window.renderChart(layer, id); });
+                                }
+                            }
+                            if(!props.faction) props.faction = window.projectName;
+                            const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button></div>`;
+                            layer.bindPopup((props.baseText || 'Elemento') + actionBtns);
+                            if (layer.endMarker) layer.endMarker.bindPopup((props.baseText || 'Elemento') + actionBtns);
+                            if (layer instanceof L.Marker) { 
+                                updateMarkerBuffer(layer); 
+                                updateMarkerLabel(layer); 
+                                updateMarkerCone(layer); 
+                            }
+                            if (props.chartData) window.attachChartListener(layer, id);
+                        } catch(err) {
+                            console.error("Error aislando elemento corrupto:", err);
+                        }
                     }
-                    if(!feature.properties.faction) layer.feature.properties.faction = window.projectName;
-                    const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button></div>`;
-                    layer.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
-                    if (layer.endMarker) layer.endMarker.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
-                    if (layer instanceof L.Marker) { updateMarkerBuffer(layer); updateMarkerLabel(layer); updateMarkerCone(layer); }
-                    if (feature.properties.chartData) window.attachChartListener(layer, id);
-                }
-            });
+                });
+            }
+            if (window.searchMarker) map.removeLayer(window.searchMarker); window.searchMarker = null;
+            updateLayerTree(); window.toggleMenu(); 
+        } catch(err) {
+            console.error("Error general procesando datos (ignorado de forma segura):", err);
         }
-        if (searchMarker) map.removeLayer(searchMarker);
-        updateLayerTree(); window.toggleMenu(); 
     };
 
     window.guardarProyecto = function() {
@@ -1676,7 +1718,15 @@
 
     window.cargarProyecto = function(event) {
         const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
-        reader.onload = function(e) { try { const data = JSON.parse(e.target.result); const fileName = file.name.replace('.json', ''); window.procesarDatosCargados(data, fileName); } catch (err) { window.customAlert("Error", "Error al cargar el proyecto local."); } };
+        reader.onload = function(e) { 
+            try { 
+                const data = JSON.parse(e.target.result); 
+                const fileName = file.name.replace('.json', ''); 
+                window.procesarDatosCargados(data, fileName); 
+            } catch (err) { 
+                window.customAlert("Error", "El archivo seleccionado no es un formato válido o está gravemente dañado."); 
+            } 
+        };
         reader.readAsText(file); event.target.value = ''; 
     };
 
@@ -1800,10 +1850,34 @@
     window.toggleTheme = function() { const body = document.body; const btnTheme = document.getElementById('themeToggleBtn'); body.classList.toggle('dark-mode'); if (body.classList.contains('dark-mode')) { btnTheme.innerHTML = '☀️'; btnTheme.title = 'Cambiar a Modo Claro'; } else { btnTheme.innerHTML = '🌙'; btnTheme.title = 'Cambiar a Modo Oscuro'; } };
     initMobileMode(); 
 
-    // --- FUNCIONES RESTAURADAS DE LA INTERFAZ ---
     window.toggleMenu = function() { 
         document.getElementById('panelLateral').classList.toggle('oculto'); 
     };
+
+    window.toggleGroup = function(id) {
+        const container = document.getElementById(id);
+        if (!container) return;
+        
+        const btn = document.querySelector(`button[onclick*="${id}"]`);
+        
+        if (container.style.display === 'none' || container.style.display === '') {
+            container.style.display = 'block';
+            if (btn) {
+                const icon = btn.querySelector('span:last-child');
+                if (icon && icon.innerText.includes('▼')) icon.innerText = '▲';
+            }
+            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+        } else {
+            container.style.display = 'none';
+            if (btn) {
+                const icon = btn.querySelector('span:last-child');
+                if (icon && icon.innerText.includes('▲')) icon.innerText = '▼';
+            }
+        }
+    };
+
+    window.openManual = function() { document.getElementById('manual-modal').style.display = 'flex'; };
+    window.closeManual = function() { document.getElementById('manual-modal').style.display = 'none'; };
 
     window.changeLayer = function() {
         const bVal = document.getElementById('baseLayer').value;
@@ -2024,36 +2098,6 @@
             }
         }
     });
-
-    window.toggleGroup = function(id) {
-        const container = document.getElementById(id);
-        if (!container) return;
-        
-        const btn = document.querySelector(`button[onclick*="${id}"]`);
-        
-        if (container.style.display === 'none' || container.style.display === '') {
-            container.style.display = 'block';
-            if (btn) {
-                const icon = btn.querySelector('span:last-child');
-                if (icon && icon.innerText.includes('▼')) icon.innerText = '▲';
-            }
-            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-        } else {
-            container.style.display = 'none';
-            if (btn) {
-                const icon = btn.querySelector('span:last-child');
-                if (icon && icon.innerText.includes('▲')) icon.innerText = '▼';
-            }
-        }
-    };
-
-    window.openManual = function() {
-        document.getElementById('manual-modal').style.display = 'flex';
-    };
-
-    window.closeManual = function() {
-        document.getElementById('manual-modal').style.display = 'none';
-    };
 </script>
 </body>
 </html>
