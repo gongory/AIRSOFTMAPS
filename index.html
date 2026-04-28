@@ -287,7 +287,30 @@
         <button onclick="closeManual()" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; font-weight:bold;">✕</button>
         <h2 style="margin-top:0; color:var(--ign-blue); border-bottom:2px solid #f1f5f9; padding-bottom:10px; font-size:20px;">📖 Manual de Usuario - AirsoftMaps</h2>
         <div style="font-size:13px; color:#475569; line-height:1.6;">
-            <p><b>Modo Offline:</b> Descarga el mapa en "Mezclador" antes de ir al campo.<br><b>Radar Aliado:</b> Transmite tu posición GPS (requiere internet) para ver a tu equipo.</p>
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📁 1. Gestión de Proyectos y Archivos</h4>
+            <p style="margin-top:0;">
+            <b>Nuevo / Guardar / Cargar:</b> Permite limpiar el mapa o guardar tu progreso en un archivo <code>.json</code>.<br>
+            <b>Importar / Exportar:</b> Compatible con formatos estándar de GPS (Garmin) y Google Earth (<code>.kml</code> y <code>.gpx</code>).
+            </p>
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🌍 2. Capas, Mezclador y Modo Offline</h4>
+            <p style="margin-top:0;"><b>Mezclador:</b> Superpone el <b>Mapa Topográfico (MTN)</b> y el <b>Satélite (PNOA)</b> con opacidad regulable.<br>
+            <b>Modo Offline:</b> Haz zoom en la zona de juego, abre el "Mezclador de Mapas" y pulsa "Descargar Zona Actual". Podrás usar el mapa sin cobertura ni gastar datos en el monte.</p>
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📐 3. Sistema, Cuadrícula y Escala</h4>
+            <p style="margin-top:0;">El marcador flotante indica las coordenadas del ratón. Puedes cambiar al formato <b>Táctica Alfanumérica</b> (ej. D4) para comunicaciones de radio rápidas. Escala exacta arrastrable y botón para <b>bloquear el zoom</b>.</p>
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">✏️ 4. Herramientas de Edición Avanzadas</h4>
+            <ul style="padding-left:20px; margin-top:0;">
+                <li><b>📍 Marcador:</b> Coloca iconos tácticos (Respawn, Médico). Añade <b>Radios de Acción</b> o <b>Conos de Visión</b> rotativos.</li>
+                <li><b>📏 Ruta Manual:</b> Mide distancia, calcula desnivel y estima el tiempo a pie (Regla de Naismith).</li>
+                <li><b>🗺️ Ruta Inteligente:</b> Marca varios puntos y la app buscará automáticamente el camino real por senderos y pistas. Incluye cálculo de tiempo y puede editarse.</li>
+                <li><b>🔲 Área y Brújula:</b> Mide hectáreas y arrastra una rosa de los vientos a cualquier punto.</li>
+            </ul>
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🎯 5. GPS, Brújula y Radar Aliado</h4>
+            <p style="margin-top:0;">
+            <b>GPS Integrado:</b> Toca el icono de la diana (🎯) arriba. El mapa te seguirá, y tu marcador mostrará tu <b>rumbo en vivo</b> (girará contigo gracias a la brújula del móvil).<br>
+            <b>Radar Aliado:</b> En el panel lateral, ponte un indicativo y elige tu color. Pulsa <b>Iniciar Transmisión</b> (requiere internet). Tus compañeros de equipo verán tu posición y orientación exacta en sus mapas en tiempo real.
+            </p>
+            <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">🗂️ 6. Gestor de Capas e Impresión</h4>
+            <p style="margin-top:0;">Oculta (👁️) facciones enteras con un clic. La galería captura mapas limpios y te permite ir a la <b>Impresión Avanzada</b> para maquetar el papel (A4, A3) arrastrando libremente la brújula y la escala antes de exportarlo a PDF o imagen.</p>
         </div>
         <div style="text-align:right; margin-top:20px; border-top:1px solid #e2e8f0; padding-top:15px;">
             <button style="padding:10px 20px; border-radius:8px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold; font-size:14px;" onclick="closeManual()">Entendido</button>
@@ -569,16 +592,57 @@
     window.addEventListener('deviceorientationabsolute', e => { window.currentDeviceHeading = 360 - e.alpha; if(document.getElementById('user-dir-arrow')) document.getElementById('user-dir-arrow').style.transform = `rotate(${window.currentDeviceHeading}deg)`; }, true);
 
     function toggleLocation() {
-        if (locWatchId) { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; if(userLocMarker) map.removeLayer(userLocMarker); userLocMarker = null; return; }
+        const btn = document.querySelector('button[title="Mi Ubicación"]');
+        if (locWatchId) { 
+            if (!window.isFollowingUser) {
+                // Volver a centrar y seguir
+                window.isFollowingUser = true;
+                if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 });
+                if (btn) { btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
+                return;
+            } else {
+                // Apagar el GPS
+                navigator.geolocation.clearWatch(locWatchId); locWatchId = null; 
+                if(userLocMarker) map.removeLayer(userLocMarker); userLocMarker = null; 
+                window.isFollowingUser = false;
+                if (btn) { btn.innerHTML = '🎯'; btn.style.color = ''; btn.style.borderColor = 'var(--ign-blue)'; }
+                return; 
+            }
+        }
+        
+        if (btn) { btn.innerHTML = "⏳"; btn.style.opacity = "0.7"; }
+        window.isFollowingUser = true;
+
         locWatchId = navigator.geolocation.watchPosition(pos => {
             const {latitude, longitude} = pos.coords;
-            map.setView([latitude, longitude], 17);
+            if (window.isFollowingUser) map.setView([latitude, longitude], 17);
+            
+            if (btn && btn.innerHTML === "⏳") {
+                btn.innerHTML = "🚶‍♂️"; 
+                btn.style.opacity = "1";
+                btn.style.color = "var(--success)"; 
+                btn.style.borderColor = "var(--success)";
+            }
+
             if (!userLocMarker) {
                 userLocMarker = L.marker([latitude, longitude], { icon: L.divIcon({ html: `<div style="width:14px;height:14px;background:#0d6efd;border-radius:50%;"><div id="user-dir-arrow" style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:16px solid #0d6efd;margin-top:-16px;transform:rotate(${window.currentDeviceHeading}deg)"></div></div>` }) }).addTo(map);
                 window.userLocMarker = userLocMarker;
             } else userLocMarker.setLatLng([latitude, longitude]);
-        }, e => {}, {enableHighAccuracy: true});
+        }, e => {
+            if (btn) { btn.innerHTML = '🎯'; btn.style.opacity = "1"; btn.style.color = ''; btn.style.borderColor = 'var(--ign-blue)'; }
+            window.isFollowingUser = false;
+        }, {enableHighAccuracy: true});
     }
+
+    // Desactivar el auto-seguimiento si el usuario arrastra el mapa manualmente
+    map.on('dragstart', () => { 
+        window.isFollowingUser = false; 
+        const btn = document.querySelector('button[title="Mi Ubicación"]');
+        if (btn && locWatchId !== null) {
+            btn.style.color = 'var(--ign-gold)'; // Botón amarillo
+            btn.style.borderColor = 'var(--ign-gold)';
+        }
+    });
 
     function toggleMenu() { document.getElementById('panelLateral').classList.toggle('oculto'); }
     function changeLayer() { map.removeLayer(currentBase); if(currentOverlay) map.removeLayer(currentOverlay); currentBase = baseLayers[document.getElementById('baseLayer').value]; map.addLayer(currentBase); const ov = document.getElementById('overlayLayer').value; if(ov!=='none'){ currentOverlay = baseLayers[ov]; currentOverlay.setOpacity(parseFloat(document.getElementById('overlayOpacity').value)); map.addLayer(currentOverlay); } }
