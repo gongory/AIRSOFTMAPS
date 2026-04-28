@@ -70,7 +70,7 @@
         body.mobile-mode .leaflet-control-zoom { display: none !important; }
         body.mobile-mode .coord-display { bottom: 30px; left: 10px; font-size: 10px !important; padding: 6px 12px !important; min-width: auto !important; max-width: calc(100vw - 100px) !important; }
         body.mobile-mode #drawing-actions { top: auto !important; bottom: 120px !important; width: 90% !important; flex-direction: column !important; }
-        body.mobile-mode #drawing-actions button { width: 100% !important; }
+        body.mobile-mode #drawing-actions button, body.mobile-mode #drawing-actions select { width: 100% !important; box-sizing: border-box; }
         
         /* MODO OSCURO */
         body.dark-mode { --bg-sidebar: #1e293b; --ign-blue: #0f172a; background: #0f172a; color: #f8fafc; }
@@ -109,6 +109,11 @@
 <div id="drawing-actions" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 10px; width: max-content;">
     <div id="auto-route-info" style="display:none; background: rgba(255,255,255,0.95); padding: 8px 16px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: 800; color: var(--ign-blue); font-size: 13px; border: 2px solid var(--ign-gold);"></div>
     <div style="display: flex; gap: 10px; justify-content: center;">
+        <select id="route-mode-select" onchange="window.recalculateAutoRoute()" style="display: none; padding: 12px 20px; border-radius: 50px; font-weight: 600; border: 2px solid var(--ign-blue); background: white; color: var(--ign-blue); cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.4); font-size: 14px; outline: none; -webkit-appearance: none; text-align: center;">
+            <option value="foot">🚶‍♂️ A pie</option>
+            <option value="driving">🚗 En coche</option>
+            <option value="bike">🚲 En bici</option>
+        </select>
         <button id="undo-point-btn" onclick="window.undoLastPoint()" style="background: var(--ign-gold); color: var(--ign-blue); border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">↩️ Deshacer Punto</button>
         <button id="finish-route-btn" onclick="window.finishAutoRoute()" style="background: var(--success); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">✅ Finalizar Ruta</button>
         <button id="cancel-crop-btn" onclick="window.stopDrawing()" style="background: var(--danger); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer;">✕ Cancelar Acción (Esc)</button>
@@ -139,6 +144,7 @@
             <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 12px; font-size:16px;" onclick="window.toggleLocation()" title="Mi Ubicación">🎯</button>
         </div>
 
+        <!-- RADAR ALIADO -->
         <button class="btn-outline" id="toggleLiveBtn" onclick="window.toggleGroup('live-group-container')" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between; border-color: #9b59b6; color: #9b59b6;">
             <span>📡 Radar Aliado (Live)</span><span>▼</span>
         </button>
@@ -1041,6 +1047,32 @@
         return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${tacticalIcons[type] || '📍'}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
     }
 
+    window.recalculateAutoRoute = async function() {
+        if (autoRoutePoints.length > 1) {
+            const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';');
+            const mode = document.getElementById('route-mode-select').value || 'foot';
+            try {
+                const response = await fetch(`https://router.project-osrm.org/route/v1/${mode}/${coordsStr}?geometries=geojson&overview=full`);
+                const data = await response.json();
+                if (data.code === 'Ok' && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    window.lastAutoRouteDuration = route.duration;
+                    autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                    if (currentAutoRouteLine) autoRouteLayer.removeLayer(currentAutoRouteLine);
+                    const lineColor = document.getElementById('drawColor').value || '#2ecc71';
+                    const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
+                    currentAutoRouteLine = L.polyline(autoRouteCoordinates, { color: lineColor, weight: lineWeight, dashArray: '5, 10' }).addTo(autoRouteLayer);
+                    const dist = route.distance; const distText = dist > 1000 ? (dist/1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
+                    const timeMinutes = Math.round(route.duration / 60); const timeHours = Math.floor(timeMinutes / 60); const remMin = timeMinutes % 60;
+                    const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                    const mIcon = mode === 'driving' ? '🚗' : (mode === 'bike' ? '🚲' : '🚶‍♂️');
+                    const infoDiv = document.getElementById('auto-route-info');
+                    if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ${mIcon} Aprox: ${timeText}`; }
+                } else { window.customAlert("Atención", "No se encontró un camino conectable entre esos puntos."); }
+            } catch (error) { console.error("Error fetching route:", error); window.customAlert("Error", "No se pudo calcular la ruta."); }
+        }
+    };
+
     window.undoLastPoint = function() {
         if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') { activeHandler.deleteLastVertex(); } 
         else if (autoRoutePoints && autoRoutePoints.length > 0) {
@@ -1048,17 +1080,19 @@
             autoRoutePoints.forEach(p => L.circleMarker(p, {radius: 5, color: '#2ecc71', fillColor: '#fff', fillOpacity: 1}).addTo(autoRouteLayer));
             if (autoRoutePoints.length > 1) {
                 const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';');
-                fetch(`https://router.project-osrm.org/route/v1/foot/${coordsStr}?geometries=geojson&overview=full`).then(res => res.json()).then(data => {
+                const mode = document.getElementById('route-mode-select').value || 'foot';
+                fetch(`https://router.project-osrm.org/route/v1/${mode}/${coordsStr}?geometries=geojson&overview=full`).then(res => res.json()).then(data => {
                     if (data.code === 'Ok' && data.routes.length > 0) {
-                        const route = data.routes[0]; autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                        const route = data.routes[0]; window.lastAutoRouteDuration = route.duration; autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
                         const lineColor = document.getElementById('drawColor').value || '#2ecc71';
                         const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
                         currentAutoRouteLine = L.polyline(autoRouteCoordinates, { color: lineColor, weight: lineWeight, dashArray: '5, 10' }).addTo(autoRouteLayer);
                         const dist = route.distance; const distText = dist > 1000 ? (dist/1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
                         const timeMinutes = Math.round(route.duration / 60); const timeHours = Math.floor(timeMinutes / 60); const remMin = timeMinutes % 60;
                         const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                        const mIcon = mode === 'driving' ? '🚗' : (mode === 'bike' ? '🚲' : '🚶‍♂️');
                         const infoDiv = document.getElementById('auto-route-info');
-                        if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ⏱️ Aprox: ${timeText}`; }
+                        if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ${mIcon} Aprox: ${timeText}`; }
                     }
                 }).catch(err => console.error(err));
             } else {
@@ -1073,7 +1107,9 @@
         document.getElementById('drawing-actions').style.display = 'flex';
         document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon' || type === 'auto-route') ? 'block' : 'none';
         const finishBtn = document.getElementById('finish-route-btn');
+        const routeModeSelect = document.getElementById('route-mode-select');
         if (finishBtn) finishBtn.style.display = (type === 'auto-route') ? 'block' : 'none';
+        if (routeModeSelect) routeModeSelect.style.display = (type === 'auto-route') ? 'block' : 'none';
         if (type === 'delete') { document.getElementById('cancel-crop-btn').innerText = "✕ Salir"; drawnItems.eachLayer(layer => layer.on('click', window.deleteClickHandler)); return; } 
         else { document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar Acción (Esc)"; }
         if (type === 'auto-route') { autoRoutePoints = []; autoRouteCoordinates = []; autoRouteLayer.addTo(map); map.on('click', handleAutoRouteClick); document.getElementById('map-container').style.cursor = 'crosshair'; return; }
@@ -1098,11 +1134,13 @@
         L.circleMarker(e.latlng, {radius: 5, color: '#2ecc71', fillColor: '#fff', fillOpacity: 1}).addTo(autoRouteLayer);
         if (autoRoutePoints.length > 1) {
             const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';');
+            const mode = document.getElementById('route-mode-select').value || 'foot';
             try {
-                const response = await fetch(`https://router.project-osrm.org/route/v1/foot/${coordsStr}?geometries=geojson&overview=full`);
+                const response = await fetch(`https://router.project-osrm.org/route/v1/${mode}/${coordsStr}?geometries=geojson&overview=full`);
                 const data = await response.json();
                 if (data.code === 'Ok' && data.routes.length > 0) {
                     const route = data.routes[0];
+                    window.lastAutoRouteDuration = route.duration;
                     autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
                     if (currentAutoRouteLine) autoRouteLayer.removeLayer(currentAutoRouteLine);
                     const lineColor = document.getElementById('drawColor').value || '#2ecc71';
@@ -1111,8 +1149,9 @@
                     const dist = route.distance; const distText = dist > 1000 ? (dist/1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
                     const timeMinutes = Math.round(route.duration / 60); const timeHours = Math.floor(timeMinutes / 60); const remMin = timeMinutes % 60;
                     const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                    const mIcon = mode === 'driving' ? '🚗' : (mode === 'bike' ? '🚲' : '🚶‍♂️');
                     const infoDiv = document.getElementById('auto-route-info');
-                    if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ⏱️ Aprox: ${timeText}`; }
+                    if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ${mIcon} Aprox: ${timeText}`; }
                 } else { window.customAlert("Atención", "No se encontró un camino conectable entre esos puntos."); }
             } catch (error) { console.error("Error fetching route:", error); window.customAlert("Error", "No se pudo calcular la ruta."); }
         }
@@ -1122,6 +1161,9 @@
         if (autoRouteCoordinates.length > 1) {
             const finalPolyline = L.polyline(autoRouteCoordinates, { color: document.getElementById('drawColor').value || '#2ecc71', weight: parseInt(document.getElementById('drawWeight').value) || 4 });
             finalPolyline.isAutoRoute = true;
+            finalPolyline.routeMode = document.getElementById('route-mode-select').value || 'foot';
+            finalPolyline.routeDuration = window.lastAutoRouteDuration || 0;
+            finalPolyline.autoRouteOriginalPoints = autoRoutePoints.map(p => ({lat: p.lat, lng: p.lng}));
             map.fire(L.Draw.Event.CREATED, { layer: finalPolyline, layerType: 'polyline' });
         } else { window.stopDrawing(); }
     };
@@ -1201,6 +1243,13 @@
         else if (e.layerType === 'polyline') {
             const latlngs = layer.getLatLngs();
 
+            layer.feature.properties.routeMode = layer.routeMode || 'foot';
+            if (layer.autoRouteOriginalPoints) layer.feature.properties.autoRouteOriginalPoints = layer.autoRouteOriginalPoints;
+            if (layer.routeDuration) layer.feature.properties.routeDuration = layer.routeDuration;
+
+            let rMode = layer.feature.properties.routeMode;
+            let mIcon = rMode === 'driving' ? '🚗' : (rMode === 'bike' ? '🚲' : '🚶‍♂️');
+
             if (layer.isAutoRoute) {
                 const endPt = latlngs[latlngs.length - 1];
                 layer.endMarker = L.marker(endPt, { icon: getMarkerIconObj(layer.feature.properties.color || '#2ecc71', 'bandera'), zIndexOffset: 1000 }).addTo(map);
@@ -1245,12 +1294,20 @@
                         if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff);
                     }
                     
-                    let timeMinutes = (distance * 0.012) + (elevGain * 0.1);
+                    let timeMinutes = 0;
+                    if (layer.feature.properties.isAutoRoute && layer.feature.properties.routeDuration) {
+                        timeMinutes = layer.feature.properties.routeDuration / 60;
+                    } else {
+                        if (rMode === 'driving') timeMinutes = distance * 0.0015;
+                        else if (rMode === 'bike') timeMinutes = distance * 0.004;
+                        else timeMinutes = (distance * 0.012) + (elevGain * 0.1);
+                    }
+                    
                     let timeHours = Math.floor(timeMinutes / 60);
                     let remainMinutes = Math.round(timeMinutes % 60);
                     let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`;
                     
-                    baseText = `<div style="min-width: 260px;"><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b> | ⏱️ <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height: 120px; width: 100%; margin-top: 8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                    baseText = `<div style="min-width: 260px;"><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height: 120px; width: 100%; margin-top: 8px;"><canvas id="chart-${id}"></canvas></div></div>`;
                     
                     layer.feature.properties.baseText = baseText;
                     layer.setPopupContent(baseText + actionBtns);
@@ -1339,6 +1396,88 @@
                 layer.options.color = newColor; layer.options.weight = newWeight;
                 layer.feature.properties.color = newColor; layer.feature.properties.weight = newWeight;
                 if (layer.endMarker) { layer.endMarker.setIcon(getMarkerIconObj(newColor, 'bandera')); }
+                
+                const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button></div>`;
+
+                if (layer.feature.properties.isAutoRoute) {
+                    const newMode = document.getElementById('edit-route-mode').value;
+                    const oldMode = layer.feature.properties.routeMode;
+                    layer.feature.properties.routeMode = newMode;
+                    const mIcon = newMode === 'driving' ? '🚗' : (newMode === 'bike' ? '🚲' : '🚶‍♂️');
+                    
+                    if (newMode !== oldMode && layer.feature.properties.autoRouteOriginalPoints && layer.feature.properties.autoRouteOriginalPoints.length > 1) {
+                        const pts = layer.feature.properties.autoRouteOriginalPoints;
+                        const coordsStr = pts.map(p => `${p.lng},${p.lat}`).join(';');
+                        fetch(`https://router.project-osrm.org/route/v1/${newMode}/${coordsStr}?geometries=geojson&overview=full`).then(res=>res.json()).then(async data => {
+                            if(data.code === 'Ok' && data.routes.length > 0) {
+                                const route = data.routes[0]; const newCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                                layer.setLatLngs(newCoords);
+                                layer.feature.properties.routeDuration = route.duration;
+                                if (layer.endMarker) layer.endMarker.setLatLng(newCoords[newCoords.length-1]);
+                                
+                                let distance = route.distance;
+                                let samplePoints = layer.getLatLngs();
+                                if (samplePoints.length > 90) {
+                                    const step = Math.ceil(samplePoints.length / 90);
+                                    samplePoints = samplePoints.filter((_, idx) => idx % step === 0);
+                                    if (samplePoints[samplePoints.length - 1] !== layer.getLatLngs()[layer.getLatLngs().length - 1]) samplePoints.push(layer.getLatLngs()[layer.getLatLngs().length - 1]);
+                                }
+                                const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(','); const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
+                                try {
+                                    const resEle = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
+                                    const eleData = await resEle.json();
+                                    if(eleData && eleData.elevation) {
+                                        let elevGain = 0, elevLoss = 0; const elevations = eleData.elevation;
+                                        let distancesArray = [0], cumDist = 0;
+                                        for (let i = 1; i < samplePoints.length; i++) { cumDist += samplePoints[i-1].distanceTo(samplePoints[i]); distancesArray.push((cumDist/1000).toFixed(2)); }
+                                        layer.feature.properties.chartData = { labels: distancesArray, data: elevations };
+                                        for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i+1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
+                                        
+                                        let timeMinutes = route.duration / 60;
+                                        let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60);
+                                        let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`;
+                                        const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                                        
+                                        const newBaseText = `<div style="min-width: 260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height: 120px; width: 100%; margin-top: 8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                                        layer.feature.properties.baseText = newBaseText;
+                                        layer.setPopupContent(newBaseText + actionBtns);
+                                        if (layer.endMarker) layer.endMarker.setPopupContent(newBaseText + actionBtns);
+                                        window.renderChart(layer, id);
+                                    }
+                                } catch(e){}
+                            }
+                        });
+                    } else if (layer.feature.properties.chartData) {
+                        let distance = 0; const latlngs = layer.getLatLngs(); for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i+1]);
+                        let elevGain = 0, elevLoss = 0; const elevations = layer.feature.properties.chartData.data; for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i+1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
+                        
+                        let timeMinutes = 0;
+                        if (layer.feature.properties.isAutoRoute && layer.feature.properties.routeDuration && newMode === oldMode) {
+                            timeMinutes = layer.feature.properties.routeDuration / 60;
+                        } else {
+                            if (newMode === 'driving') timeMinutes = distance * 0.0015;
+                            else if (newMode === 'bike') timeMinutes = distance * 0.004;
+                            else timeMinutes = (distance * 0.012) + (elevGain * 0.1);
+                        }
+                        
+                        let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`;
+                        const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                        
+                        const newBaseText = `<div style="min-width: 260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height: 120px; width: 100%; margin-top: 8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                        layer.feature.properties.baseText = newBaseText; layer.setPopupContent(newBaseText + actionBtns); if (layer.endMarker) layer.endMarker.setPopupContent(newBaseText + actionBtns);
+                    }
+                } else if (layer.feature.properties.chartData) { // MANUAL ROUTE
+                    let mIcon = '🚶‍♂️';
+                    let distance = 0; const latlngs = layer.getLatLngs(); for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i+1]);
+                    let elevGain = 0, elevLoss = 0; const elevations = layer.feature.properties.chartData.data; for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i+1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
+                    let timeMinutes = (distance * 0.012) + (elevGain * 0.1);
+                    let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`;
+                    const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                    const newBaseText = `<div style="min-width: 260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height: 120px; width: 100%; margin-top: 8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                    layer.feature.properties.baseText = newBaseText; layer.setPopupContent(newBaseText + actionBtns);
+                } else {
+                    layer.setPopupContent(layer.feature.properties.baseText + actionBtns);
+                }
             } else if (isMarker) {
                 const newColor = document.getElementById('edit-color-input').value;
                 const newIconType = document.getElementById('edit-icon-input').value;
@@ -1989,7 +2128,6 @@
         } else { currentOverlay = null; }
     };
 
-    // --- VARIABLES GLOBALES DEL GPS ---
     window.isFollowingUser = false;
     window.currentDeviceHeading = 0;
     let locWatchId = null;
@@ -2016,6 +2154,30 @@
             }
         }
     }
+
+    window.recalculateAutoRoute = async function() {
+        if (autoRoutePoints.length > 1) {
+            const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';');
+            const mode = document.getElementById('route-mode-select').value || 'foot';
+            try {
+                const response = await fetch(`https://router.project-osrm.org/route/v1/${mode}/${coordsStr}?geometries=geojson&overview=full`);
+                const data = await response.json();
+                if (data.code === 'Ok' && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                    if (currentAutoRouteLine) autoRouteLayer.removeLayer(currentAutoRouteLine);
+                    const lineColor = document.getElementById('drawColor').value || '#2ecc71';
+                    const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
+                    currentAutoRouteLine = L.polyline(autoRouteCoordinates, { color: lineColor, weight: lineWeight, dashArray: '5, 10' }).addTo(autoRouteLayer);
+                    const dist = route.distance; const distText = dist > 1000 ? (dist/1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
+                    const timeMinutes = Math.round(route.duration / 60); const timeHours = Math.floor(timeMinutes / 60); const remMin = timeMinutes % 60;
+                    const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                    const infoDiv = document.getElementById('auto-route-info');
+                    if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ⏱️ Aprox: ${timeText}`; }
+                } else { window.customAlert("Atención", "No se encontró un camino conectable entre esos puntos."); }
+            } catch (error) { console.error("Error fetching route:", error); window.customAlert("Error", "No se pudo calcular la ruta."); }
+        }
+    };
 
     window.toggleLocation = function() {
         try {
