@@ -376,27 +376,46 @@
         });
     }
 
-    window.guardarEnNube = async function(btn) {
+    window.guardarEnNube = function(btn) {
         if (!currentUser) return window.customAlert("Error", "No conectado a Firebase.");
-        const originalText = btn.innerText; btn.innerText = "⏳ Guardando..."; btn.disabled = true;
-        const geojsonData = window.drawnItems.toGeoJSON();
-        geojsonData.features.forEach((feature, index) => {
-            if (feature && feature.properties) {
-                feature.id = "am_" + Date.now() + "_" + index; 
-                feature.properties.name = feature.properties.layerName || 'Elemento';
-                feature.properties.title = feature.properties.layerName || 'Elemento';
-                feature.properties['marker-color'] = feature.properties.color || '#e74c3c';
-                feature.properties['stroke'] = feature.properties.color || '#2ecc71';
-            }
-        });
-        geojsonData.view = { center: window.map.getCenter(), zoom: window.map.getZoom() };
-        const projectDataStr = JSON.stringify(geojsonData);
-        const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', window.projectName.replace(/[^a-z0-9_-]/gi, '_'));
-        try {
-            await setDoc(docRef, { name: window.projectName, data: projectDataStr, updatedAt: Date.now() });
-            window.customAlert("Éxito", "Guardado en Firebase.");
-        } catch (e) { window.customAlert("Error", e.message); } 
-        finally { btn.innerText = originalText; btn.disabled = false; }
+        
+        const modal = document.getElementById('custom-modal');
+        const input = document.getElementById('modal-input');
+        document.getElementById('modal-title').innerText = "Guardar en nube como:";
+        input.value = window.projectName;
+        modal.style.display = 'flex';
+        setTimeout(() => input.select(), 100);
+
+        window.confirmModal = async () => {
+            modal.style.display = 'none';
+            const newName = input.value.trim() || window.projectName;
+            window.projectName = newName;
+            document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
+            
+            const originalText = btn.innerText; btn.innerText = "⏳ Guardando..."; btn.disabled = true;
+            const geojsonData = window.drawnItems.toGeoJSON();
+            geojsonData.features.forEach((feature, index) => {
+                if (feature && feature.properties) {
+                    feature.id = "am_" + Date.now() + "_" + index; 
+                    feature.properties.name = feature.properties.layerName || 'Elemento';
+                    feature.properties.title = feature.properties.layerName || 'Elemento';
+                    feature.properties['marker-color'] = feature.properties.color || '#e74c3c';
+                    feature.properties['stroke'] = feature.properties.color || '#2ecc71';
+                }
+            });
+            geojsonData.view = { center: window.map.getCenter(), zoom: window.map.getZoom() };
+            const projectDataStr = JSON.stringify(geojsonData);
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', window.projectName.replace(/[^a-z0-9_-]/gi, '_'));
+            try {
+                await setDoc(docRef, { name: window.projectName, data: projectDataStr, updatedAt: Date.now() });
+                window.customAlert("Éxito", "Guardado en Firebase.");
+            } catch (e) { window.customAlert("Error", e.message); } 
+            finally { btn.innerText = originalText; btn.disabled = false; }
+        };
+        
+        window.closeModal = () => { 
+            modal.style.display = 'none'; 
+        };
     };
 
     window.abrirNube = function() {
