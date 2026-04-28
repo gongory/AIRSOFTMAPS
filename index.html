@@ -450,7 +450,7 @@
             btn.innerHTML = "📡 Iniciar Transmisión"; btn.style.backgroundColor = "white"; btn.style.color = "#9b59b6";
             window.alliesLayer.clearLayers(); allyMarkers = {};
         } else {
-            if (!window.userLocMarker) return window.customAlert("Aviso", "Enciende tu GPS primero.");
+            if (!window.userLocMarker) return window.customAlert("Aviso", "Enciende tu GPS primero (Botón 🎯).");
             isTransmitting = true; btn.innerHTML = "⏹️ Detener Transmisión"; btn.style.backgroundColor = "var(--danger)"; btn.style.color = "white"; btn.style.borderColor = "var(--danger)";
 
             transmitInterval = setInterval(async () => {
@@ -569,10 +569,10 @@
         minimal: `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g transform="translate(40,40)"><circle cx="0" cy="0" r="30" fill="rgba(255,255,255,0.8)" stroke="#333" stroke-width="2"/><path d="M0,-25 L8,10 L0,2 L-8,10 Z" fill="#e74c3c"/><path d="M0,-25 L0,2 L-8,10 Z" fill="#c0392b"/><circle cx="0" cy="0" r="3" fill="#333"/><text x="0" y="-32" font-family="sans-serif" font-weight="900" font-size="14" fill="#333" text-anchor="middle">N</text></g></svg>`
     };
 
-    function updateCompassStyle() {
+    window.updateCompassStyle = function() {
         const style = document.getElementById('compassStyle').value;
         document.getElementById('compass-rose').innerHTML = compassStyles[style];
-    }
+    };
  
     const baseLayers = {
         mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN' }),
@@ -598,7 +598,7 @@
     let activeHandler = null, isLegendVisible = false, isZoomLocked = false;
     let scaleControlObj = null;
 
-    function renderChart(layer, id) {
+    window.renderChart = function(layer, id) {
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${id}`);
             if (ctx && layer.feature.properties.chartData && window.Chart) {
@@ -622,35 +622,35 @@
                 });
             }
         }, 50);
-    }
+    };
 
-    function attachChartListener(layer, id) {
-        layer.on('popupopen', function() { renderChart(layer, id); });
-    }
+    window.attachChartListener = function(layer, id) {
+        layer.on('popupopen', function() { window.renderChart(layer, id); });
+    };
 
-    function toggleMapLegend() {
+    window.toggleMapLegend = function() {
         isLegendVisible = !isLegendVisible;
         document.getElementById('map-legend').style.display = isLegendVisible ? 'block' : 'none';
         document.getElementById('toggleLegendBtn').innerText = isLegendVisible ? '📋 Ocultar Leyenda' : '📋 Leyenda';
         document.getElementById('toggleLegendBtn').style.borderStyle = isLegendVisible ? 'solid' : 'dashed';
         if (isLegendVisible) updateLegend();
-    }
+    };
 
-    function toggleCompass() {
+    window.toggleCompass = function() {
         const compass = document.getElementById('compass-rose');
         const btn = document.getElementById('btn-compass');
         if (compass.style.display === 'none') { compass.style.display = 'block'; btn.classList.add('active'); } 
         else { compass.style.display = 'none'; btn.classList.remove('active'); }
-    }
+    };
 
-    function toggleNumScale() {
+    window.toggleNumScale = function() {
         const widget = document.getElementById('numeric-scale-widget');
         const btn = document.getElementById('numScaleToggleBtn');
         if (widget.style.display === 'none') { widget.style.display = 'block'; btn.innerText = "Ocultar Escala Numérica"; } 
         else { widget.style.display = 'none'; btn.innerText = "Mostrar Escala Numérica"; }
-    }
+    };
 
-    function toggleZoomLock() {
+    window.toggleZoomLock = function() {
         isZoomLocked = !isZoomLocked;
         const btn = document.getElementById('lockZoomBtn');
         const zoomCtrl = document.querySelector('.leaflet-control-zoom');
@@ -665,7 +665,7 @@
             document.getElementById('gridScale').value = 'auto';
         }
         updateNumericScaleDisplay();
-    }
+    };
 
     function updateNumericScaleDisplay() {
         const scaleDropdown = document.getElementById('gridScale').value;
@@ -934,7 +934,7 @@
         } else { layer.unbindTooltip(); }
     }
 
-    const deleteClickHandler = function(e) { window.removeLayerById(L.stamp(e.target)); };
+    window.deleteClickHandler = function(e) { window.removeLayerById(L.stamp(e.target)); };
 
     function getMarkerIconObj(color, type) {
         if (type === 'images_2') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; overflow: hidden;"><img src="images_2.jpg" style="width: 100%; height: 100%; object-fit: cover;"></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
@@ -943,7 +943,7 @@
         return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 14px;">${tacticalIcons[type] || '📍'}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
     }
 
-    function undoLastPoint() {
+    window.undoLastPoint = function() {
         if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') { activeHandler.deleteLastVertex(); } 
         else if (autoRoutePoints && autoRoutePoints.length > 0) {
             autoRoutePoints.pop(); autoRouteLayer.clearLayers();
@@ -968,32 +968,32 @@
                 const infoDiv = document.getElementById('auto-route-info'); if(infoDiv) infoDiv.style.display = 'none';
             }
         }
-    }
+    };
 
-    function enableTool(type) {
-        stopDrawing(); toggleMenu(); 
+    window.enableTool = function(type) {
+        window.stopDrawing(); window.toggleMenu(); 
         document.getElementById('drawing-actions').style.display = 'flex';
         document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon' || type === 'auto-route') ? 'block' : 'none';
         const finishBtn = document.getElementById('finish-route-btn');
         if (finishBtn) finishBtn.style.display = (type === 'auto-route') ? 'block' : 'none';
-        if (type === 'delete') { document.getElementById('cancel-crop-btn').innerText = "✕ Salir"; drawnItems.eachLayer(layer => layer.on('click', deleteClickHandler)); return; } 
+        if (type === 'delete') { document.getElementById('cancel-crop-btn').innerText = "✕ Salir"; drawnItems.eachLayer(layer => layer.on('click', window.deleteClickHandler)); return; } 
         else { document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar Acción (Esc)"; }
         if (type === 'auto-route') { autoRoutePoints = []; autoRouteCoordinates = []; autoRouteLayer.addTo(map); map.on('click', handleAutoRouteClick); document.getElementById('map-container').style.cursor = 'crosshair'; return; }
         if (type === 'marker') { drawOptions.marker.icon = getMarkerIconObj(document.getElementById('markerColor').value || '#e74c3c', 'punto'); activeHandler = new L.Draw.Marker(map, drawOptions.marker); }
         if (type === 'polyline') { drawOptions.polyline.shapeOptions.weight = parseInt(document.getElementById('drawWeight').value) || 4; drawOptions.polyline.shapeOptions.color = document.getElementById('drawColor').value || '#2ecc71'; activeHandler = new L.Draw.Polyline(map, drawOptions.polyline); }
         if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, drawOptions.polygon);
         if (activeHandler) activeHandler.enable();
-    }
+    };
 
-    function stopDrawing() {
+    window.stopDrawing = function() {
         if (activeHandler) { activeHandler.disable(); activeHandler = null; }
-        drawnItems.eachLayer(layer => layer.off('click', deleteClickHandler));
+        drawnItems.eachLayer(layer => layer.off('click', window.deleteClickHandler));
         document.getElementById('drawing-actions').style.display = 'none';
         map.off('click', handleAutoRouteClick); if (typeof autoRouteLayer !== 'undefined') { autoRouteLayer.clearLayers(); map.removeLayer(autoRouteLayer); }
         if (typeof currentAutoRouteLine !== 'undefined') currentAutoRouteLine = null;
         document.getElementById('map-container').style.cursor = '';
         const infoDiv = document.getElementById('auto-route-info'); if(infoDiv) infoDiv.style.display = 'none';
-    }
+    };
 
     async function handleAutoRouteClick(e) {
         autoRoutePoints.push(e.latlng);
@@ -1020,13 +1020,13 @@
         }
     }
 
-    function finishAutoRoute() {
+    window.finishAutoRoute = function() {
         if (autoRouteCoordinates.length > 1) {
             const finalPolyline = L.polyline(autoRouteCoordinates, { color: document.getElementById('drawColor').value || '#2ecc71', weight: parseInt(document.getElementById('drawWeight').value) || 4 });
             finalPolyline.isAutoRoute = true;
             map.fire(L.Draw.Event.CREATED, { layer: finalPolyline, layerType: 'polyline' });
-        } else { stopDrawing(); }
-    }
+        } else { window.stopDrawing(); }
+    };
 
     function askName(title, defaultText) {
         return new Promise((resolve) => {
@@ -1050,7 +1050,7 @@
         
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         layer.feature.properties.layerName = layerName;
-        layer.feature.properties.faction = window.projectName;
+        layer.feature.properties.faction = window.projectName; // Se asocia al proyecto actual
         layer.feature.properties.grupo = "";
         layer.feature.properties.isAutoRoute = layer.isAutoRoute || false;
         layer.isHidden = false;
@@ -1079,7 +1079,7 @@
         
         drawnItems.addLayer(layer);
         updateLayerTree(); 
-        stopDrawing();
+        window.stopDrawing();
 
         if (e.layerType === 'marker') {
             const latlng = layer.getLatLng(); const lat = latlng.lat; const lng = latlng.lng;
@@ -1108,7 +1108,7 @@
                 layer.endMarker = L.marker(endPt, { icon: getMarkerIconObj(layer.feature.properties.color || '#2ecc71', 'bandera'), zIndexOffset: 1000 }).addTo(map);
                 const originalSetPopupContent = layer.setPopupContent.bind(layer);
                 layer.setPopupContent = function(content) { originalSetPopupContent(content); if (layer.endMarker) layer.endMarker.setPopupContent(content); };
-                layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) renderChart(layer, id); });
+                layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) window.renderChart(layer, id); });
             }
 
             let distance = 0;
@@ -1126,6 +1126,7 @@
                     samplePoints = latlngs.filter((_, idx) => idx % step === 0);
                     if (samplePoints[samplePoints.length - 1] !== latlngs[latlngs.length - 1]) samplePoints.push(latlngs[latlngs.length - 1]);
                 }
+
                 const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(',');
                 const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
                 
@@ -1155,7 +1156,7 @@
                     
                     layer.feature.properties.baseText = baseText;
                     layer.setPopupContent(baseText + actionBtns);
-                    attachChartListener(layer, id); renderChart(layer, id);
+                    window.attachChartListener(layer, id); window.renderChart(layer, id);
                 }
             } catch (error) { baseText = `<div><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b><br>Desnivel: Error</div>`; layer.feature.properties.baseText = baseText; layer.setPopupContent(baseText + actionBtns); }
         }
@@ -1261,7 +1262,7 @@
                 <button onclick="window.removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button>
             </div>`;
             layer.setPopupContent(layer.feature.properties.baseText + actionBtns);
-            if (layer.feature.properties.chartData) renderChart(layer, id);
+            if (layer.feature.properties.chartData) window.renderChart(layer, id);
             updateLayerTree(); 
         };
         window.closeEditModal = () => modal.style.display = 'none';
@@ -1278,10 +1279,10 @@
         }
     };
 
-    function openImageModal(src) { document.getElementById('image-modal-content').src = src; document.getElementById('image-modal').style.display = 'flex'; }
-    function closeImageModal() { document.getElementById('image-modal').style.display = 'none'; document.getElementById('image-modal-content').src = ''; }
+    window.openImageModal = function(src) { document.getElementById('image-modal-content').src = src; document.getElementById('image-modal').style.display = 'flex'; };
+    window.closeImageModal = function() { document.getElementById('image-modal').style.display = 'none'; document.getElementById('image-modal-content').src = ''; };
 
-    function printImage(src, title, captureId = null) {
+    window.printImage = function(src, title, captureId = null) {
         const printWin = window.open('', '_blank');
         if (!printWin) return window.customAlert("Atención", "Permite ventanas emergentes para imprimir.");
         const parentStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(el => el.outerHTML).join('\n');
@@ -1397,12 +1398,12 @@
             <\/script></body></html>
         `);
         printWin.document.close();
-    }
+    };
 
-    async function captureMap() {
+    window.captureMap = async function() {
         const captureName = await askName("Introduce un nombre para la captura:", "Mapa_AirsoftMaps");
         const safeName = captureName.endsWith('.png') ? captureName : captureName + '.png';
-        toggleMenu(); document.body.classList.add('hide-controls');
+        window.toggleMenu(); document.body.classList.add('hide-controls');
         const captureId = Date.now(); window.captures = window.captures || {};
         const legendEl = document.getElementById('map-legend'); const compassEl = document.getElementById('compass-rose'); const numScaleEl = document.getElementById('numeric-scale-widget'); const geoScaleEl = document.querySelector('.leaflet-control-scale');
         window.captures[captureId] = {
@@ -1421,10 +1422,10 @@
                 }
             });
             const item = document.createElement('div'); item.className = 'gallery-item'; const imgData = canvas.toDataURL();
-            item.innerHTML = `<img src="${imgData}" style="cursor: zoom-in;" onclick="openImageModal(this.src)" title="Clic para ampliar"><div style="font-size:13px; font-weight:bold; color:var(--ign-blue); text-align:center; margin:5px 0;">${captureName}</div><div style="display:flex; justify-content:space-between; align-items:center; padding: 5px; flex-wrap: wrap; gap: 5px;"><button onclick="openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none; background:none; color:var(--success); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">👁️ Ver</button><button onclick="printImage(this.closest('.gallery-item').querySelector('img').src, this.parentElement.previousElementSibling.innerText, ${captureId})" style="border:none; background:none; color:#64748b; cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🖨️ Imprimir</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue); font-weight:bold; text-decoration:none; font-size: 12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none; background:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🗑️ Borrar</button></div>`;
-            document.getElementById('gallery').prepend(item); document.body.classList.remove('hide-controls'); toggleMenu();
+            item.innerHTML = `<img src="${imgData}" style="cursor: zoom-in;" onclick="window.openImageModal(this.src)" title="Clic para ampliar"><div style="font-size:13px; font-weight:bold; color:var(--ign-blue); text-align:center; margin:5px 0;">${captureName}</div><div style="display:flex; justify-content:space-between; align-items:center; padding: 5px; flex-wrap: wrap; gap: 5px;"><button onclick="window.openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none; background:none; color:var(--success); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">👁️ Ver</button><button onclick="window.printImage(this.closest('.gallery-item').querySelector('img').src, this.parentElement.previousElementSibling.innerText, ${captureId})" style="border:none; background:none; color:#64748b; cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🖨️ Imprimir</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue); font-weight:bold; text-decoration:none; font-size: 12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none; background:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size: 12px; padding:0;">🗑️ Borrar</button></div>`;
+            document.getElementById('gallery').prepend(item); document.body.classList.remove('hide-controls'); window.toggleMenu();
         }, 100);
-    }
+    };
 
     function getMTNLeaf(lat, lon) {
         const refLat = 44.0, refLon = -9.5;
@@ -1437,7 +1438,7 @@
         if (infoDiv) { infoDiv.innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div><a href="https://centrodedescargas.cnig.es/CentroDescargas/buscar.do?serie=MTN50&numHoja=${hoja}" target="_blank" style="font-size:10px; color:var(--info); text-decoration:none;">Descargar Hoja Oficial</a>`; }
     }
 
-    function toggleMtnGrid() {
+    window.toggleMtnGrid = function() {
         isMtnGridVisible = !isMtnGridVisible; const btn = document.getElementById('mtnGridBtn');
         if (isMtnGridVisible) {
             if (mtnGridLayer) map.removeLayer(mtnGridLayer);
@@ -1450,26 +1451,26 @@
             for (let lng = sLng; lng <= eLng; lng += stepLon) L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], gridStyle).addTo(mtnGridLayer);
             mtnGridLayer.addTo(map); btn.innerText = "Ocultar Cuadrículas MTN";
         } else { if (mtnGridLayer) map.removeLayer(mtnGridLayer); btn.innerText = "Ver Cuadrículas MTN"; }
-    }
+    };
 
     let gridLayer = null, isGridVisible = false;
-    function toggleGrid() {
+    window.toggleGrid = function() {
         isGridVisible = !isGridVisible; const btn = document.getElementById('gridToggleBtn');
-        if (isGridVisible) { updateGrid(); map.on('moveend', updateGrid); btn.innerText = "Desactivar Cuadrícula"; } 
-        else { if (gridLayer) map.removeLayer(gridLayer); map.off('moveend', updateGrid); btn.innerText = "Activar Cuadrícula"; }
-    }
+        if (isGridVisible) { window.updateGrid(); map.on('moveend', window.updateGrid); btn.innerText = "Desactivar Cuadrícula"; } 
+        else { if (gridLayer) map.removeLayer(gridLayer); map.off('moveend', window.updateGrid); btn.innerText = "Activar Cuadrícula"; }
+    };
 
-    function updateGridByScale() {
+    window.updateGridByScale = function() {
         const scaleStr = document.getElementById('gridScale').value;
         if (scaleStr !== 'auto') {
             const targetScale = parseInt(scaleStr); const lat = map.getCenter().lat;
             const targetZoom = Math.log2((156543.03392 * Math.cos(lat * Math.PI / 180)) / (targetScale * 0.0002645833));
-            map.setZoom(targetZoom); if (!isZoomLocked) { toggleZoomLock(); }
-        } else { if (isZoomLocked) { toggleZoomLock(); } }
-        updateGrid();
-    }
+            map.setZoom(targetZoom); if (!isZoomLocked) { window.toggleZoomLock(); }
+        } else { if (isZoomLocked) { window.toggleZoomLock(); } }
+        window.updateGrid();
+    };
 
-    function toggleScale() {
+    window.toggleScale = function() {
         const btn = document.getElementById('scaleToggleBtn');
         if (!scaleControlObj) {
             scaleControlObj = L.control.scale({ imperial: false }).addTo(map);
@@ -1481,13 +1482,13 @@
             map.removeControl(scaleControlObj); scaleControlObj = null;
             btn.innerText = "Mostrar Escala Gráfica"; btn.classList.remove('active');
         }
-    }
+    };
  
     function getGridStep(z) { return (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : z > 5 ? 1.0 : 5.0); }
     function getAlphaFromNumber(num) { let letters = ''; while (num >= 0) { letters = String.fromCharCode(65 + (num % 26)) + letters; num = Math.floor(num / 26) - 1; } return letters; }
-    function onGridTypeChange() { if (!isGridVisible) { toggleGrid(); } else { updateGrid(); } }
+    window.onGridTypeChange = function() { if (!isGridVisible) { window.toggleGrid(); } else { window.updateGrid(); } };
 
-    function updateGrid() {
+    window.updateGrid = function() {
         if (!isGridVisible) return;
         if (gridLayer) map.removeLayer(gridLayer);
         gridLayer = L.layerGroup();
@@ -1526,7 +1527,7 @@
             }
         }
         gridLayer.addTo(map);
-    }
+    };
  
     function latLonToUTM(lat, lon) {
         const a = 6378137.0, f = 1 / 298.257223563, k0 = 0.9996;
@@ -1579,19 +1580,19 @@
  
     map.on('move', updateMtnInfo);
  
-    function renombrarProyecto() {
-        toggleMenu(); const factions = new Set(); factions.add(window.projectName); 
+    window.renombrarProyecto = function() {
+        window.toggleMenu(); const factions = new Set(); factions.add(window.projectName); 
         drawnItems.eachLayer(layer => { const fac = layer.feature?.properties?.faction; if (fac) factions.add(fac); });
         const select = document.getElementById('rename-folder-select'); select.innerHTML = '';
         factions.forEach(fac => { const opt = document.createElement('option'); opt.value = fac; opt.text = '📁 ' + fac; select.appendChild(opt); });
         document.getElementById('rename-folder-input').value = select.value;
         document.getElementById('rename-folder-modal').style.display = 'flex';
         setTimeout(() => document.getElementById('rename-folder-input').select(), 100);
-    }
+    };
 
-    function closeRenameFolderModal() { document.getElementById('rename-folder-modal').style.display = 'none'; toggleMenu(); }
+    window.closeRenameFolderModal = function() { document.getElementById('rename-folder-modal').style.display = 'none'; window.toggleMenu(); };
 
-    function confirmRenameFolderModal() {
+    window.confirmRenameFolderModal = function() {
         const oldName = document.getElementById('rename-folder-select').value;
         const newName = document.getElementById('rename-folder-input').value.trim();
         if (newName && newName !== oldName) {
@@ -1599,21 +1600,21 @@
             if (window.projectName === oldName) { window.projectName = newName; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName; }
             updateLayerTree(); 
         }
-        document.getElementById('rename-folder-modal').style.display = 'none'; toggleMenu(); 
-    }
+        document.getElementById('rename-folder-modal').style.display = 'none'; window.toggleMenu(); 
+    };
 
-    function nuevoProyecto() {
-        toggleMenu(); document.getElementById('confirm-modal').style.display = 'flex';
+    window.nuevoProyecto = function() {
+        window.toggleMenu(); document.getElementById('confirm-modal').style.display = 'flex';
         window.acceptConfirmModal = async function() {
             document.getElementById('confirm-modal').style.display = 'none';
             const name = await askName("Nombre del nuevo proyecto:", "Nuevo_Proyecto");
             window.projectName = name.trim() || "Nuevo_Proyecto"; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
             drawnItems.eachLayer(l => { if(l.bufferCircle) map.removeLayer(l.bufferCircle); if(l.conePolygon) map.removeLayer(l.conePolygon); });
             drawnItems.clearLayers(); document.getElementById('gallery').innerHTML = ''; if (searchMarker) map.removeLayer(searchMarker);
-            stopDrawing(); updateLayerTree(); map.setView([40.4167, -3.7037], 6); toggleMenu(); 
+            window.stopDrawing(); updateLayerTree(); map.setView([40.4167, -3.7037], 6); window.toggleMenu(); 
         };
-        window.closeConfirmModal = function() { document.getElementById('confirm-modal').style.display = 'none'; toggleMenu(); };
-    }
+        window.closeConfirmModal = function() { document.getElementById('confirm-modal').style.display = 'none'; window.toggleMenu(); };
+    };
 
     window.procesarDatosCargados = function(data, fileName) {
         window.projectName = fileName; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
@@ -1643,22 +1644,22 @@
                         layer.endMarker = L.marker(latlngs[latlngs.length - 1], { icon: getMarkerIconObj(feature.properties.color || '#2ecc71', 'bandera'), zIndexOffset: 1000 }).addTo(map);
                         const originalSetPopupContent = layer.setPopupContent.bind(layer);
                         layer.setPopupContent = function(content) { originalSetPopupContent(content); if (layer.endMarker) layer.endMarker.setPopupContent(content); };
-                        layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) renderChart(layer, id); });
+                        layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) window.renderChart(layer, id); });
                     }
                     if(!feature.properties.faction) layer.feature.properties.faction = window.projectName;
                     const actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); border:1px solid var(--ign-blue); padding:3px; border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); border:1px solid var(--danger); padding:3px; border-radius:4px;">🗑️</button></div>`;
                     layer.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
                     if (layer.endMarker) layer.endMarker.bindPopup((feature.properties.baseText || 'Elemento') + actionBtns);
                     if (layer instanceof L.Marker) { updateMarkerBuffer(layer); updateMarkerLabel(layer); updateMarkerCone(layer); }
-                    if (feature.properties.chartData) attachChartListener(layer, id);
+                    if (feature.properties.chartData) window.attachChartListener(layer, id);
                 }
             });
         }
         if (searchMarker) map.removeLayer(searchMarker);
-        updateLayerTree(); toggleMenu(); 
+        updateLayerTree(); window.toggleMenu(); 
     };
 
-    function guardarProyecto() {
+    window.guardarProyecto = function() {
         const geojsonData = drawnItems.toGeoJSON();
         geojsonData.features.forEach((feature, index) => {
             if (feature && feature.properties) {
@@ -1671,18 +1672,18 @@
         geojsonData.view = { center: map.getCenter(), zoom: map.getZoom() };
         const blob = new Blob([JSON.stringify(geojsonData, null, 2)], {type: "application/json"}); const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = window.projectName.replace(/[^a-z0-9_-]/gi, '_') + ".json"; a.click(); URL.revokeObjectURL(url);
-    }
+    };
 
-    function cargarProyecto(event) {
+    window.cargarProyecto = function(event) {
         const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
         reader.onload = function(e) { try { const data = JSON.parse(e.target.result); const fileName = file.name.replace('.json', ''); window.procesarDatosCargados(data, fileName); } catch (err) { window.customAlert("Error", "Error al cargar el proyecto local."); } };
         reader.readAsText(file); event.target.value = ''; 
-    }
+    };
 
     function escapeXML(str) { return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;'); }
     function downloadFile(content, fileName, mimeType) { const blob = new Blob([content], {type: mimeType}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName; a.click(); URL.revokeObjectURL(url); }
 
-    function exportKML() {
+    window.exportKML = function() {
         let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n<name>' + escapeXML(window.projectName) + '</name>\n';
         drawnItems.eachLayer(layer => {
             const id = L.stamp(layer); const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
@@ -1694,9 +1695,9 @@
             kml += `</Placemark>\n`;
         });
         kml += '</Document>\n</kml>'; downloadFile(kml, window.projectName.replace(/[^a-z0-9_-]/gi, '_') + '.kml', 'application/vnd.google-earth.kml+xml');
-    }
+    };
 
-    function exportGPX() {
+    window.exportGPX = function() {
         let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps">\n'; gpx += `<metadata><name>${escapeXML(window.projectName)}</name></metadata>\n`;
         drawnItems.eachLayer(layer => {
             const name = escapeXML(layer.feature?.properties?.layerName || 'Elemento');
@@ -1705,9 +1706,9 @@
             else if (layer instanceof L.Polyline) { const lls = (layer instanceof L.Polygon) ? layer.getLatLngs()[0] : layer.getLatLngs(); gpx += `<trk><name>${name}</name><desc>${desc}</desc><trkseg>\n`; lls.forEach(ll => { gpx += `<trkpt lat="${ll.lat}" lon="${ll.lng}"></trkpt>\n`; }); if (layer instanceof L.Polygon) gpx += `<trkpt lat="${lls[0].lat}" lon="${lls[0].lng}"></trkpt>\n`; gpx += `</trkseg></trk>\n`; }
         });
         gpx += '</gpx>'; downloadFile(gpx, window.projectName.replace(/[^a-z0-9_-]/gi, '_') + '.gpx', 'application/gpx+xml');
-    }
+    };
 
-    function importKMLGPX(event) {
+    window.importKMLGPX = function(event) {
         const file = event.target.files[0]; if (!file) return; const fileName = file.name; const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -1727,11 +1728,11 @@
                     Array.from(xmlDoc.getElementsByTagNameNS('*', 'rte')).forEach(t => { const nameNode = t.getElementsByTagNameNS('*', 'name')[0]; const name = nameNode ? nameNode.textContent.trim() : 'Ruta GPX'; const latlngs = []; Array.from(t.getElementsByTagNameNS('*', 'rtept')).forEach(pt => { latlngs.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]); }); if (latlngs.length > 1) addImportedLayer(L.polyline(latlngs, drawOptions.polyline.shapeOptions), name, 'polyline', fileName); });
                 }
                 if(drawnItems.getLayers().length > 0) map.fitBounds(drawnItems.getBounds());
-                updateLayerTree(); toggleMenu(); 
+                updateLayerTree(); window.toggleMenu(); 
             } catch (err) { window.customAlert("Error", "Error al procesar el archivo. Asegúrate de que sea un formato KML o GPX válido."); }
         };
         reader.readAsText(file); event.target.value = '';
-    }
+    };
 
     function addImportedLayer(layer, name, type, folderName) {
         const id = L.stamp(layer);
@@ -1749,7 +1750,7 @@
         layer.feature.properties.baseText = baseText; layer.bindPopup(baseText + actionBtns); drawnItems.addLayer(layer);
     }
 
-    async function buscarLugar() {
+    window.buscarLugar = async function() {
         const q = document.getElementById('searchInput').value.trim(); if (!q) return;
         const type = document.getElementById('gridType').value; let foundLat = null, foundLon = null, popupText = "Búsqueda: " + q;
         if (type === 'decimal') { const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/); if (coordMatch) { const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]); if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { foundLat = lat; foundLon = lon; } } } 
@@ -1762,11 +1763,10 @@
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`); const data = await res.json();
             if (data[0]) { foundLat = parseFloat(data[0].lat); foundLon = parseFloat(data[0].lon); popupText = data[0].display_name.split(',')[0]; addEditableMarkerFromSearch(foundLat, foundLon, popupText); }
         } catch (error) { console.error("Error en la búsqueda"); }
-    }
+    };
 
-    let searchMarker = null;
     async function addEditableMarkerFromSearch(lat, lon, name) {
-        if (isZoomLocked) toggleZoomLock();
+        if (isZoomLocked) window.toggleZoomLock();
         map.setView([lat, lon], 15);
         const color = '#3498db'; const newMarker = L.marker([lat, lon], { icon: getMarkerIconObj(color, 'punto') }); const id = L.stamp(newMarker);
         newMarker.feature = { type: 'Feature', properties: {} }; newMarker.feature.properties.layerName = name; newMarker.feature.properties.faction = window.projectName; newMarker.feature.properties.grupo = ""; newMarker.isHidden = false; newMarker.feature.properties.color = color; newMarker.feature.properties.iconType = 'punto'; newMarker.feature.properties.bufferRadius = 0; newMarker.feature.properties.showLabel = false; newMarker.feature.properties.coneEnabled = false; newMarker.feature.properties.coneAngle = 0; newMarker.feature.properties.coneSpread = 60; newMarker.feature.properties.coneDist = 100; newMarker.feature.properties.coneColor = color;
@@ -1796,16 +1796,16 @@
     dragElement(document.getElementById("map-legend")); dragElement(document.getElementById("compass-rose")); dragElement(document.getElementById("numeric-scale-widget")); dragElement(document.getElementById("liveCoords"));
     let isMobileMode = window.innerWidth <= 768; 
     function initMobileMode() { const btn = document.getElementById('modeToggleBtn'); if (isMobileMode) { document.body.classList.add('mobile-mode'); btn.innerText = '💻'; btn.title = 'Cambiar a modo escritorio'; } else { document.body.classList.remove('mobile-mode'); btn.innerText = '📱'; btn.title = 'Cambiar a modo móvil'; } }
-    function toggleMobileMode() { isMobileMode = !isMobileMode; initMobileMode(); }
-    function toggleTheme() { const body = document.body; const btnTheme = document.getElementById('themeToggleBtn'); body.classList.toggle('dark-mode'); if (body.classList.contains('dark-mode')) { btnTheme.innerHTML = '☀️'; btnTheme.title = 'Cambiar a Modo Claro'; } else { btnTheme.innerHTML = '🌙'; btnTheme.title = 'Cambiar a Modo Oscuro'; } }
+    window.toggleMobileMode = function() { isMobileMode = !isMobileMode; initMobileMode(); };
+    window.toggleTheme = function() { const body = document.body; const btnTheme = document.getElementById('themeToggleBtn'); body.classList.toggle('dark-mode'); if (body.classList.contains('dark-mode')) { btnTheme.innerHTML = '☀️'; btnTheme.title = 'Cambiar a Modo Claro'; } else { btnTheme.innerHTML = '🌙'; btnTheme.title = 'Cambiar a Modo Oscuro'; } };
     initMobileMode(); 
 
     // --- FUNCIONES RESTAURADAS DE LA INTERFAZ ---
-    function toggleMenu() { 
+    window.toggleMenu = function() { 
         document.getElementById('panelLateral').classList.toggle('oculto'); 
-    }
+    };
 
-    function changeLayer() {
+    window.changeLayer = function() {
         const bVal = document.getElementById('baseLayer').value;
         const oVal = document.getElementById('overlayLayer').value;
         const op = parseFloat(document.getElementById('overlayOpacity').value);
@@ -1820,7 +1820,7 @@
             currentOverlay.setOpacity(op);
             map.addLayer(currentOverlay);
         } else { currentOverlay = null; }
-    }
+    };
 
     let orientationHandlerActive = false;
     function handleDeviceOrientation(event) {
@@ -1843,7 +1843,7 @@
         }
     }
 
-    function toggleLocation() {
+    window.toggleLocation = function() {
         const btn = document.querySelector('button[title="Mi Ubicación"]');
 
         if (locWatchId !== null) {
@@ -1981,7 +1981,7 @@
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-    }
+    };
 
     map.on('dragstart', () => { 
         window.isFollowingUser = false; 
@@ -1992,7 +1992,7 @@
         }
     });
 
-    function toggleMapMixerGroup() {
+    window.toggleMapMixerGroup = function() {
         const container = document.getElementById('map-mixer-container');
         const icon = document.getElementById('toggleMapMixerIcon');
         if (container.style.display === 'none') {
@@ -2003,9 +2003,9 @@
             container.style.display = 'none';
             icon.innerText = '▼';
         }
-    }
+    };
 
-    function toggleGridGroup() {
+    window.toggleGridGroup = function() {
         const container = document.getElementById('grid-group-container');
         const icon = document.getElementById('toggleGridMenuIcon');
         if (container.style.display === 'none') {
@@ -2016,9 +2016,9 @@
             container.style.display = 'none';
             icon.innerText = '▼';
         }
-    }
+    };
 
-    function toggleEditGroup() {
+    window.toggleEditGroup = function() {
         const container = document.getElementById('edit-group-container');
         const icon = document.getElementById('toggleEditIcon');
         if (container.style.display === 'none') {
@@ -2029,9 +2029,9 @@
             container.style.display = 'none';
             icon.innerText = '▼';
         }
-    }
+    };
 
-    function toggleProjectGroup() {
+    window.toggleProjectGroup = function() {
         const container = document.getElementById('project-group-container');
         const icon = document.getElementById('toggleProjectIcon');
         if (container.style.display === 'none') {
@@ -2042,9 +2042,9 @@
             container.style.display = 'none';
             icon.innerText = '▼';
         }
-    }
+    };
 
-    function toggleMtnGroup() {
+    window.toggleMtnGroup = function() {
         const container = document.getElementById('mtn-group-container');
         const icon = document.getElementById('toggleMtnIcon');
         if (container.style.display === 'none') {
@@ -2055,9 +2055,9 @@
             container.style.display = 'none';
             icon.innerText = '▼';
         }
-    }
+    };
 
-    function toggleLayerManagerGroup() {
+    window.toggleLayerManagerGroup = function() {
         const container = document.getElementById('layer-manager-container');
         const icon = document.getElementById('toggleLayerManagerIcon');
         if (container.style.display === 'none') {
@@ -2068,9 +2068,9 @@
             container.style.display = 'none';
             icon.innerText = '▼';
         }
-    }
+    };
 
-    function toggleGalleryGroup() {
+    window.toggleGalleryGroup = function() {
         const container = document.getElementById('gallery-container');
         const icon = document.getElementById('toggleGalleryIcon');
         if (container.style.display === 'none') {
@@ -2081,15 +2081,15 @@
             container.style.display = 'none';
             icon.innerText = '▼';
         }
-    }
+    };
 
-    function openManual() {
+    window.openManual = function() {
         document.getElementById('manual-modal').style.display = 'flex';
-    }
+    };
 
-    function closeManual() {
+    window.closeManual = function() {
         document.getElementById('manual-modal').style.display = 'none';
-    }
+    };
 </script>
 </body>
 </html>
