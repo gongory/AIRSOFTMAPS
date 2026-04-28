@@ -151,7 +151,10 @@
                 <option value="#f1c40f">🟡 Bando Amarillo</option>
                 <option value="#1e293b">⚫ PMC / Mercenarios</option>
             </select>
-            <button class="btn-outline" id="btn-transmit" style="margin-bottom: 0; border-color: #9b59b6; color: #9b59b6;" onclick="window.toggleLiveTransmission()">📡 Iniciar Transmisión</button>
+            <div style="display: flex; gap: 8px; margin-bottom: 0;">
+                <button class="btn-outline" id="btn-transmit" style="margin-bottom: 0; border-color: #9b59b6; color: #9b59b6; flex: 1;" onclick="window.toggleLiveTransmission()">📡 Iniciar Transmisión</button>
+                <button class="btn-outline" id="btn-refresh-radar" style="margin-bottom: 0; border-color: #3498db; color: #3498db; width: auto; padding: 0 15px;" onclick="window.refreshRadar()" title="Refrescar Radar">🔄</button>
+            </div>
             <p style="font-size: 10px; color: #64748b; margin: 8px 0 0 0; text-align: center; line-height:1.3;">Comparte tu ubicación con tu equipo. <br><b>Requiere tener el GPS (🎯) activo primero.</b></p>
         </div>
 
@@ -271,6 +274,7 @@
     </div>
 </div>
  
+<!-- MODALES -->
 <div id="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);"><h3 id="modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">Nombrar elemento</h3><input type="text" id="modal-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><div style="display:flex; justify-content:flex-end; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="window.closeModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="window.confirmModal()">Aceptar</button></div></div></div>
 
 <div id="alert-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:4000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center; white-space: pre-wrap;"><h3 id="alert-modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:18px;">Notificación</h3><p id="alert-modal-msg" style="font-size: 13px; color: #475569; margin-bottom: 20px; line-height: 1.4;"></p><div style="display:flex; justify-content:center;"><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="document.getElementById('alert-modal').style.display='none'">Aceptar</button></div></div></div>
@@ -485,6 +489,23 @@
             console.error("Error al cargar de nube:", e);
             window.customAlert("Error", "Datos corruptos o formato inválido."); 
         }
+    };
+
+    window.refreshRadar = async function() {
+        if (!isTransmitting) {
+            return window.customAlert("Atención", "El radar debe estar activo para refrescar posiciones.");
+        }
+        const btnRefresh = document.getElementById('btn-refresh-radar');
+        const oldHtml = btnRefresh.innerHTML;
+        btnRefresh.innerHTML = "⏳";
+        btnRefresh.disabled = true;
+        
+        await window.toggleLiveTransmission(); // Apagar
+        setTimeout(async () => {
+            await window.toggleLiveTransmission(); // Encender
+            btnRefresh.innerHTML = oldHtml;
+            btnRefresh.disabled = false;
+        }, 500); // Pequeño delay para asegurar desconexión
     };
 
     // RADAR ALIADO
