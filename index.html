@@ -103,38 +103,38 @@
 <div id="drawing-actions" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 10px; width: max-content;">
     <div id="auto-route-info" style="display:none; background: rgba(255,255,255,0.95); padding: 8px 16px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: 800; color: var(--ign-blue); font-size: 13px; border: 2px solid var(--ign-gold);"></div>
     <div style="display: flex; gap: 10px; justify-content: center;">
-        <button id="undo-point-btn" onclick="undoLastPoint()" style="background: var(--ign-gold); color: var(--ign-blue); border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">↩️ Deshacer Punto</button>
-        <button id="finish-route-btn" onclick="finishAutoRoute()" style="background: var(--success); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">✅ Finalizar Ruta</button>
-        <button id="cancel-crop-btn" onclick="stopDrawing()" style="background: var(--danger); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer;">✕ Cancelar Acción (Esc)</button>
+        <button id="undo-point-btn" onclick="window.undoLastPoint()" style="background: var(--ign-gold); color: var(--ign-blue); border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">↩️ Deshacer Punto</button>
+        <button id="finish-route-btn" onclick="window.finishAutoRoute()" style="background: var(--success); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; display: none;">✅ Finalizar Ruta</button>
+        <button id="cancel-crop-btn" onclick="window.stopDrawing()" style="background: var(--danger); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer;">✕ Cancelar Acción (Esc)</button>
     </div>
 </div>
 
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
-<button class="fab-menu" id="fabBtn" onclick="toggleMenu()" title="Herramientas">🛠️</button>
+<button class="fab-menu" id="fabBtn" onclick="window.toggleMenu()" title="Herramientas">🛠️</button>
  
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
         <span id="app-title" style="font-weight: 600; font-size: 16px;">AirsoftMaps</span>
         <div style="display:flex; align-items:center; gap:12px;">
-            <button id="modeToggleBtn" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; font-size: 18px; border-radius: 50%; width: 32px; height: 32px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="toggleMobileMode()" title="Cambiar a modo móvil">📱</button>
-            <button id="themeToggleBtn" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; font-size: 18px; border-radius: 50%; width: 32px; height: 32px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="toggleTheme()" title="Cambiar a Modo Oscuro">🌙</button>
-            <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="toggleMenu()">✕</button>
+            <button id="modeToggleBtn" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; font-size: 18px; border-radius: 50%; width: 32px; height: 32px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="window.toggleMobileMode()" title="Cambiar a modo móvil">📱</button>
+            <button id="themeToggleBtn" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; font-size: 18px; border-radius: 50%; width: 32px; height: 32px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="window.toggleTheme()" title="Cambiar a Modo Oscuro">🌙</button>
+            <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="window.toggleMenu()">✕</button>
         </div>
     </div>
     <div class="content">
         <div style="display:flex; gap:8px; margin-bottom: 10px;">
-            <button class="btn-outline" style="border-color: var(--success); color: var(--success); margin-bottom: 0;" onclick="openManual()">📖 Manual de Usuario</button>
+            <button class="btn-outline" style="border-color: var(--success); color: var(--success); margin-bottom: 0;" onclick="window.openManual()">📖 Manual de Usuario</button>
         </div>
 
         <div class="section-title" style="margin-top: 0;">🔍 Buscador</div>
         <div style="display:flex; gap:5px; margin-bottom:12px;">
-            <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas..." onkeypress="if(event.key==='Enter') buscarLugar()">
-            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="buscarLugar()">Ir</button>
-            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 12px; font-size:16px;" onclick="toggleLocation()" title="Mi Ubicación">🎯</button>
+            <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas..." onkeypress="if(event.key==='Enter') window.buscarLugar()">
+            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 15px;" onclick="window.buscarLugar()">Ir</button>
+            <button class="btn-outline" style="width:auto; margin-bottom:0; padding:0 12px; font-size:16px;" onclick="window.toggleLocation()" title="Mi Ubicación">🎯</button>
         </div>
 
         <!-- RADAR ALIADO -->
-        <button class="btn-outline" id="toggleLiveBtn" onclick="const c = document.getElementById('live-group-container'); c.style.display = c.style.display === 'none' ? 'block' : 'none';" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between; border-color: #9b59b6; color: #9b59b6;">
+        <button class="btn-outline" id="toggleLiveBtn" onclick="window.toggleGroup('live-group-container')" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between; border-color: #9b59b6; color: #9b59b6;">
             <span>📡 Radar Aliado (Live)</span><span>▼</span>
         </button>
         <div id="live-group-container" style="display: none; padding: 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0; border-left: 4px solid #9b59b6;">
@@ -150,52 +150,52 @@
             <p style="font-size: 10px; color: #64748b; margin: 8px 0 0 0; text-align: center; line-height:1.3;">Comparte tu ubicación con tu equipo. <br><b>Requiere tener el GPS (🎯) activo primero.</b></p>
         </div>
 
-        <button class="btn-outline" id="toggleProjectBtn" onclick="toggleProjectGroup()" style="margin-bottom: 15px; justify-content: space-between;">
+        <button class="btn-outline" id="toggleProjectBtn" onclick="window.toggleGroup('project-group-container')" style="margin-bottom: 15px; justify-content: space-between;">
             <span id="toggleProjectText">📁 Gestión de Proyecto</span><span id="toggleProjectIcon">▼</span>
         </button>
         <div id="project-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
             <div style="display:flex; gap:8px; margin-bottom: 10px;">
-                <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0; padding: 10px 5px;" onclick="nuevoProyecto()">📄 Nuevo</button>
-                <button class="btn-outline" style="margin-bottom: 0; padding: 10px 5px;" onclick="renombrarProyecto()">✏️ Renombrar</button>
+                <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0; padding: 10px 5px;" onclick="window.nuevoProyecto()">📄 Nuevo</button>
+                <button class="btn-outline" style="margin-bottom: 0; padding: 10px 5px;" onclick="window.renombrarProyecto()">✏️ Renombrar</button>
             </div>
             <div style="display:flex; gap:8px; margin-bottom: 10px;">
-                <button class="btn-outline" style="margin-bottom:0;" onclick="guardarEnNube(this)">☁️ Guardar Nube</button>
-                <button class="btn-outline" style="margin-bottom:0;" onclick="abrirNube()">☁️ Cargar Nube</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="window.guardarEnNube(this)">☁️ Guardar Nube</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="window.abrirNube()">☁️ Cargar Nube</button>
             </div>
             <div style="display:flex; gap:8px; margin-bottom: 10px;">
-                <button class="btn-outline" style="margin-bottom:0;" onclick="guardarProyecto()">💾 Guardar Local (JSON)</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="window.guardarProyecto()">💾 Guardar Local (JSON)</button>
                 <label class="btn-outline" for="file-loader" style="margin-bottom:0; cursor:pointer;">📂 Cargar Local</label>
-                <input type="file" id="file-loader" style="position:absolute; width:0; height:0; opacity:0; z-index:-1;" onchange="cargarProyecto(event)">
+                <input type="file" id="file-loader" style="position:absolute; width:0; height:0; opacity:0; z-index:-1;" onchange="window.cargarProyecto(event)">
             </div>
             <div style="border-top: 1px dashed #cbd5e0; margin-top: 15px; padding-top: 10px;">
                 <label style="font-size: 11px; font-weight: bold; color: #475569; display: block; margin-bottom: 8px;">Importar / Exportar (KML/GPX)</label>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportKML()">⬇️ Exportar KML</button>
-                    <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="exportGPX()">⬇️ Exportar GPX</button>
+                    <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="window.exportKML()">⬇️ Exportar KML</button>
+                    <button class="btn-outline" style="margin-bottom:0; font-size: 11px;" onclick="window.exportGPX()">⬇️ Exportar GPX</button>
                 </div>
                 <label class="btn-outline" for="kml-gpx-loader" style="margin-bottom:0; font-size: 11px; cursor:pointer;">⬆️ Importar Archivo</label>
-                <input type="file" id="kml-gpx-loader" style="position:absolute; width:0; height:0; opacity:0; z-index:-1;" onchange="importKMLGPX(event)">
+                <input type="file" id="kml-gpx-loader" style="position:absolute; width:0; height:0; opacity:0; z-index:-1;" onchange="window.importKMLGPX(event)">
             </div>
         </div>
  
-        <button class="btn-outline" id="toggleMtnBtn" onclick="toggleMtnGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+        <button class="btn-outline" id="toggleMtnBtn" onclick="window.toggleGroup('mtn-group-container')" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
             <span id="toggleMtnText">🗺️ Información MTN</span><span id="toggleMtnIcon">▼</span>
         </button>
         <div id="mtn-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
             <div id="mtnInfo" class="mtn-card" style="margin-bottom: 10px; margin-top: 0;"><div class="mtn-title">Identificando hoja...</div></div>
-            <button id="mtnGridBtn" class="btn-outline" style="margin-bottom: 0;" onclick="toggleMtnGrid()">Ver Cuadrículas MTN</button>
+            <button id="mtnGridBtn" class="btn-outline" style="margin-bottom: 0;" onclick="window.toggleMtnGrid()">Ver Cuadrículas MTN</button>
         </div>
  
-        <button class="btn-outline" id="toggleMapMixerBtn" onclick="toggleMapMixerGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+        <button class="btn-outline" id="toggleMapMixerBtn" onclick="window.toggleGroup('map-mixer-container')" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
             <span id="toggleMapMixerText">🌍 Mezclador de Mapas</span><span id="toggleMapMixerIcon">▼</span>
         </button>
         <div id="map-mixer-container" style="display: none; background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e0; margin-bottom: 15px;">
             <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Capa Principal (Fondo)</label>
-            <select id="baseLayer" class="form-select" style="margin-bottom: 8px;" onchange="changeLayer()"><option value="mtn">Mapa Topográfico (MTN)</option><option value="pnoa">Satélite (PNOA)</option><option value="base">Callejero IGN</option><option value="osm">OpenStreetMap</option></select>
+            <select id="baseLayer" class="form-select" style="margin-bottom: 8px;" onchange="window.changeLayer()"><option value="mtn">Mapa Topográfico (MTN)</option><option value="pnoa">Satélite (PNOA)</option><option value="base">Callejero IGN</option><option value="osm">OpenStreetMap</option></select>
             <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Capa Secundaria (Superpuesta)</label>
-            <select id="overlayLayer" class="form-select" style="margin-bottom: 8px;" onchange="changeLayer()"><option value="none">Ninguna</option><option value="mtn">Mapa Topográfico (MTN)</option><option value="pnoa" selected>Satélite (PNOA)</option><option value="base">Callejero IGN</option><option value="osm">OpenStreetMap</option></select>
+            <select id="overlayLayer" class="form-select" style="margin-bottom: 8px;" onchange="window.changeLayer()"><option value="none">Ninguna</option><option value="mtn">Mapa Topográfico (MTN)</option><option value="pnoa" selected>Satélite (PNOA)</option><option value="base">Callejero IGN</option><option value="osm">OpenStreetMap</option></select>
             <label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Opacidad Capa Secundaria</label>
-            <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4" style="width:100%; margin-bottom: 0;" oninput="changeLayer()">
+            <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4" style="width:100%; margin-bottom: 0;" oninput="window.changeLayer()">
             
             <!-- MODO OFFLINE -->
             <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #cbd5e0;">
@@ -208,28 +208,28 @@
             </div>
         </div>
  
-        <button class="btn-outline" id="toggleGridMenuBtn" onclick="toggleGridGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+        <button class="btn-outline" id="toggleGridMenuBtn" onclick="window.toggleGroup('grid-group-container')" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
             <span id="toggleGridMenuText">📍 Sistema y Cuadrícula</span><span id="toggleGridMenuIcon">▼</span>
         </button>
         <div id="grid-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 12px; border: 1px solid #cbd5e0;">
             <label style="font-size: 11px; color: #64748b; display: block; margin-bottom: 4px;">Formato de Coordenadas</label>
-            <select id="gridType" class="form-select" onchange="onGridTypeChange()" style="margin-bottom: 12px;"><option value="decimal">Grados Decimales (DD)</option><option value="dms">G. M. S. (DMS)</option><option value="utm">UTM (Métricas)</option><option value="alpha">Táctica Alfanumérica (A1)</option></select>
+            <select id="gridType" class="form-select" onchange="window.onGridTypeChange()" style="margin-bottom: 12px;"><option value="decimal">Grados Decimales (DD)</option><option value="dms">G. M. S. (DMS)</option><option value="utm">UTM (Métricas)</option><option value="alpha">Táctica Alfanumérica (A1)</option></select>
             <div class="grid-config-group">
-                <div><label style="font-size: 10px; font-weight: bold; color: #475569;">Grosor</label><select id="gridWeight" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="updateGrid()"><option value="1">Baja (Fina)</option><option value="2.5" selected>Media</option><option value="5">Grande (Gruesa)</option></select></div>
-                <div><label style="font-size: 10px; font-weight: bold; color: #475569;">Color</label><select id="gridColor" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="updateGrid()"><option value="red" selected>Rojo</option><option value="blue">Azul</option><option value="green">Verde</option><option value="black">Negro</option><option value="yellow">Amarillo</option></select></div>
+                <div><label style="font-size: 10px; font-weight: bold; color: #475569;">Grosor</label><select id="gridWeight" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="window.updateGrid()"><option value="1">Baja (Fina)</option><option value="2.5" selected>Media</option><option value="5">Grande (Gruesa)</option></select></div>
+                <div><label style="font-size: 10px; font-weight: bold; color: #475569;">Color</label><select id="gridColor" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="window.updateGrid()"><option value="red" selected>Rojo</option><option value="blue">Azul</option><option value="green">Verde</option><option value="black">Negro</option><option value="yellow">Amarillo</option></select></div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                <div><label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Exacta</label><select id="gridScale" class="form-select" style="font-size:12px; margin-bottom: 0;" onchange="updateGridByScale()"><option value="auto" selected>Libre (Auto)</option><option value="2000">1:2.000</option><option value="5000">1:5.000</option><option value="10000">1:10.000</option><option value="25000">1:25.000</option><option value="50000">1:50.000</option><option value="100000">1:100.000</option></select></div>
-                <div style="display: flex; align-items: flex-end;"><button id="lockZoomBtn" class="btn-outline" style="margin-bottom:0; font-size:11px;" onclick="toggleZoomLock()">🔓 Bloquear Zoom</button></div>
+                <div><label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Escala Exacta</label><select id="gridScale" class="form-select" style="font-size:12px; margin-bottom: 0;" onchange="window.updateGridByScale()"><option value="auto" selected>Libre (Auto)</option><option value="2000">1:2.000</option><option value="5000">1:5.000</option><option value="10000">1:10.000</option><option value="25000">1:25.000</option><option value="50000">1:50.000</option><option value="100000">1:100.000</option></select></div>
+                <div style="display: flex; align-items: flex-end;"><button id="lockZoomBtn" class="btn-outline" style="margin-bottom:0; font-size:11px;" onclick="window.toggleZoomLock()">🔓 Bloquear Zoom</button></div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <button id="gridToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleGrid()">Activar Cuadrícula</button>
-                <button id="scaleToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="toggleScale()">Mostrar Escala</button>
-                <button id="numScaleToggleBtn" class="btn-outline" style="margin-bottom:0; grid-column: span 2;" onclick="toggleNumScale()">Ocultar Escala Numérica</button>
+                <button id="gridToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="window.toggleGrid()">Activar Cuadrícula</button>
+                <button id="scaleToggleBtn" class="btn-outline" style="margin-bottom:0;" onclick="window.toggleScale()">Mostrar Escala</button>
+                <button id="numScaleToggleBtn" class="btn-outline" style="margin-bottom:0; grid-column: span 2;" onclick="window.toggleNumScale()">Ocultar Escala Numérica</button>
             </div>
         </div>
  
-        <button class="btn-outline" id="toggleEditBtn" onclick="toggleEditGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+        <button class="btn-outline" id="toggleEditBtn" onclick="window.toggleGroup('edit-group-container')" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
             <span id="toggleEditText">✏️ Edición de Mapa</span><span id="toggleEditIcon">▼</span>
         </button>
         <div id="edit-group-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e0;">
@@ -237,54 +237,54 @@
                 <div><label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Grosor de Línea</label><select id="drawWeight" class="form-select" style="margin-bottom:0; font-size:12px;"><option value="2">Fina</option><option value="4" selected>Normal</option><option value="6">Gruesa</option></select></div>
                 <div><label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Color de Línea</label><select id="drawColor" class="form-select" style="margin-bottom:0; font-size:12px;"><option value="#2ecc71" selected>Verde</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#f1c40f">Amarillo</option><option value="#34495e">Oscuro</option></select></div>
                 <div style="grid-column: span 2;"><label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Color de Marcador</label><select id="markerColor" class="form-select" style="margin-bottom:0; font-size:12px;"><option value="#2ecc71">Verde</option><option value="#e74c3c" selected>Rojo</option><option value="#3498db">Azul</option><option value="#f1c40f">Amarillo</option><option value="#34495e">Oscuro</option></select></div>
-                <div style="grid-column: span 2;"><label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Estilo Brújula</label><select id="compassStyle" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="updateCompassStyle()"><option value="modern" selected>Moderna</option><option value="classic">Clásica</option><option value="military">Militar</option><option value="minimal">Minimalista</option></select></div>
+                <div style="grid-column: span 2;"><label style="font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">Estilo Brújula</label><select id="compassStyle" class="form-select" style="margin-bottom:0; font-size:12px;" onchange="window.updateCompassStyle()"><option value="modern" selected>Moderna</option><option value="classic">Clásica</option><option value="military">Militar</option><option value="minimal">Minimalista</option></select></div>
             </div>
             <div class="edit-tools-grid" style="margin-bottom: 0;">
-                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('marker')">📍 Marcador</button>
-                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polyline')">📏 Ruta Manual</button>
-                <button class="btn-outline" style="margin-bottom: 0; grid-column: span 2; border-color: var(--info); color: var(--info);" onclick="enableTool('auto-route')">🗺️ Ruta Inteligente</button>
-                <button class="btn-outline" style="margin-bottom: 0;" onclick="enableTool('polygon')">🔲 Área</button>
-                <button class="btn-outline" style="margin-bottom: 0;" id="btn-compass" onclick="toggleCompass()">🧭 Brújula</button>
-                <button class="btn-outline" id="toggleLegendBtn" style="margin-bottom: 0; border-style: dashed; grid-column: span 2;" onclick="toggleMapLegend()">📋 Leyenda</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="window.enableTool('marker')">📍 Marcador</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="window.enableTool('polyline')">📏 Ruta Manual</button>
+                <button class="btn-outline" style="margin-bottom: 0; grid-column: span 2; border-color: var(--info); color: var(--info);" onclick="window.enableTool('auto-route')">🗺️ Ruta Inteligente</button>
+                <button class="btn-outline" style="margin-bottom: 0;" onclick="window.enableTool('polygon')">🔲 Área</button>
+                <button class="btn-outline" style="margin-bottom: 0;" id="btn-compass" onclick="window.toggleCompass()">🧭 Brújula</button>
+                <button class="btn-outline" id="toggleLegendBtn" style="margin-bottom: 0; border-style: dashed; grid-column: span 2;" onclick="window.toggleMapLegend()">📋 Leyenda</button>
             </div>
         </div>
         
-        <button class="btn-outline" id="toggleLayerManagerBtn" onclick="toggleLayerManagerGroup()" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
+        <button class="btn-outline" id="toggleLayerManagerBtn" onclick="window.toggleGroup('layer-manager-container')" style="margin-top: 15px; margin-bottom: 10px; justify-content: space-between;">
             <span id="toggleLayerManagerText">🗂️ Gestor de Capas</span><span id="toggleLayerManagerIcon">▼</span>
         </button>
         <div id="layer-manager-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
             <div id="layer-list" style="max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #cbd5e0; border-radius: 8px;"><div style="font-size:11px; color:#64748b; text-align:center; padding:10px;">No hay elementos dibujados</div></div>
         </div>
         
-        <button class="btn-outline" id="toggleGalleryBtn" onclick="toggleGalleryGroup()" style="margin-bottom: 10px; justify-content: space-between;">
+        <button class="btn-outline" id="toggleGalleryBtn" onclick="window.toggleGroup('gallery-container')" style="margin-bottom: 10px; justify-content: space-between;">
             <span id="toggleGalleryText">📸 Galería de Capturas</span><span id="toggleGalleryIcon">▼</span>
         </button>
         <div id="gallery-container" style="display: none; padding: 10px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e0;">
-            <button class="btn-outline" style="margin-bottom: 10px; font-size: 14px; border-width: 2px;" onclick="captureMap()">📸 Tomar Nueva Captura</button>
+            <button class="btn-outline" style="margin-bottom: 10px; font-size: 14px; border-width: 2px;" onclick="window.captureMap()">📸 Tomar Nueva Captura</button>
             <div id="gallery"></div>
         </div>
-        <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0;" onclick="enableTool('delete')">🗑️ Borrar Individual</button>
+        <button class="btn-outline" style="border-color: var(--danger); color: var(--danger); margin-bottom: 0;" onclick="window.enableTool('delete')">🗑️ Borrar Individual</button>
     </div>
 </div>
  
 <!-- MODALES -->
-<div id="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);"><h3 id="modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">Nombrar elemento</h3><input type="text" id="modal-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><div style="display:flex; justify-content:flex-end; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="closeModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="confirmModal()">Aceptar</button></div></div></div>
+<div id="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);"><h3 id="modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">Nombrar elemento</h3><input type="text" id="modal-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><div style="display:flex; justify-content:flex-end; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="window.closeModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="window.confirmModal()">Aceptar</button></div></div></div>
 
 <div id="alert-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:4000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center; white-space: pre-wrap;"><h3 id="alert-modal-title" style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:18px;">Notificación</h3><p id="alert-modal-msg" style="font-size: 13px; color: #475569; margin-bottom: 20px; line-height: 1.4;"></p><div style="display:flex; justify-content:center;"><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="document.getElementById('alert-modal').style.display='none'">Aceptar</button></div></div></div>
 
 <div id="cloud-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:320px; box-shadow:0 4px 20px rgba(0,0,0,0.3); max-height: 80vh; display: flex; flex-direction: column;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px; text-align: center;">☁️ Mis Proyectos (Nube)</h3><div id="cloud-project-list" style="flex:1; overflow-y:auto; margin-bottom: 15px; border: 1px solid #cbd5e0; border-radius: 8px; padding: 5px; min-height: 100px;"><p style="font-size:12px; color:#64748b; text-align:center; padding-top: 20px;">Cargando nube...</p></div><div style="display:flex; justify-content:flex-end;"><button style="padding:8px 15px; border-radius:6px; border:1px solid #cbd5e0; background:white; color:#475569; cursor:pointer; font-weight:bold; width:100%;" onclick="document.getElementById('cloud-modal').style.display='none'">Cerrar</button></div></div></div>
 
-<div id="confirm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--danger); font-size:18px;">⚠️ Nuevo Proyecto</h3><p style="font-size: 14px; color: #475569; margin-bottom: 20px;">¿Estás seguro? Se borrarán todos los marcadores y rutas.</p><div style="display:flex; justify-content:center; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid #cbd5e0; background:white; color:#475569; cursor:pointer; font-weight:bold;" onclick="closeConfirmModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--danger); color:white; cursor:pointer; font-weight:bold;" onclick="acceptConfirmModal()">Sí, borrar todo</button></div></div></div>
+<div id="confirm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3); text-align: center;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--danger); font-size:18px;">⚠️ Nuevo Proyecto</h3><p style="font-size: 14px; color: #475569; margin-bottom: 20px;">¿Estás seguro? Se borrarán todos los marcadores y rutas.</p><div style="display:flex; justify-content:center; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid #cbd5e0; background:white; color:#475569; cursor:pointer; font-weight:bold;" onclick="window.closeConfirmModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--danger); color:white; cursor:pointer; font-weight:bold;" onclick="window.acceptConfirmModal()">Sí, borrar todo</button></div></div></div>
 
-<div id="edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:340px; box-shadow:0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Editar Elemento</h3><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nombre</label><input type="text" id="edit-name-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Bando</label><select id="edit-faction-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="General">🏳️ General</option><option value="Rojo">🔴 Bando Rojo</option><option value="Azul">🔵 Bando Azul</option><option value="Organizacion">⚙️ Organización</option><option value="Neutral">⚪ Neutral / Civil</option></select><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grupo</label><input type="text" id="edit-group-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: Escuadra Alfa"><div id="edit-style-options" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Color</label><select id="edit-color-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="#2ecc71">Verde</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#f1c40f">Amarillo</option><option value="#9b59b6">Morado</option><option value="#34495e">Oscuro</option></select><div id="edit-marker-specifics" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Icono Militar</label><select id="edit-icon-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="punto">🔴 Punto normal</option><option value="base">⛺ Base / Campamento</option><option value="objetivo">🎯 Objetivo</option><option value="bandera">🚩 Bandera / Respawn</option><option value="combate">⚔️ Zona de Combate</option><option value="defensa">🛡️ Punto Defensivo</option><option value="vehiculo">🚁 Vehículo / Extracción</option><option value="medico">🏥 Médico / Hospital</option><option value="radio">📡 Comunicaciones</option><option value="hq">🌟 HQ / Mando</option><option value="suministros">📦 Suministros / Munición</option><option value="sniper">🔭 Francotirador / Observación</option><option value="peligro">⚠️ Peligro / Minas</option><option value="encuentro">🤝 Punto de Encuentro</option><option value="obstaculo">🧱 Obstáculo / Muro</option><option value="agua">💧 Punto de Agua</option><option value="images_2">📡 Radar personalizado</option></select><label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;"><input type="checkbox" id="edit-show-label-input" style="width:16px; height:16px;"> Mostrar nombre en el mapa</label><label style="font-size: 12px; font-weight: bold; color: var(--ign-gold); display:block; margin-bottom:4px;">⭕ Radio de Acción (metros)</label><input type="number" id="edit-buffer-input" min="0" step="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: 50 o vacío para ninguno"><div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #cbd5e0;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer;"><input type="checkbox" id="edit-cone-enable" style="width:16px; height:16px;" onchange="document.getElementById('edit-cone-options').style.display = this.checked ? 'block' : 'none';"> 🔦 Mostrar Cono de Visión</label><div id="edit-cone-options" style="display:none; margin-left: 24px;"><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Color del Cono</label><select id="edit-cone-color-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e0; margin-bottom:8px; box-sizing:border-box; font-size:13px;"><option value="#f1c40f">Amarillo</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#2ecc71">Verde</option><option value="#9b59b6">Morado</option><option value="#ffffff">Blanco</option><option value="#34495e">Oscuro</option></select><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Orientación (0° N - 180° S)</label><div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;"><input type="range" id="edit-cone-angle-range" min="0" max="360" value="0" style="flex:1;" oninput="document.getElementById('edit-cone-angle-val').innerText = this.value + '°'"><span id="edit-cone-angle-val" style="font-size:11px; width:30px; font-weight:bold; color:var(--ign-blue);">0°</span></div><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Apertura</label><div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;"><input type="range" id="edit-cone-spread-range" min="10" max="180" value="60" style="flex:1;" oninput="document.getElementById('edit-cone-spread-val').innerText = this.value + '°'"><span id="edit-cone-spread-val" style="font-size:11px; width:30px; font-weight:bold; color:var(--ign-blue);">60°</span></div><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Alcance Visual (metros)</label><input type="number" id="edit-cone-dist" min="10" step="10" value="100" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e0; box-sizing:border-box; font-size:13px;"></div></div></div><div id="edit-shape-specifics" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grosor</label><select id="edit-weight-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><option value="2">Fina</option><option value="4">Normal</option><option value="6">Gruesa</option><option value="8">Muy Gruesa</option><option value="12">Extra Gruesa</option></select></div></div><div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="closeEditModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="confirmEditModal()">Guardar Cambios</button></div></div></div>
+<div id="edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:340px; box-shadow:0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;"><h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Editar Elemento</h3><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nombre</label><input type="text" id="edit-name-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Bando</label><select id="edit-faction-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="General">🏳️ General</option><option value="Rojo">🔴 Bando Rojo</option><option value="Azul">🔵 Bando Azul</option><option value="Organizacion">⚙️ Organización</option><option value="Neutral">⚪ Neutral / Civil</option></select><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grupo</label><input type="text" id="edit-group-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: Escuadra Alfa"><div id="edit-style-options" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Color</label><select id="edit-color-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="#2ecc71">Verde</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#f1c40f">Amarillo</option><option value="#9b59b6">Morado</option><option value="#34495e">Oscuro</option></select><div id="edit-marker-specifics" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Icono Militar</label><select id="edit-icon-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;"><option value="punto">🔴 Punto normal</option><option value="base">⛺ Base / Campamento</option><option value="objetivo">🎯 Objetivo</option><option value="bandera">🚩 Bandera / Respawn</option><option value="combate">⚔️ Zona de Combate</option><option value="defensa">🛡️ Punto Defensivo</option><option value="vehiculo">🚁 Vehículo / Extracción</option><option value="medico">🏥 Médico / Hospital</option><option value="radio">📡 Comunicaciones</option><option value="hq">🌟 HQ / Mando</option><option value="suministros">📦 Suministros / Munición</option><option value="sniper">🔭 Francotirador / Observación</option><option value="peligro">⚠️ Peligro / Minas</option><option value="encuentro">🤝 Punto de Encuentro</option><option value="obstaculo">🧱 Obstáculo / Muro</option><option value="agua">💧 Punto de Agua</option><option value="images_2">📡 Radar personalizado</option></select><label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;"><input type="checkbox" id="edit-show-label-input" style="width:16px; height:16px;"> Mostrar nombre en el mapa</label><label style="font-size: 12px; font-weight: bold; color: var(--ign-gold); display:block; margin-bottom:4px;">⭕ Radio de Acción (metros)</label><input type="number" id="edit-buffer-input" min="0" step="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:10px; box-sizing:border-box; font-size:14px;" placeholder="Ej: 50 o vacío para ninguno"><div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #cbd5e0;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer;"><input type="checkbox" id="edit-cone-enable" style="width:16px; height:16px;" onchange="document.getElementById('edit-cone-options').style.display = this.checked ? 'block' : 'none';"> 🔦 Mostrar Cono de Visión</label><div id="edit-cone-options" style="display:none; margin-left: 24px;"><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Color del Cono</label><select id="edit-cone-color-input" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e0; margin-bottom:8px; box-sizing:border-box; font-size:13px;"><option value="#f1c40f">Amarillo</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#2ecc71">Verde</option><option value="#9b59b6">Morado</option><option value="#ffffff">Blanco</option><option value="#34495e">Oscuro</option></select><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Orientación (0° N - 180° S)</label><div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;"><input type="range" id="edit-cone-angle-range" min="0" max="360" value="0" style="flex:1;" oninput="document.getElementById('edit-cone-angle-val').innerText = this.value + '°'"><span id="edit-cone-angle-val" style="font-size:11px; width:30px; font-weight:bold; color:var(--ign-blue);">0°</span></div><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Apertura</label><div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;"><input type="range" id="edit-cone-spread-range" min="10" max="180" value="60" style="flex:1;" oninput="document.getElementById('edit-cone-spread-val').innerText = this.value + '°'"><span id="edit-cone-spread-val" style="font-size:11px; width:30px; font-weight:bold; color:var(--ign-blue);">60°</span></div><label style="font-size: 11px; font-weight: bold; color: #64748b; display:block; margin-bottom:4px;">Alcance Visual (metros)</label><input type="number" id="edit-cone-dist" min="10" step="10" value="100" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e0; box-sizing:border-box; font-size:13px;"></div></div></div><div id="edit-shape-specifics" style="display:none;"><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Grosor</label><select id="edit-weight-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><option value="2">Fina</option><option value="4">Normal</option><option value="6">Gruesa</option><option value="8">Muy Gruesa</option><option value="12">Extra Gruesa</option></select></div></div><div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="window.closeEditModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="window.confirmEditModal()">Guardar Cambios</button></div></div></div>
 
-<div id="rename-folder-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);"><h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Renombrar Carpeta</h3><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Selecciona la carpeta / bando</label><select id="rename-folder-select" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;" onchange="document.getElementById('rename-folder-input').value = this.value"></select><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nuevo nombre</label><input type="text" id="rename-folder-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><div style="display:flex; justify-content:flex-end; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="closeRenameFolderModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="confirmRenameFolderModal()">Renombrar</button></div></div></div>
+<div id="rename-folder-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;"><div style="background:white; padding:20px; border-radius:12px; width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.3);"><h3 style="margin-top:0; margin-bottom:15px; color:var(--ign-blue); font-size:16px;">✏️ Renombrar Carpeta</h3><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Selecciona la carpeta / bando</label><select id="rename-folder-select" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;" onchange="document.getElementById('rename-folder-input').value = this.value"></select><label style="font-size: 12px; font-weight: bold; color: #475569; display:block; margin-bottom:4px;">Nuevo nombre</label><input type="text" id="rename-folder-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e0; margin-bottom:15px; box-sizing:border-box; font-size:14px;"><div style="display:flex; justify-content:flex-end; gap:10px;"><button style="padding:8px 15px; border-radius:6px; border:1px solid var(--danger); background:white; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="window.closeRenameFolderModal()">Cancelar</button><button style="padding:8px 15px; border-radius:6px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold;" onclick="window.confirmRenameFolderModal()">Renombrar</button></div></div></div>
 
-<div id="image-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:4000; align-items:center; justify-content:center;"><div style="position:relative; max-width:95%; max-height:95%; display:flex; flex-direction:column; align-items:center;"><button onclick="closeImageModal()" style="position:absolute; top:-40px; right:0; background:none; border:none; color:white; font-size:32px; cursor:pointer; font-weight:bold;" title="Cerrar">✕</button><img id="image-modal-content" src="" style="max-width:100%; max-height:90vh; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.5);"></div></div>
+<div id="image-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:4000; align-items:center; justify-content:center;"><div style="position:relative; max-width:95%; max-height:95%; display:flex; flex-direction:column; align-items:center;"><button onclick="window.closeImageModal()" style="position:absolute; top:-40px; right:0; background:none; border:none; color:white; font-size:32px; cursor:pointer; font-weight:bold;" title="Cerrar">✕</button><img id="image-modal-content" src="" style="max-width:100%; max-height:90vh; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.5);"></div></div>
 
 <div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:4000; align-items:center; justify-content:center;">
     <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:650px; max-height:85vh; overflow-y:auto; box-shadow:0 4px 20px rgba(0,0,0,0.4); position:relative;">
-        <button onclick="closeManual()" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; font-weight:bold;">✕</button>
+        <button onclick="window.closeManual()" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; font-weight:bold;">✕</button>
         <h2 style="margin-top:0; color:var(--ign-blue); border-bottom:2px solid #f1f5f9; padding-bottom:10px; font-size:20px;">📖 Manual de Usuario - AirsoftMaps</h2>
         <div style="font-size:13px; color:#475569; line-height:1.6;">
             <h4 style="color:var(--ign-blue); margin-bottom:5px; font-size:14px;">📁 1. Gestión de Proyectos y Archivos</h4>
@@ -313,7 +313,7 @@
             <p style="margin-top:0;">Oculta (👁️) facciones enteras con un clic. La galería captura mapas limpios y te permite ir a la <b>Impresión Avanzada</b> para maquetar el papel (A4, A3) arrastrando libremente la brújula y la escala antes de exportarlo a PDF o imagen.</p>
         </div>
         <div style="text-align:right; margin-top:20px; border-top:1px solid #e2e8f0; padding-top:15px;">
-            <button style="padding:10px 20px; border-radius:8px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold; font-size:14px;" onclick="closeManual()">Entendido</button>
+            <button style="padding:10px 20px; border-radius:8px; border:none; background:var(--ign-blue); color:white; cursor:pointer; font-weight:bold; font-size:14px;" onclick="window.closeManual()">Entendido</button>
         </div>
     </div>
 </div>
@@ -1822,7 +1822,14 @@
         } else { currentOverlay = null; }
     };
 
+    // --- VARIABLES GLOBALES DEL GPS ---
+    window.isFollowingUser = false;
+    window.currentDeviceHeading = 0;
+    let locWatchId = null;
+    let userLocMarker = null;
+    let userLocCircle = null;
     let orientationHandlerActive = false;
+
     function handleDeviceOrientation(event) {
         let heading = null;
         if (event.webkitCompassHeading !== undefined) {
@@ -2018,94 +2025,25 @@
         }
     });
 
-    window.toggleMapMixerGroup = function() {
-        const container = document.getElementById('map-mixer-container');
-        const icon = document.getElementById('toggleMapMixerIcon');
-        if (container.style.display === 'none') {
+    window.toggleGroup = function(id) {
+        const container = document.getElementById(id);
+        if (!container) return;
+        
+        const btn = document.querySelector(`button[onclick*="${id}"]`);
+        
+        if (container.style.display === 'none' || container.style.display === '') {
             container.style.display = 'block';
-            icon.innerText = '▲';
+            if (btn) {
+                const icon = btn.querySelector('span:last-child');
+                if (icon && icon.innerText.includes('▼')) icon.innerText = '▲';
+            }
             setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
         } else {
             container.style.display = 'none';
-            icon.innerText = '▼';
-        }
-    };
-
-    window.toggleGridGroup = function() {
-        const container = document.getElementById('grid-group-container');
-        const icon = document.getElementById('toggleGridMenuIcon');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
-        }
-    };
-
-    window.toggleEditGroup = function() {
-        const container = document.getElementById('edit-group-container');
-        const icon = document.getElementById('toggleEditIcon');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
-        }
-    };
-
-    window.toggleProjectGroup = function() {
-        const container = document.getElementById('project-group-container');
-        const icon = document.getElementById('toggleProjectIcon');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
-        }
-    };
-
-    window.toggleMtnGroup = function() {
-        const container = document.getElementById('mtn-group-container');
-        const icon = document.getElementById('toggleMtnIcon');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
-        }
-    };
-
-    window.toggleLayerManagerGroup = function() {
-        const container = document.getElementById('layer-manager-container');
-        const icon = document.getElementById('toggleLayerManagerIcon');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
-        }
-    };
-
-    window.toggleGalleryGroup = function() {
-        const container = document.getElementById('gallery-container');
-        const icon = document.getElementById('toggleGalleryIcon');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.innerText = '▲';
-            setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-        } else {
-            container.style.display = 'none';
-            icon.innerText = '▼';
+            if (btn) {
+                const icon = btn.querySelector('span:last-child');
+                if (icon && icon.innerText.includes('▲')) icon.innerText = '▼';
+            }
         }
     };
 
