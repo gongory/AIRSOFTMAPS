@@ -73,7 +73,7 @@
         body.dark-mode [id$="-container"],body.dark-mode #layer-list,body.dark-mode .layer-item{background:#0f172a!important;border-color:#334155!important;color:#f8fafc}
         body.dark-mode .mtn-title,body.dark-mode .layer-name-text,body.dark-mode .legend-title{color:#f8fafc!important}
         body.dark-mode label,body.dark-mode p,body.dark-mode span,body.dark-mode .hint{color:#cbd5e0!important}
-        body.dark-mode .map-legend,body.dark-mode .coord-display,body.dark-mode #numeric-scale-widget{background:rgba(30,41,59,.95)!important;border-color:#475569!important;color:#f8fafc!important}
+        body.dark-mode .map-legend,body.dark-mode .coord-display,body.dark-mode .numeric-scale-widget{background:rgba(30,41,59,.95)!important;border-color:#475569!important;color:#f8fafc!important}
         body.dark-mode .leaflet-control-scale-line{background-color:rgba(30,41,59,.9)!important;color:#fff!important;border-color:#cbd5e0!important;background-image:linear-gradient(to bottom,#cbd5e0,#cbd5e0),linear-gradient(to right,rgba(30,41,59,.9) 50%,#cbd5e0 50%)!important}
         body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)}
     </style>
@@ -136,6 +136,14 @@
 
         <button class="btn-outline" onclick="window.toggleGroup('project-group-container')" style="margin-bottom:15px;justify-content:space-between;"><span>📁 Gestión de Proyecto</span><span>▼</span></button>
         <div id="project-group-container" style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
+            
+            <!-- GOOGLE SIGN IN BUTTONS -->
+            <div style="border-bottom:1px dashed #cbd5e0;margin-bottom:15px;padding-bottom:10px;text-align:center;">
+                <button id="btn-login-google" class="btn-outline" style="border-color:#4285F4;color:#4285F4;margin-bottom:0;" onclick="window.iniciarSesionGoogle()"><span style="font-weight:bold;font-size:16px;">G</span> Guardar cuenta (Google)</button>
+                <button id="btn-logout" class="btn-outline" style="border-color:#64748b;color:#64748b;margin-bottom:0;display:none;" onclick="window.cerrarSesion()">Cerrar sesión</button>
+                <p id="login-status-text" style="font-size:10px;color:#64748b;margin:5px 0 0 0;">Modo Anónimo (Mapas locales temporales)</p>
+            </div>
+
             <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;padding:10px 5px;" onclick="window.nuevoProyecto()">📄 Nuevo</button><button class="btn-outline" style="margin-bottom:0;padding:10px 5px;" onclick="window.renombrarProyecto()">✏️ Renombrar</button></div>
             <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline" style="margin-bottom:0;" onclick="window.guardarEnNube(this)">☁️ Guardar Nube</button><button class="btn-outline" style="margin-bottom:0;" onclick="window.abrirNube()">☁️ Cargar Nube</button></div>
             <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline" style="margin-bottom:0;" onclick="window.guardarProyecto()">💾 Guardar Local</button><label class="btn-outline" for="file-loader" style="margin-bottom:0;cursor:pointer;">📂 Cargar Local</label><input type="file" id="file-loader" style="position:absolute;width:0;height:0;opacity:0;z-index:-1;" onchange="window.cargarProyecto(event)"></div>
@@ -352,7 +360,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const miConfiguracionFirebase = { apiKey: "AIzaSyDIy8yd_3z85TUYADDVRI6lDo9-jJvYsVo", authDomain: "airsoftmaps-3bc14.firebaseapp.com", projectId: "airsoftmaps-3bc14", storageBucket: "airsoftmaps-3bc14.firebasestorage.app", messagingSenderId: "198929323056", appId: "1:198929323056:web:96653efbc97f6f919249f5" };
@@ -363,7 +371,30 @@
 
     const initAuth = async () => { try { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { try { await signInWithCustomToken(auth, __initial_auth_token); } catch (e) { await signInAnonymously(auth); } } else { await signInAnonymously(auth); } } catch (e) {} };
     initAuth();
-    onAuthStateChanged(auth, (user) => { currentUser = user; if (user) { listenToProjects(); } else if (unsubscribeProjects) { unsubscribeProjects(); unsubscribeProjects = null; } });
+    
+    onAuthStateChanged(auth, (user) => { 
+        currentUser = user; 
+        const statusText = document.getElementById('login-status-text');
+        const btnLogin = document.getElementById('btn-login-google');
+        const btnLogout = document.getElementById('btn-logout');
+        
+        if (user) { 
+            listenToProjects(); 
+            if (statusText) {
+                if (user.isAnonymous) {
+                    statusText.innerText = "Modo Anónimo (Los mapas se perderán si cambias de PC)";
+                    if(btnLogin) btnLogin.style.display = 'flex';
+                    if(btnLogout) btnLogout.style.display = 'none';
+                } else {
+                    statusText.innerText = `Sesión iniciada: ${user.email || 'Cuenta de Google'}`;
+                    if(btnLogin) btnLogin.style.display = 'none';
+                    if(btnLogout) btnLogout.style.display = 'flex';
+                }
+            }
+        } else { 
+            if (unsubscribeProjects) { unsubscribeProjects(); unsubscribeProjects = null; } 
+        } 
+    });
 
     function listenToProjects() { if (!currentUser) return; const projectsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'projects'); unsubscribeProjects = onSnapshot(projectsRef, (snapshot) => { cloudProjects = []; snapshot.forEach(doc => { cloudProjects.push({ id: doc.id, ...doc.data() }); }); renderCloudProjects(); }); }
 
@@ -435,6 +466,39 @@
         }
     };
     window.addEventListener('beforeunload', () => { if (isTransmitting && auth.currentUser) deleteDoc(doc(db, 'live_tracking', window.projectName, 'users', auth.currentUser.uid)).catch(()=>{}); });
+
+    window.iniciarSesionGoogle = async function() {
+        const provider = new GoogleAuthProvider();
+        try {
+            if (auth.currentUser && auth.currentUser.isAnonymous) {
+                await linkWithPopup(auth.currentUser, provider);
+                window.customAlert("Éxito", "¡Sesión iniciada! Tus mapas anónimos ahora están a salvo en tu cuenta de Google.");
+            } else {
+                await signInWithPopup(auth, provider);
+            }
+        } catch (error) {
+            if (error.code === 'auth/credential-already-in-use') {
+                try {
+                    await signInWithPopup(auth, provider);
+                    window.customAlert("Bienvenido", "Has iniciado sesión con tu cuenta existente. Tus mapas antiguos se han cargado.");
+                } catch (err) { window.customAlert("Error", "No se pudo iniciar sesión."); }
+            } else {
+                window.customAlert("Error", "Fallo al iniciar sesión: " + error.message);
+            }
+        }
+    };
+
+    window.cerrarSesion = async function() {
+        try {
+            await signOut(auth);
+            window.drawnItems.clearLayers();
+            window.projectName = "Proyecto_AirsoftMaps";
+            document.getElementById('app-title').innerText = "AirsoftMaps";
+            window.updateLayerTree();
+            await signInAnonymously(auth);
+            window.customAlert("Sesión cerrada", "Has vuelto al modo anónimo y se ha limpiado el mapa.");
+        } catch(e) { window.customAlert("Error", "No se pudo cerrar sesión."); }
+    };
 </script>
 
 <script>
@@ -462,8 +526,6 @@
     };
 
     const tacticalIcons = { 'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁', 'medico': '🏥', 'radio': '📡', 'hq': '🌟', 'suministros': '📦', 'sniper': '🔭', 'peligro': '⚠️', 'encuentro': '🤝', 'obstaculo': '🧱', 'agua': '💧' };
-    const tacticalNames = { 'punto': 'Punto', 'base': 'Base / Camp.', 'objetivo': 'Objetivo', 'bandera': 'Respawn', 'combate': 'Combate', 'defensa': 'Defensa', 'vehiculo': 'Extracción', 'medico': 'Hospital', 'radio': 'Comunicaciones', 'hq': 'HQ / Mando', 'suministros': 'Suministros', 'sniper': 'Observación', 'peligro': 'Peligro', 'encuentro': 'Encuentro', 'obstaculo': 'Obstáculo', 'agua': 'Agua' };
-
     const compassStyles = { modern: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,50)"><g transform="rotate(45)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(135)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(225)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(315)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(0)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#e74c3c"/><polygon points="0,-48 0,0 -10,-10" fill="#c0392b"/></g><g transform="rotate(90)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><g transform="rotate(180)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><g transform="rotate(270)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><circle cx="0" cy="0" r="4" fill="#1e293b"/><circle cx="0" cy="0" r="1.5" fill="#fff"/><text x="0" y="-31" font-family="sans-serif" font-weight="900" font-size="14" fill="#fff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">N</text></g></svg>`, classic: `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><g transform="translate(60,60)"><circle cx="0" cy="0" r="45" fill="#fef9e7" stroke="#8b5a2b" stroke-width="2"/><circle cx="0" cy="0" r="40" fill="none" stroke="#8b5a2b" stroke-width="1" stroke-dasharray="2 2"/><g transform="rotate(45)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(135)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(225)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(315)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(0)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#8b0000"/><polygon points="0,-40 0,0 -8,-8" fill="#5c0000"/></g><g transform="rotate(90)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><g transform="rotate(180)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><g transform="rotate(270)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><circle cx="0" cy="0" r="5" fill="#8b5a2b"/><circle cx="0" cy="0" r="2" fill="#fef9e7"/><text x="0" y="-48" font-family="serif" font-weight="bold" font-size="14" fill="#8b0000" text-anchor="middle">N</text></g></svg>`, military: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,50)"><circle cx="0" cy="0" r="42" fill="rgba(75, 83, 32, 0.1)" stroke="#4b5320" stroke-width="3" stroke-dasharray="6 4"/><circle cx="0" cy="0" r="34" fill="none" stroke="#4b5320" stroke-width="1"/><line x1="0" y1="-46" x2="0" y2="46" stroke="#4b5320" stroke-width="2"/><line x1="-46" y1="0" x2="46" y2="0" stroke="#4b5320" stroke-width="2"/><polygon points="0,-46 6,-25 -6,-25" fill="#ff4500"/><circle cx="0" cy="0" r="10" fill="none" stroke="#4b5320" stroke-width="2"/><circle cx="0" cy="0" r="2" fill="#ff4500"/><text x="14" y="-28" font-family="monospace" font-weight="bold" font-size="12" fill="#4b5320" style="text-shadow: 1px 1px 0px rgba(255,255,255,0.7);">000</text></g></svg>`, minimal: `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g transform="translate(40,40)"><circle cx="0" cy="0" r="30" fill="rgba(255,255,255,0.8)" stroke="#333" stroke-width="2"/><path d="M0,-25 L8,10 L0,2 L-8,10 Z" fill="#e74c3c"/><path d="M0,-25 L0,2 L-8,10 Z" fill="#c0392b"/><circle cx="0" cy="0" r="3" fill="#333"/><text x="0" y="-32" font-family="sans-serif" font-weight="900" font-size="14" fill="#333" text-anchor="middle">N</text></g></svg>` };
 
     window.updateCompassStyle = function() { document.getElementById('compass-rose').innerHTML = compassStyles[document.getElementById('compassStyle').value]; };
@@ -478,7 +540,7 @@
     let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
     const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false });
     window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
-    window.alliesLayer = L.featureGroup().addTo(map); const drawnItems = new L.FeatureGroup().addTo(map); window.drawnItems = drawnItems;
+    window.alliesLayer = L.featureGroup().addTo(map); const drawnItems = new L.FeatureGroup().addTo(map); window.drawnItems = drawnItems; window.updateLayerTree = updateLayerTree;
 
     const drawOptions = { polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } }, polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } }, marker: {} };
 
