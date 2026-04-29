@@ -372,25 +372,28 @@
     const initAuth = async () => { try { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { try { await signInWithCustomToken(auth, __initial_auth_token); } catch (e) { await signInAnonymously(auth); } } else { await signInAnonymously(auth); } } catch (e) {} };
     initAuth();
     
-    onAuthStateChanged(auth, (user) => { 
-        currentUser = user; 
+    window.updateAuthUI = function(user) {
         const statusText = document.getElementById('login-status-text');
         const btnLogin = document.getElementById('btn-login-google');
         const btnLogout = document.getElementById('btn-logout');
-        
+        if (statusText) {
+            if (user && !user.isAnonymous) {
+                statusText.innerHTML = `<b>🟢 Sesión iniciada:</b><br>${user.email || 'Cuenta de Google'}`;
+                if(btnLogin) btnLogin.style.display = 'none';
+                if(btnLogout) btnLogout.style.display = 'flex';
+            } else {
+                statusText.innerHTML = "<b>👤 Modo Anónimo</b> (Mapas temporales)";
+                if(btnLogin) btnLogin.style.display = 'flex';
+                if(btnLogout) btnLogout.style.display = 'none';
+            }
+        }
+    };
+
+    onAuthStateChanged(auth, (user) => { 
+        currentUser = user; 
         if (user) { 
             listenToProjects(); 
-            if (statusText) {
-                if (user.isAnonymous) {
-                    statusText.innerHTML = "<b>👤 Modo Anónimo</b> (Mapas temporales)";
-                    if(btnLogin) btnLogin.style.display = 'flex';
-                    if(btnLogout) btnLogout.style.display = 'none';
-                } else {
-                    statusText.innerHTML = `<b>🟢 Sesión iniciada:</b><br>${user.email || 'Cuenta de Google'}`;
-                    if(btnLogin) btnLogin.style.display = 'none';
-                    if(btnLogout) btnLogout.style.display = 'flex';
-                }
-            }
+            window.updateAuthUI(user);
         } else { 
             if (unsubscribeProjects) { unsubscribeProjects(); unsubscribeProjects = null; } 
         } 
@@ -473,15 +476,18 @@
         try {
             if (auth.currentUser && auth.currentUser.isAnonymous) {
                 await linkWithPopup(auth.currentUser, provider);
+                window.updateAuthUI(auth.currentUser);
                 window.customAlert("Éxito", "¡Sesión iniciada! Tus mapas anónimos ahora están a salvo en tu cuenta de Google.");
             } else {
                 await signInWithPopup(auth, provider);
+                window.updateAuthUI(auth.currentUser);
             }
         } catch (error) {
             console.error(error);
             if (error.code === 'auth/credential-already-in-use') {
                 try {
                     await signInWithPopup(auth, provider);
+                    window.updateAuthUI(auth.currentUser);
                     window.customAlert("Bienvenido", "Has iniciado sesión con tu cuenta existente. Tus mapas antiguos se han cargado.");
                 } catch (err) { window.customAlert("Error", "No se pudo iniciar sesión. " + err.message); }
             } else if (error.code === 'auth/popup-blocked' || error.message.includes('cross-origin') || error.message.includes('iframe')) {
@@ -921,7 +927,8 @@
                         fetch(`https://router.project-osrm.org/route/v1/${newMode}/${coordsStr}?geometries=geojson&overview=full`).then(res=>res.json()).then(async data => {
                             if(data.code === 'Ok' && data.routes.length > 0) {
                                 const route = data.routes[0]; const newCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-                                layer.setLatLngs(newCoords); if (layer.endMarker) layer.endMarker.setLatLng(newCoords[newCoords.length-1]);
+                                layer.setLatLngs(newCoords); layer.feature.properties.routeDuration = route.duration;
+                                if (layer.endMarker) layer.endMarker.setLatLng(newCoords[newCoords.length-1]);
                                 let distance = route.distance; let samplePoints = layer.getLatLngs();
                                 if (samplePoints.length > 90) { const step = Math.ceil(samplePoints.length / 90); samplePoints = samplePoints.filter((_, idx) => idx % step === 0); if (samplePoints[samplePoints.length - 1] !== layer.getLatLngs()[layer.getLatLngs().length - 1]) samplePoints.push(layer.getLatLngs()[layer.getLatLngs().length - 1]); }
                                 const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(','); const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
