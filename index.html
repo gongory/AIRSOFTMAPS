@@ -11,12 +11,6 @@
     <meta name="apple-mobile-web-app-title" content="AirsoftMaps">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#003366">
-    
-    <!-- FORZAR A LOS NAVEGADORES (ESPECIALMENTE MÓVILES) A NO USAR CACHÉ ANTIGUA -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <style>
@@ -147,7 +141,7 @@
             <div style="border-bottom:1px dashed #cbd5e0;margin-bottom:15px;padding-bottom:10px;text-align:center;">
                 <button id="btn-login-google" class="btn-outline" style="border-color:#4285F4;color:#4285F4;margin-bottom:0;" onclick="window.iniciarSesionGoogle()"><span style="font-weight:bold;font-size:16px;">G</span> Guardar cuenta (Google)</button>
                 <button id="btn-logout" class="btn-outline" style="border-color:#64748b;color:#64748b;margin-bottom:0;display:none;" onclick="window.cerrarSesion()">Cerrar sesión</button>
-                <p id="login-status-text" style="font-size:11px;color:#64748b;margin:5px 0 0 0;"><b>👤 Modo Anónimo</b> (Mapas temporales)</p>
+                <p id="login-status-text" style="font-size:10px;color:#64748b;margin:5px 0 0 0;">Modo Anónimo (Mapas locales temporales)</p>
             </div>
 
             <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;padding:10px 5px;" onclick="window.nuevoProyecto()">📄 Nuevo</button><button class="btn-outline" style="margin-bottom:0;padding:10px 5px;" onclick="window.renombrarProyecto()">✏️ Renombrar</button></div>
@@ -242,7 +236,7 @@
 <div id="alert-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:4000;align-items:center;justify-content:center;">
     <div style="background:white;padding:20px;border-radius:12px;width:300px;text-align:center;">
         <h3 id="alert-modal-title" style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:18px;">Notificación</h3>
-        <p id="alert-modal-msg" style="font-size:13px;color:#475569;margin-bottom:20px;line-height:1.4;white-space:pre-wrap;"></p>
+        <p id="alert-modal-msg" style="font-size:13px;color:#475569;margin-bottom:20px;line-height:1.4;"></p>
         <button style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;" onclick="document.getElementById('alert-modal').style.display='none'">Aceptar</button>
     </div>
 </div>
@@ -378,28 +372,25 @@
     const initAuth = async () => { try { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { try { await signInWithCustomToken(auth, __initial_auth_token); } catch (e) { await signInAnonymously(auth); } } else { await signInAnonymously(auth); } } catch (e) {} };
     initAuth();
     
-    window.updateAuthUI = function(user) {
+    onAuthStateChanged(auth, (user) => { 
+        currentUser = user; 
         const statusText = document.getElementById('login-status-text');
         const btnLogin = document.getElementById('btn-login-google');
         const btnLogout = document.getElementById('btn-logout');
-        if (statusText) {
-            if (user && !user.isAnonymous) {
-                statusText.innerHTML = `<b>🟢 Sesión iniciada:</b><br>${user.email || 'Cuenta de Google'}`;
-                if(btnLogin) btnLogin.style.display = 'none';
-                if(btnLogout) btnLogout.style.display = 'flex';
-            } else {
-                statusText.innerHTML = "<b>👤 Modo Anónimo</b> (Mapas temporales)";
-                if(btnLogin) btnLogin.style.display = 'flex';
-                if(btnLogout) btnLogout.style.display = 'none';
-            }
-        }
-    };
-
-    onAuthStateChanged(auth, (user) => { 
-        currentUser = user; 
+        
         if (user) { 
             listenToProjects(); 
-            window.updateAuthUI(user);
+            if (statusText) {
+                if (user.isAnonymous) {
+                    statusText.innerText = "Modo Anónimo (Los mapas se perderán si cambias de PC)";
+                    if(btnLogin) btnLogin.style.display = 'flex';
+                    if(btnLogout) btnLogout.style.display = 'none';
+                } else {
+                    statusText.innerText = `Sesión iniciada: ${user.email || 'Cuenta de Google'}`;
+                    if(btnLogin) btnLogin.style.display = 'none';
+                    if(btnLogout) btnLogout.style.display = 'flex';
+                }
+            }
         } else { 
             if (unsubscribeProjects) { unsubscribeProjects(); unsubscribeProjects = null; } 
         } 
@@ -476,30 +467,29 @@
     };
     window.addEventListener('beforeunload', () => { if (isTransmitting && auth.currentUser) deleteDoc(doc(db, 'live_tracking', window.projectName, 'users', auth.currentUser.uid)).catch(()=>{}); });
 
+    let forceSignInMode = false;
     window.iniciarSesionGoogle = async function() {
         const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
         try {
-            if (auth.currentUser && auth.currentUser.isAnonymous) {
-                await linkWithPopup(auth.currentUser, provider);
-                window.updateAuthUI(auth.currentUser);
-                window.customAlert("Éxito", "¡Sesión iniciada! Tus mapas anónimos ahora están a salvo en tu cuenta de Google.");
+            if (auth.currentUser && auth.currentUser.isAnonymous && !forceSignInMode) {
+                const result = await linkWithPopup(auth.currentUser, provider);
+                window.updateAuthUI(result.user);
+                window.customAlert("Éxito", "¡Sesión iniciada! Tus mapas anónimos ahora están a salvo.");
             } else {
-                await signInWithPopup(auth, provider);
-                window.updateAuthUI(auth.currentUser);
+                const result = await signInWithPopup(auth, provider);
+                window.updateAuthUI(result.user);
+                forceSignInMode = false;
+                window.customAlert("Bienvenido", "Has iniciado sesión con éxito. Tus mapas en la nube se han cargado.");
             }
         } catch (error) {
             console.error(error);
             if (error.code === 'auth/credential-already-in-use') {
-                try {
-                    await signInWithPopup(auth, provider);
-                    window.updateAuthUI(auth.currentUser);
-                    window.customAlert("Bienvenido", "Has iniciado sesión con tu cuenta existente. Tus mapas antiguos se han cargado.");
-                } catch (err) { window.customAlert("Error", "No se pudo iniciar sesión. " + err.message); }
+                forceSignInMode = true;
+                window.customAlert("Cuenta ya registrada", "Tu cuenta de Google ya existe en la base de datos.\n\nHaz clic en ACEPTAR y luego PULSA DE NUEVO el botón de Google (G) para cargar tus mapas guardados.");
             } else if (error.code === 'auth/unauthorized-domain') {
-                window.customAlert("Dominio Bloqueado", `Ve a Firebase > Authentication > Dominios Autorizados y añade exactamente esto (todo en minúsculas):\n\n${window.location.hostname}`);
-            } else if (error.code === 'auth/popup-blocked' || error.message.includes('cross-origin') || error.message.includes('iframe')) {
-                window.customAlert("Aviso de Seguridad", "Parece que estás probando esto dentro de un visor cerrado.\n\nPara que Google te deje iniciar sesión, abre tu enlace directamente en una pestaña nueva del navegador.");
+                window.customAlert("Dominio Bloqueado", `Ve a Firebase > Authentication > Dominios Autorizados y añade exactamente esto:\n\n${window.location.hostname}`);
+            } else if (error.code === 'auth/popup-blocked' || error.message.includes('cross-origin')) {
+                window.customAlert("Aviso", "El navegador bloqueó la ventana de Google.\n\nPor favor, permite las ventanas emergentes (pop-ups) en tu navegador para esta página web y vuelve a intentarlo.");
             } else {
                 window.customAlert("Error", "Fallo al iniciar sesión: " + error.message);
             }
@@ -549,14 +539,14 @@
     window.updateCompassStyle = function() { document.getElementById('compass-rose').innerHTML = compassStyles[document.getElementById('compassStyle').value]; };
  
     const baseLayers = {
-        mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN', maxZoom: 24, maxNativeZoom: 19 }),
-        pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN', maxZoom: 24, maxNativeZoom: 19 }),
-        base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN', maxZoom: 24, maxNativeZoom: 19 }),
-        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM', maxZoom: 24, maxNativeZoom: 19 })
+        mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN' }),
+        pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN' }),
+        base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN' }),
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' })
     };
 
     let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
-    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 24, layers: [currentBase, currentOverlay], zoomControl: false });
+    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false });
     window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
     window.alliesLayer = L.featureGroup().addTo(map); const drawnItems = new L.FeatureGroup().addTo(map); window.drawnItems = drawnItems; window.updateLayerTree = updateLayerTree;
 
