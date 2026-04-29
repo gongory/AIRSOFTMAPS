@@ -531,14 +531,14 @@
     window.updateCompassStyle = function() { document.getElementById('compass-rose').innerHTML = compassStyles[document.getElementById('compassStyle').value]; };
  
     const baseLayers = {
-        mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN' }),
-        pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN' }),
-        base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN' }),
-        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' })
+        mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN', maxZoom: 24, maxNativeZoom: 19 }),
+        pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN', maxZoom: 24, maxNativeZoom: 19 }),
+        base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', attribution: '© IGN', maxZoom: 24, maxNativeZoom: 19 }),
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM', maxZoom: 24, maxNativeZoom: 19 })
     };
 
     let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
-    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, layers: [currentBase, currentOverlay], zoomControl: false });
+    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 24, layers: [currentBase, currentOverlay], zoomControl: false });
     window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
     window.alliesLayer = L.featureGroup().addTo(map); const drawnItems = new L.FeatureGroup().addTo(map); window.drawnItems = drawnItems; window.updateLayerTree = updateLayerTree;
 
@@ -917,8 +917,7 @@
                         fetch(`https://router.project-osrm.org/route/v1/${newMode}/${coordsStr}?geometries=geojson&overview=full`).then(res=>res.json()).then(async data => {
                             if(data.code === 'Ok' && data.routes.length > 0) {
                                 const route = data.routes[0]; const newCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-                                layer.setLatLngs(newCoords); layer.feature.properties.routeDuration = route.duration;
-                                if (layer.endMarker) layer.endMarker.setLatLng(newCoords[newCoords.length-1]);
+                                layer.setLatLngs(newCoords); if (layer.endMarker) layer.endMarker.setLatLng(newCoords[newCoords.length-1]);
                                 let distance = route.distance; let samplePoints = layer.getLatLngs();
                                 if (samplePoints.length > 90) { const step = Math.ceil(samplePoints.length / 90); samplePoints = samplePoints.filter((_, idx) => idx % step === 0); if (samplePoints[samplePoints.length - 1] !== layer.getLatLngs()[layer.getLatLngs().length - 1]) samplePoints.push(layer.getLatLngs()[layer.getLatLngs().length - 1]); }
                                 const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(','); const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
