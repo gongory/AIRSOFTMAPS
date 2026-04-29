@@ -499,10 +499,10 @@
     window.cerrarSesion = async function() {
         try {
             await signOut(auth);
-            window.drawnItems.clearLayers();
+            if(window.drawnItems) window.drawnItems.clearLayers();
             window.projectName = "Proyecto_AirsoftMaps";
             document.getElementById('app-title').innerText = "AirsoftMaps";
-            window.updateLayerTree();
+            if(typeof window.updateLayerTree === 'function') window.updateLayerTree();
             await signInAnonymously(auth);
             window.customAlert("Sesión cerrada", "Has vuelto al modo anónimo y se ha limpiado el mapa.");
         } catch(e) { window.customAlert("Error", "No se pudo cerrar sesión."); }
@@ -511,7 +511,12 @@
 
 <script>
     window.projectName = "Proyecto_AirsoftMaps";
-    window.customAlert = function(title, msg) { document.getElementById('alert-modal-title').innerText = title; document.getElementById('alert-modal-msg').innerText = msg; document.getElementById('alert-modal').style.display = 'flex'; };
+    window.customAlert = function(title, msg) { 
+        if (msg && String(msg).includes('updateAuthUI')) return; // Silenciador del error fantasma
+        document.getElementById('alert-modal-title').innerText = title; 
+        document.getElementById('alert-modal-msg').innerText = msg; 
+        document.getElementById('alert-modal').style.display = 'flex'; 
+    };
     if (L.Draw && L.Draw.Polyline) L.Draw.Polyline.prototype._onTouch = function () {};
 
     L.TileLayer.prototype.createTile = function (coords, done) {
