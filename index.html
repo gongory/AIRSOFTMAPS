@@ -467,21 +467,29 @@
     };
     window.addEventListener('beforeunload', () => { if (isTransmitting && auth.currentUser) deleteDoc(doc(db, 'live_tracking', window.projectName, 'users', auth.currentUser.uid)).catch(()=>{}); });
 
+    let forceSignInMode = false;
     window.iniciarSesionGoogle = async function() {
         const provider = new GoogleAuthProvider();
         try {
-            if (auth.currentUser && auth.currentUser.isAnonymous) {
-                await linkWithPopup(auth.currentUser, provider);
-                window.customAlert("Éxito", "¡Sesión iniciada! Tus mapas anónimos ahora están a salvo en tu cuenta de Google.");
+            if (auth.currentUser && auth.currentUser.isAnonymous && !forceSignInMode) {
+                const result = await linkWithPopup(auth.currentUser, provider);
+                window.updateAuthUI(result.user);
+                window.customAlert("Éxito", "¡Sesión iniciada! Tus mapas anónimos ahora están a salvo.");
             } else {
-                await signInWithPopup(auth, provider);
+                const result = await signInWithPopup(auth, provider);
+                window.updateAuthUI(result.user);
+                forceSignInMode = false;
+                window.customAlert("Bienvenido", "Has iniciado sesión con éxito. Tus mapas en la nube se han cargado.");
             }
         } catch (error) {
+            console.error(error);
             if (error.code === 'auth/credential-already-in-use') {
-                try {
-                    await signInWithPopup(auth, provider);
-                    window.customAlert("Bienvenido", "Has iniciado sesión con tu cuenta existente. Tus mapas antiguos se han cargado.");
-                } catch (err) { window.customAlert("Error", "No se pudo iniciar sesión."); }
+                forceSignInMode = true;
+                window.customAlert("Cuenta ya registrada", "Tu cuenta de Google ya existe en la base de datos.\n\nHaz clic en ACEPTAR y luego PULSA DE NUEVO el botón de Google (G) para cargar tus mapas guardados.");
+            } else if (error.code === 'auth/unauthorized-domain') {
+                window.customAlert("Dominio Bloqueado", `Ve a Firebase > Authentication > Dominios Autorizados y añade exactamente esto:\n\n${window.location.hostname}`);
+            } else if (error.code === 'auth/popup-blocked' || error.message.includes('cross-origin')) {
+                window.customAlert("Aviso", "El navegador bloqueó la ventana de Google.\n\nPor favor, permite las ventanas emergentes (pop-ups) en tu navegador para esta página web y vuelve a intentarlo.");
             } else {
                 window.customAlert("Error", "Fallo al iniciar sesión: " + error.message);
             }
