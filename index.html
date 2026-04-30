@@ -11,6 +11,12 @@
     <meta name="apple-mobile-web-app-title" content="AirsoftMaps">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#003366">
+    
+    <!-- FORZAR A LOS NAVEGADORES A NO USAR CACHÉ ANTIGUA -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <style>
@@ -137,11 +143,10 @@
         <button class="btn-outline" onclick="window.toggleGroup('project-group-container')" style="margin-bottom:15px;justify-content:space-between;"><span>📁 Gestión de Proyecto</span><span>▼</span></button>
         <div id="project-group-container" style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
             
-            <!-- GOOGLE SIGN IN BUTTONS -->
             <div style="border-bottom:1px dashed #cbd5e0;margin-bottom:15px;padding-bottom:10px;text-align:center;">
                 <button id="btn-login-google" class="btn-outline" style="border-color:#4285F4;color:#4285F4;margin-bottom:0;" onclick="window.iniciarSesionGoogle()"><span style="font-weight:bold;font-size:16px;">G</span> Guardar cuenta (Google)</button>
                 <button id="btn-logout" class="btn-outline" style="border-color:#64748b;color:#64748b;margin-bottom:0;display:none;" onclick="window.cerrarSesion()">Cerrar sesión</button>
-                <p id="login-status-text" style="font-size:10px;color:#64748b;margin:5px 0 0 0;">Modo Anónimo (Mapas locales temporales)</p>
+                <p id="login-status-text" style="font-size:11px;color:#64748b;margin:5px 0 0 0;"><b>👤 Modo Anónimo</b> (Mapas temporales)</p>
             </div>
 
             <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;padding:10px 5px;" onclick="window.nuevoProyecto()">📄 Nuevo</button><button class="btn-outline" style="margin-bottom:0;padding:10px 5px;" onclick="window.renombrarProyecto()">✏️ Renombrar</button></div>
@@ -236,7 +241,7 @@
 <div id="alert-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:4000;align-items:center;justify-content:center;">
     <div style="background:white;padding:20px;border-radius:12px;width:300px;text-align:center;">
         <h3 id="alert-modal-title" style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:18px;">Notificación</h3>
-        <p id="alert-modal-msg" style="font-size:13px;color:#475569;margin-bottom:20px;line-height:1.4;"></p>
+        <p id="alert-modal-msg" style="font-size:13px;color:#475569;margin-bottom:20px;line-height:1.4;white-space:pre-wrap;"></p>
         <button style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;" onclick="document.getElementById('alert-modal').style.display='none'">Aceptar</button>
     </div>
 </div>
@@ -345,8 +350,13 @@
         <button onclick="window.closeManual()" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;">✕</button>
         <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;">📖 Manual de Usuario</h2>
         <div style="font-size:13px;color:#475569;line-height:1.6;">
-            <p><b>Ruta Inteligente:</b> Elige "A pie", "Bici" o "Coche". El mapa recalcula la ruta por calles o pistas. Los tiempos son reales según vehículo y desnivel.</p>
-            <p><b>GPS:</b> Toca la diana (🎯) arriba. Tu marcador indicará el rumbo con tu brújula.</p>
+            <p><b>📍 Marcadores y Áreas:</b> Añade marcadores tácticos (bases, médicos, etc.). Edítalos para añadir un radio de acción o un cono de visión direccional. Dibuja rutas y áreas para delimitar el terreno.</p>
+            <p><b>🗺️ Ruta Inteligente:</b> Elige "A pie", "Bici" o "Coche". El mapa recalcula la ruta por calles o pistas reales. Muestra distancia, tiempos aproximados y gráfica de desnivel.</p>
+            <p><b>🎯 GPS y Brújula:</b> Toca la diana arriba. Tu marcador indicará tu posición exacta y el rumbo hacia donde apuntas con el móvil.</p>
+            <p><b>📡 Radar Aliado (Live):</b> Activa el GPS, pon tu indicativo y bando, e inicia la transmisión. Podrás ver en tiempo real la posición y distancia de tus compañeros de equipo en el mapa.</p>
+            <p><b>☁️ Guardado en la Nube:</b> Inicia sesión con tu cuenta de Google. Tus mapas creados se guardarán y sincronizarán automáticamente entre tu PC y tu móvil.</p>
+            <p><b>🌍 Mapas Offline y Capas:</b> Mezcla el mapa topográfico con el satélite PNOA. Si te vas a quedar sin cobertura, usa "Descargar Zona Actual" para guardar el mapa en tu dispositivo.</p>
+            <p><b>🔍 Súper Zoom y Cuadrículas:</b> Acércate al máximo (hasta nivel 24) para precisión extrema. Activa la cuadrícula MGRS/UTM, Táctica Alfanumérica o Coordenadas Decimales según necesites.</p>
         </div>
         <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;">
             <button style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;" onclick="window.closeManual()">Entendido</button>
@@ -360,7 +370,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signInWithPopup, signOut, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const miConfiguracionFirebase = { apiKey: "AIzaSyDIy8yd_3z85TUYADDVRI6lDo9-jJvYsVo", authDomain: "airsoftmaps-3bc14.firebaseapp.com", projectId: "airsoftmaps-3bc14", storageBucket: "airsoftmaps-3bc14.firebasestorage.app", messagingSenderId: "198929323056", appId: "1:198929323056:web:96653efbc97f6f919249f5" };
@@ -369,28 +379,31 @@
     window.db = db; window.auth = auth;
     let currentUser = null; let unsubscribeProjects = null; let cloudProjects = [];
 
+    window.updateAuthUI = function(user) {
+        const statusText = document.getElementById('login-status-text');
+        const btnLogin = document.getElementById('btn-login-google');
+        const btnLogout = document.getElementById('btn-logout');
+        if (statusText) {
+            if (user && !user.isAnonymous) {
+                statusText.innerHTML = `<b>🟢 Sesión iniciada:</b><br>${user.email || 'Cuenta de Google'}`;
+                if(btnLogin) btnLogin.style.display = 'none';
+                if(btnLogout) btnLogout.style.display = 'flex';
+            } else {
+                statusText.innerHTML = "<b>👤 Modo Anónimo</b> (Mapas temporales)";
+                if(btnLogin) btnLogin.style.display = 'flex';
+                if(btnLogout) btnLogout.style.display = 'none';
+            }
+        }
+    };
+
     const initAuth = async () => { try { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { try { await signInWithCustomToken(auth, __initial_auth_token); } catch (e) { await signInAnonymously(auth); } } else { await signInAnonymously(auth); } } catch (e) {} };
     initAuth();
     
     onAuthStateChanged(auth, (user) => { 
         currentUser = user; 
-        const statusText = document.getElementById('login-status-text');
-        const btnLogin = document.getElementById('btn-login-google');
-        const btnLogout = document.getElementById('btn-logout');
-        
         if (user) { 
             listenToProjects(); 
-            if (statusText) {
-                if (user.isAnonymous) {
-                    statusText.innerText = "Modo Anónimo (Los mapas se perderán si cambias de PC)";
-                    if(btnLogin) btnLogin.style.display = 'flex';
-                    if(btnLogout) btnLogout.style.display = 'none';
-                } else {
-                    statusText.innerText = `Sesión iniciada: ${user.email || 'Cuenta de Google'}`;
-                    if(btnLogin) btnLogin.style.display = 'none';
-                    if(btnLogout) btnLogout.style.display = 'flex';
-                }
-            }
+            if (typeof window.updateAuthUI === 'function') window.updateAuthUI(user);
         } else { 
             if (unsubscribeProjects) { unsubscribeProjects(); unsubscribeProjects = null; } 
         } 
@@ -470,26 +483,41 @@
     let forceSignInMode = false;
     window.iniciarSesionGoogle = async function() {
         const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
         try {
             if (auth.currentUser && auth.currentUser.isAnonymous && !forceSignInMode) {
                 const result = await linkWithPopup(auth.currentUser, provider);
-                window.updateAuthUI(result.user);
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user);
                 window.customAlert("Éxito", "¡Sesión iniciada! Tus mapas anónimos ahora están a salvo.");
             } else {
                 const result = await signInWithPopup(auth, provider);
-                window.updateAuthUI(result.user);
+                if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user);
                 forceSignInMode = false;
                 window.customAlert("Bienvenido", "Has iniciado sesión con éxito. Tus mapas en la nube se han cargado.");
             }
         } catch (error) {
             console.error(error);
+            if (error.message && String(error.message).includes('updateAuthUI')) return;
+            
             if (error.code === 'auth/credential-already-in-use') {
-                forceSignInMode = true;
-                window.customAlert("Cuenta ya registrada", "Tu cuenta de Google ya existe en la base de datos.\n\nHaz clic en ACEPTAR y luego PULSA DE NUEVO el botón de Google (G) para cargar tus mapas guardados.");
+                try {
+                    const credential = GoogleAuthProvider.credentialFromError(error);
+                    if (credential) {
+                        const result = await signInWithCredential(auth, credential);
+                        if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user);
+                        window.customAlert("Bienvenido", "Has iniciado sesión con tu cuenta existente. Tus mapas en la nube se han cargado.");
+                    } else {
+                        await signInWithPopup(auth, provider);
+                    }
+                } catch (err) { 
+                    if (!String(err.message).includes('updateAuthUI')) {
+                        window.customAlert("Error", "No se pudo iniciar sesión. " + err.message); 
+                    }
+                }
             } else if (error.code === 'auth/unauthorized-domain') {
                 window.customAlert("Dominio Bloqueado", `Ve a Firebase > Authentication > Dominios Autorizados y añade exactamente esto:\n\n${window.location.hostname}`);
-            } else if (error.code === 'auth/popup-blocked' || error.message.includes('cross-origin')) {
-                window.customAlert("Aviso", "El navegador bloqueó la ventana de Google.\n\nPor favor, permite las ventanas emergentes (pop-ups) en tu navegador para esta página web y vuelve a intentarlo.");
+            } else if (error.code === 'auth/popup-blocked' || String(error.message).includes('cross-origin')) {
+                window.customAlert("Aviso", "El navegador bloqueó la ventana de Google.\n\nPor favor, permite las ventanas emergentes en tu navegador o haz clic en el botón de nuevo.");
             } else {
                 window.customAlert("Error", "Fallo al iniciar sesión: " + error.message);
             }
