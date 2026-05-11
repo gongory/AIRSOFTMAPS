@@ -195,7 +195,10 @@
             <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4" style="width:100%;margin-bottom:0;" oninput="window.changeLayer()">
             <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
                 <label style="font-size:10px;font-weight:bold;color:var(--success);display:block;margin-bottom:4px;">Modo Avión / Sin Cobertura</label>
-                <button class="btn-outline" id="btn-offline" style="margin-bottom:5px;border-color:var(--success);color:var(--success);" onclick="window.downloadOfflineMap()">⬇️ Descargar Zona Actual</button>
+                <div style="display:flex; gap:5px; margin-bottom:5px;">
+                    <button class="btn-outline" id="btn-offline" style="margin-bottom:0;border-color:var(--success);color:var(--success);padding:8px 5px;font-size:11px;" onclick="window.downloadOfflineMap()">⬇️ Visión Actual</button>
+                    <button class="btn-outline" style="margin-bottom:0;border-color:var(--success);color:var(--success);padding:8px 5px;font-size:11px;" onclick="window.startOfflineSelection()">🔲 Marcar Zona</button>
+                </div>
                 <div id="offline-progress" style="display:none;font-size:11px;font-weight:bold;color:#475569;text-align:center;width:100%;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-bottom:10px;"><div id="offline-bar" style="width:0%;background:var(--success);color:white;padding:2px 0;transition:width 0.3s;">0%</div></div>
                 
                 <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;margin-top:10px;">Zonas Descargadas</label>
@@ -646,18 +649,19 @@
         window.renderOfflineZones();
     };
 
-    window.downloadOfflineMap = async function() {
+    window.downloadOfflineMap = async function(customBounds) {
         if (!('caches' in window)) return window.customAlert("Error", "No soportado.");
         
         const zoneName = await askName("Nombre para esta zona offline:", "Zona " + new Date().toLocaleDateString());
         if (!zoneName || zoneName.trim() === '') return;
 
         const btn = document.getElementById('btn-offline'); const prog = document.getElementById('offline-progress'); const bar = document.getElementById('offline-bar');
-        btn.disabled = true; prog.style.display = 'block'; bar.style.width = '0%'; bar.innerText = 'Calculando...';
-        const bounds = window.map.getBounds(); const zMax = Math.min(window.map.getZoom() + 2, 18);
+        if(btn) btn.disabled = true; prog.style.display = 'block'; bar.style.width = '0%'; bar.innerText = 'Calculando...';
+        const bounds = customBounds && customBounds.isValid ? customBounds : window.map.getBounds(); 
+        const zMax = Math.min(window.map.getZoom() + 2, 18);
         let urls = []; const layers = []; window.map.eachLayer(l => { if (l instanceof L.TileLayer) layers.push(l); });
         for (let z = window.map.getZoom(); z <= zMax; z++) { const nw = window.map.project(bounds.getNorthWest(), z).divideBy(256).floor(); const se = window.map.project(bounds.getSouthEast(), z).divideBy(256).floor(); for (let x = nw.x; x <= se.x; x++) for (let y = nw.y; y <= se.y; y++) layers.forEach(l => urls.push(l.getTileUrl({x,y,z}))); }
-        if (urls.length > 2500) { btn.disabled = false; prog.style.display = 'none'; return window.customAlert("Error", "Area muy grande, haz zoom."); }
+        if (urls.length > 2500) { if(btn) btn.disabled = false; prog.style.display = 'none'; return window.customAlert("Error", "Area muy grande, haz zoom o dibuja un área más pequeña."); }
         try { 
             const cache = await caches.open('airsoftmaps-offline'); let done = 0; 
             for (let i = 0; i < urls.length; i += 15) { 
@@ -680,7 +684,7 @@
             window.customAlert("Exito", `Zona "${zoneName}" guardada para uso offline.`); 
         } catch (e) {
             window.customAlert("Error", "Fallo en la descarga.");
-        } finally { btn.disabled = false; setTimeout(() => prog.style.display = 'none', 3000); }
+        } finally { if(btn) btn.disabled = false; setTimeout(() => prog.style.display = 'none', 3000); }
     };
     
     // Inicializar la lista al cargar la página
@@ -730,7 +734,28 @@
     window.toggleCompass = function() { const compass = document.getElementById('compass-rose'); const btn = document.getElementById('btn-compass'); if (compass.style.display === 'none') { compass.style.display = 'block'; btn.classList.add('active'); } else { compass.style.display = 'none'; btn.classList.remove('active'); } };
     window.toggleNumScale = function() { const widget = document.getElementById('numeric-scale-widget'); const btn = document.getElementById('numScaleToggleBtn'); if (widget.style.display === 'none') { widget.style.display = 'block'; btn.innerText = "Ocultar Numérica"; } else { widget.style.display = 'none'; btn.innerText = "Mostrar Numérica"; } };
 
-    window.toggleScale = function() { const btn = document.getElementById('scaleToggleBtn'); if (scaleControlObj) { map.removeControl(scaleControlObj); scaleControlObj = null; btn.innerText = "Mostrar Escala"; } else { scaleControlObj = L.control.scale({ position: 'bottomleft', metric: true, imperial: false }).addTo(map); btn.innerText = "Ocultar Escala"; } };
+    window.toggleScale = function() { 
+        const btn = document.getElementById('scaleToggleBtn'); 
+        if (scaleControlObj) { 
+            map.removeControl(scaleControlObj); 
+            scaleControlObj = null; 
+            btn.innerText = "Mostrar Escala"; 
+        } else { 
+            scaleControlObj = L.control.scale({ position: 'bottomleft', metric: true, imperial: false }).addTo(map); 
+            btn.innerText = "Ocultar Escala"; 
+            setTimeout(() => {
+                const scaleEl = document.querySelector('.leaflet-control-scale');
+                if (scaleEl) {
+                    document.getElementById('map-container').appendChild(scaleEl);
+                    scaleEl.style.position = 'absolute';
+                    scaleEl.style.bottom = '60px';
+                    scaleEl.style.left = '20px';
+                    scaleEl.style.zIndex = '998';
+                    dragElement(scaleEl);
+                }
+            }, 50);
+        } 
+    };
 
     window.toggleZoomLock = function() {
         isZoomLocked = !isZoomLocked; const btn = document.getElementById('lockZoomBtn'); const zoomCtrl = document.querySelector('.leaflet-control-zoom');
@@ -923,8 +948,22 @@
         if (activeHandler) activeHandler.enable();
     };
 
+    window.isSelectingOfflineZone = false;
+    window.startOfflineSelection = function() {
+        window.stopDrawing(); window.toggleMenu(); window.isSelectingOfflineZone = true;
+        document.getElementById('drawing-actions').style.display = 'flex';
+        document.getElementById('undo-point-btn').style.display = 'none';
+        const finishBtn = document.getElementById('finish-route-btn'); if (finishBtn) finishBtn.style.display = 'none'; 
+        const routeModeSelect = document.getElementById('route-mode-select'); if (routeModeSelect) routeModeSelect.style.display = 'none';
+        document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar";
+        window.customAlert("Modo Descarga", "Dibuja un rectángulo en el mapa para marcar el área exacta que quieres descargar para uso offline.");
+        activeHandler = new L.Draw.Rectangle(map, { shapeOptions: { color: '#28a745', weight: 2, fillOpacity: 0.2 } });
+        activeHandler.enable();
+    };
+
     window.stopDrawing = function() {
         if (activeHandler) { activeHandler.disable(); activeHandler = null; }
+        window.isSelectingOfflineZone = false;
         drawnItems.eachLayer(layer => layer.off('click', window.deleteClickHandler)); document.getElementById('drawing-actions').style.display = 'none';
         map.off('click', handleAutoRouteClick); if (typeof autoRouteLayer !== 'undefined') { autoRouteLayer.clearLayers(); map.removeLayer(autoRouteLayer); }
         if (typeof currentAutoRouteLine !== 'undefined') currentAutoRouteLine = null; document.getElementById('map-container').style.cursor = '';
@@ -964,6 +1003,13 @@
     function askName(title, defaultText) { return new Promise((resolve) => { const modal = document.getElementById('custom-modal'); const input = document.getElementById('modal-input'); document.getElementById('modal-title').innerText = title; input.value = defaultText; modal.style.display = 'flex'; setTimeout(() => input.select(), 100); window.confirmModal = () => { modal.style.display = 'none'; resolve(input.value.trim() || defaultText); }; window.closeModal = () => { modal.style.display = 'none'; resolve(defaultText); }; }); }
 
     map.on(L.Draw.Event.CREATED, async (e) => {
+        if (window.isSelectingOfflineZone) {
+            window.stopDrawing();
+            const bounds = e.layer.getBounds();
+            window.downloadOfflineMap(bounds);
+            return;
+        }
+
         const layer = e.layer; const id = L.stamp(layer);
         let defaultName = e.layerType === 'marker' ? 'Marcador' : (e.layerType === 'polyline' ? (layer.isAutoRoute ? 'Ruta Inteligente' : 'Ruta') : 'Área');
         const layerName = await askName(`Nombre para ${defaultName}:`, defaultName);
@@ -1638,6 +1684,36 @@
     map.on('dragstart', () => { 
         if (locWatchId !== null) { window.isFollowingUser = false; const btn = document.querySelector('button[title="Mi Ubicación"]'); if (btn) { btn.innerHTML = '🚶‍♂️'; btn.style.color = 'var(--ign-gold)'; btn.style.borderColor = 'var(--ign-gold)'; btn.style.opacity = "1"; } }
     });
+</script>
+
+<script>
+    // PWA: Convertir en App Instalable (Generación dinámica)
+    (function() {
+        try {
+            const manifestJSON = {
+                "name": "AirsoftMaps",
+                "short_name": "AirsoftMaps",
+                "start_url": window.location.href.split('?')[0] || ".",
+                "display": "standalone",
+                "background_color": "#003366",
+                "theme_color": "#003366",
+                "icons": [{ "src": "AirsoftMaps.ico", "sizes": "192x192 512x512", "type": "image/x-icon" }]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifestJSON)], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(manifestBlob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+
+            if ('serviceWorker' in navigator) {
+                const swCode = "self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => {});";
+                const swBlob = new Blob([swCode], {type: 'application/javascript'});
+                const swURL = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swURL).catch(()=>{});
+            }
+        } catch(e) {}
+    })();
 </script>
 </body>
 </html>
