@@ -956,7 +956,13 @@
         const finishBtn = document.getElementById('finish-route-btn'); if (finishBtn) finishBtn.style.display = 'none'; 
         const routeModeSelect = document.getElementById('route-mode-select'); if (routeModeSelect) routeModeSelect.style.display = 'none';
         document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar";
-        window.customAlert("Modo Descarga", "Dibuja un rectángulo en el mapa para marcar el área exacta que quieres descargar para uso offline.");
+        
+        const infoDiv = document.getElementById('auto-route-info');
+        if(infoDiv) { 
+            infoDiv.style.display = 'block'; 
+            infoDiv.innerHTML = `🔲 Dibuja un rectángulo en el mapa`; 
+        }
+        
         activeHandler = new L.Draw.Rectangle(map, { shapeOptions: { color: '#28a745', weight: 2, fillOpacity: 0.2 } });
         activeHandler.enable();
     };
@@ -1687,32 +1693,63 @@
 </script>
 
 <script>
-    // PWA: Convertir en App Instalable (Generación dinámica)
+    // PWA: Convertir en App Instalable (Conversión de icono de .ico a .png dinámica)
     (function() {
         try {
-            const manifestJSON = {
-                "name": "AirsoftMaps",
-                "short_name": "AirsoftMaps",
-                "start_url": window.location.href.split('?')[0] || ".",
-                "display": "standalone",
-                "background_color": "#003366",
-                "theme_color": "#003366",
-                "icons": [{ "src": "AirsoftMaps.ico", "sizes": "192x192 512x512", "type": "image/x-icon" }]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifestJSON)], {type: 'application/json'});
-            const manifestURL = URL.createObjectURL(manifestBlob);
-            const link = document.createElement('link');
-            link.rel = 'manifest';
-            link.href = manifestURL;
-            document.head.appendChild(link);
+            function buildManifest(icon192, icon512) {
+                const manifestJSON = {
+                    "name": "AirsoftMaps",
+                    "short_name": "AirsoftMaps",
+                    "start_url": window.location.href.split('?')[0] || ".",
+                    "display": "standalone",
+                    "background_color": "#003366",
+                    "theme_color": "#003366",
+                    "icons": [
+                        { "src": icon192, "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+                        { "src": icon512, "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+                    ]
+                };
+                const manifestStr = JSON.stringify(manifestJSON);
+                const manifestData = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(manifestStr);
+                const link = document.createElement('link');
+                link.rel = 'manifest';
+                link.href = manifestData;
+                document.head.appendChild(link);
 
-            if ('serviceWorker' in navigator) {
-                const swCode = "self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => {});";
-                const swBlob = new Blob([swCode], {type: 'application/javascript'});
-                const swURL = URL.createObjectURL(swBlob);
-                navigator.serviceWorker.register(swURL).catch(()=>{});
+                if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+                    const swCode = "self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => {});";
+                    const swBlob = new Blob([swCode], {type: 'application/javascript'});
+                    const swURL = URL.createObjectURL(swBlob);
+                    navigator.serviceWorker.register(swURL).catch(()=>{});
+                }
             }
-        } catch(e) {}
+
+            // El sistema carga tu "AirsoftMaps.ico" y lo convierte a formato .png internamente
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = function() {
+                const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d');
+                cvs.width = 192; cvs.height = 192; ctx.drawImage(img, 0, 0, 192, 192);
+                const icon192 = cvs.toDataURL('image/png');
+                
+                cvs.width = 512; cvs.height = 512; ctx.clearRect(0,0,512,512); ctx.drawImage(img, 0, 0, 512, 512);
+                const icon512 = cvs.toDataURL('image/png');
+                
+                buildManifest(icon192, icon512);
+            };
+            img.onerror = function() {
+                // Fallback (por si acaso falla la carga, dibuja las letras AM)
+                const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d');
+                cvs.width = 192; cvs.height = 192; ctx.fillStyle = '#003366'; ctx.fillRect(0,0,192,192); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('AM', 96, 96);
+                const i192 = cvs.toDataURL('image/png');
+                cvs.width = 512; cvs.height = 512; ctx.fillStyle = '#003366'; ctx.fillRect(0,0,512,512); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 200px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('AM', 256, 256);
+                const i512 = cvs.toDataURL('image/png');
+                buildManifest(i192, i512);
+            };
+            
+            // Carga tu radar
+            img.src = 'AirsoftMaps.ico';
+        } catch(e) { console.error("Error PWA:", e); }
     })();
 </script>
 </body>
