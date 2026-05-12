@@ -357,6 +357,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     function enterRoom(roomId, alias, isAdmin) {
         currentRoom = roomId; const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false;
         document.getElementById('room-setup-ui').style.display = 'none'; document.getElementById('room-active-ui').style.display = 'block';
+        document.getElementById('active-room-display').innerText = `[${roomId}]`;
         if (isAdmin) document.getElementById('btn-delete-room').style.display = 'inline-block'; else document.getElementById('btn-delete-room').style.display = 'none';
         startLiveTracking(roomId, alias);
         const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
@@ -375,6 +376,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         if (transmitInterval) { clearInterval(transmitInterval); transmitInterval = null; } 
         window.alliesLayer.clearLayers(); allyMarkers = {}; currentRoom = null; currentRadioMsg = ""; 
         document.getElementById('room-setup-ui').style.display = 'block'; document.getElementById('room-active-ui').style.display = 'none'; document.getElementById('chat-box').innerHTML = ''; 
+        document.getElementById('active-room-display').innerText = '';
         window.isChatInitialized = false; window.knownMsgCount = 0; window.unreadMsgCount = 0; window.lastProcessedMsgTime = 0;
         const badge = document.getElementById('chat-badge'); if (badge) badge.style.display = 'none'; 
     }
@@ -471,7 +473,8 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
                 const roleIcon = isEliminated ? '💀' : (roleIcons[data.role] || '🔫');
                 const filterStyle = isEliminated ? 'filter: grayscale(100%) opacity(0.6);' : '';
                 
-                const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b></div>`;
+                const factionNames = { '#3498db': '🔵 Bando Azul', '#e74c3c': '🔴 Bando Rojo', '#2ecc71': '🟢 Bando Verde', '#f1c40f': '🟡 Bando Amarillo', '#1e293b': '⚫ PMC / Mercenarios', '#8b4513': '💀 Marine Raider bcn' };
+                const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br><span style="color:${data.color};font-weight:bold;font-size:10px;">${factionNames[data.color] || 'Bando Desconocido'}</span><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b></div>`;
                 if (allyMarkers[id]) {
                     allyMarkers[id].setLatLng([data.lat, data.lng]); 
                     const container = allyMarkers[id].getElement().querySelector('.ally-container'); if(container) container.style.cssText = `position:relative;width:24px;height:24px;${filterStyle}`;
