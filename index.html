@@ -27,7 +27,9 @@ body,html{margin:0;padding:0;height:100%;font-family:'Segoe UI',sans-serif;overf
 .form-input,.form-select{width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:12px;box-sizing:border-box;font-size:13px;background:#fff}
 .mtn-card{background:#fff;border:1px solid var(--ign-gold);border-left:4px solid var(--ign-gold);padding:12px;border-radius:6px;margin-bottom:15px}
 .coord-display{position:absolute;bottom:110px;left:10px;z-index:999;background:rgba(255,255,255,.95);padding:8px 16px;border-radius:30px;font-size:12px;font-family:'Consolas',monospace;border:1px solid #e2e8f0;font-weight:600;box-shadow:var(--shadow);pointer-events:auto;cursor:grab;user-select:none;min-width:260px;text-align:center;}
-.fab-menu{position:absolute;top:15px;right:15px;z-index:1000;background:var(--ign-blue);color:#fff;border:none;border-radius:8px;width:42px;height:42px;font-size:20px;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;padding:0}
+.fab-menu{position:absolute;z-index:1000;color:#fff;border:none;border-radius:8px;width:42px;height:42px;font-size:20px;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;padding:0}
+#fabBtn{top:15px;right:15px;background:var(--ign-blue);}
+#fabLiveBtn{top:65px;right:15px;background:#9b59b6;}
 .grid-label{background:rgba(255,255,255,.9);padding:2px 5px;border-radius:3px;font-size:10px;font-weight:700;border:1px solid currentColor;white-space:nowrap;pointer-events:none}
 .gallery-item{margin-bottom:10px;border:1px solid #ddd;padding:5px;background:#fff;border-radius:4px} .gallery-item img{width:100%;display:block;border-radius:4px}
 .hide-controls .leaflet-top,.hide-controls .leaflet-control-attribution,.hide-controls .fab-menu,.hide-controls .coord-display,.hide-controls .sidebar,.hide-controls #drawing-actions{visibility:hidden!important}
@@ -39,7 +41,9 @@ body,html{margin:0;padding:0;height:100%;font-family:'Segoe UI',sans-serif;overf
 .radio-pulse { animation: radioPulse 1.5s infinite; border-color: var(--danger) !important; color: var(--danger) !important; z-index: 1000 !important; }
 body.mobile-mode .sidebar{top:auto!important;bottom:0!important;left:0!important;right:0!important;width:100%!important;max-width:100%!important;height:85vh!important;max-height:85vh!important;border-radius:24px 24px 0 0!important;}
 body.mobile-mode .sidebar.oculto{transform:translateY(120%)!important} body.mobile-mode .sidebar:not(.oculto){transform:translateY(0)!important}
-body.mobile-mode .fab-menu{top:auto!important;bottom:30px!important;right:20px!important;width:60px!important;height:60px!important;font-size:28px!important;border-radius:50%!important;}
+body.mobile-mode .fab-menu{top:auto!important;width:60px!important;height:60px!important;font-size:28px!important;border-radius:50%!important;}
+body.mobile-mode #fabBtn{bottom:30px!important;right:20px!important;}
+body.mobile-mode #fabLiveBtn{bottom:100px!important;right:20px!important;}
 body.mobile-mode .leaflet-control-zoom{display:none!important}
 body.dark-mode{--bg-sidebar:#1e293b;--ign-blue:#0f172a;background:#0f172a;color:#f8fafc}
 body.dark-mode .sidebar, body.dark-mode .content, body.dark-mode .mtn-card, body.dark-mode .gallery-item{background:var(--bg-sidebar); border-color:#334155; color:#f8fafc}
@@ -72,6 +76,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
 <button class="fab-menu" id="fabBtn" onclick="window.toggleMenu()" title="Herramientas">🛠️</button>
+<button class="fab-menu" id="fabLiveBtn" onclick="window.toggleLiveMenu()" title="Operaciones y GPS">📡</button>
  
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
@@ -88,38 +93,6 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         <div style="display:flex;gap:5px;margin-bottom:12px;">
             <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;" placeholder="Ciudad o coordenadas..." onkeypress="if(event.key==='Enter') window.buscarLugar()">
             <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 15px;" onclick="window.buscarLugar()">Ir</button>
-            <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 12px;font-size:16px;" onclick="window.toggleLocation()" title="Mi Ubicación">🎯</button>
-        </div>
-
-        <button class="btn-outline" onclick="window.toggleGroup('live-group-container')" style="margin-top:15px;margin-bottom:10px;justify-content:space-between;border-color:#9b59b6;color:#9b59b6;"><span>📡 Sala de Operaciones (Live)</span><span>▼</span></button>
-        <div id="live-group-container" style="display:none;padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;border-left:4px solid #9b59b6;">
-            <div id="room-setup-ui">
-                <input type="text" id="room-id" class="form-input" placeholder="Nombre de la Sala" style="margin-bottom:8px;">
-                <input type="password" id="room-pass" class="form-input" placeholder="Contraseña de la Sala" style="margin-bottom:8px;">
-                <input type="text" id="live-alias" class="form-input" placeholder="Tu indicativo (Ej. Escuadra Alfa)" style="margin-bottom:8px;">
-                <select id="live-faction" class="form-select" style="margin-bottom:10px;">
-                    <option value="#3498db">🔵 Bando Azul</option><option value="#e74c3c">🔴 Bando Rojo</option><option value="#2ecc71">🟢 Bando Verde</option><option value="#f1c40f">🟡 Bando Amarillo</option><option value="#1e293b">⚫ PMC / Mercenarios</option>
-                </select>
-                <button class="btn-outline" id="btn-room-toggle" style="margin-bottom:0;border-color:#9b59b6;color:#9b59b6;width:100%;" onclick="window.toggleRoom()">🚪 Entrar / Crear Sala</button>
-            </div>
-            <div id="room-active-ui" style="display:none; margin-top:5px;">
-                <div style="display:flex;gap:5px;margin-bottom:10px;">
-                    <button class="btn-outline" id="btn-sync-map" style="margin-bottom:0;border-color:#3498db;color:#3498db;flex:1;font-size:11px;padding:8px;" onclick="window.syncDrawingsToRoom()">🔄 Compartir Mapa</button>
-                    <button class="btn-outline" id="btn-delete-room" style="margin-bottom:0;border-color:var(--danger);color:white;background:var(--danger);flex:1;font-size:11px;padding:8px;display:none;" onclick="window.deleteRoom()">🗑️ Eliminar Sala</button>
-                </div>
-                <div id="radio-msgs-container" style="display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap;">
-                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--danger); color:var(--danger);" onclick="window.sendRadioMessage('⚠️ Enemigo')">⚠️ Enemigo</button>
-                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--success); color:var(--success);" onclick="window.sendRadioMessage('🏥 Médico')">🏥 Médico</button>
-                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--info); color:var(--info);" onclick="window.sendRadioMessage('🛡️ Defendiendo')">🛡️ Defensa</button>
-                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--ign-gold); color:var(--ign-gold);" onclick="window.sendRadioMessage('🏃 Avanzando')">🏃 Avanzando</button>
-                </div>
-                <div id="chat-box" style="height:120px; overflow-y:auto; background:#fff; border:1px solid #cbd5e0; border-radius:6px; padding:5px; font-size:11px; margin-bottom:5px; display:flex; flex-direction:column; gap:4px;"></div>
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="chat-input" class="form-input" placeholder="Mensaje..." style="margin-bottom:0; padding:6px; font-size:11px;" onkeypress="if(event.key==='Enter') window.sendChatMsg()">
-                    <button class="btn-outline" style="margin-bottom:0; width:auto; padding:0 12px; background:var(--ign-blue); color:white; border:none;" onclick="window.sendChatMsg()">➤</button>
-                </div>
-                <button class="btn-outline" style="margin-top:10px;margin-bottom:0;border-color:var(--danger);color:var(--danger);width:100%;" onclick="window.toggleRoom()">🚪 Salir de la Sala</button>
-            </div>
         </div>
 
         <button class="btn-outline" onclick="window.toggleGroup('project-group-container')" style="margin-bottom:15px;justify-content:space-between;"><span>📁 Gestión de Proyecto</span><span>▼</span></button>
@@ -207,6 +180,51 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;" onclick="window.enableTool('delete')">🗑️ Borrar Individual</button>
     </div>
 </div>
+
+<div class="sidebar oculto" id="panelLive">
+    <div class="header" style="background:#9b59b6;">
+        <span style="font-weight: 600; font-size: 16px;">Operaciones & GPS</span>
+        <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;" onclick="window.toggleLiveMenu()">✕</button>
+    </div>
+    <div class="content">
+        <button class="btn-outline" style="border-color:var(--success);color:var(--success);font-size:16px;padding:12px;margin-bottom:20px;font-weight:bold;" onclick="window.toggleLocation()" title="Mi Ubicación">🎯 Activar Seguimiento GPS</button>
+        
+        <div class="section-title" style="margin-top:0;color:#9b59b6;border-bottom-color:#9b59b6;">📡 Sala de Operaciones</div>
+        <div id="live-group-container" style="padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;border-left:4px solid #9b59b6;">
+            <div id="room-setup-ui">
+                <input type="text" id="room-id" class="form-input" placeholder="Nombre de la Sala" style="margin-bottom:8px;">
+                <input type="password" id="room-pass" class="form-input" placeholder="Contraseña de la Sala" style="margin-bottom:8px;">
+                <input type="text" id="live-alias" class="form-input" placeholder="Tu indicativo (Ej. Escuadra Alfa)" style="margin-bottom:8px;">
+                <select id="live-faction" class="form-select" style="margin-bottom:10px;">
+                    <option value="#3498db">🔵 Bando Azul</option><option value="#e74c3c">🔴 Bando Rojo</option><option value="#2ecc71">🟢 Bando Verde</option><option value="#f1c40f">🟡 Bando Amarillo</option><option value="#1e293b">⚫ PMC / Mercenarios</option><option value="#8b4513">💀 Marine Raider bcn</option>
+                </select>
+                <select id="live-role" class="form-select" style="margin-bottom:10px;">
+                    <option value="asalto">🔫 Asalto</option><option value="sniper">🔭 Francotirador</option><option value="medico">🏥 Médico</option><option value="apoyo">🛡️ Apoyo</option><option value="lider">⭐ Líder</option><option value="navegante">🧭 Navegante</option><option value="radio">📻 Radio Operador</option>
+                </select>
+                <button class="btn-outline" id="btn-room-toggle" style="margin-bottom:0;border-color:#9b59b6;color:#9b59b6;width:100%;" onclick="window.toggleRoom()">🚪 Entrar / Crear Sala</button>
+            </div>
+            <div id="room-active-ui" style="display:none; margin-top:5px;">
+                <div style="display:flex;gap:5px;margin-bottom:10px;">
+                    <button class="btn-outline" id="btn-sync-map" style="margin-bottom:0;border-color:#3498db;color:#3498db;flex:1;font-size:11px;padding:8px;" onclick="window.syncDrawingsToRoom()">🔄 Compartir Mapa</button>
+                    <button class="btn-outline" id="btn-delete-room" style="margin-bottom:0;border-color:var(--danger);color:white;background:var(--danger);flex:1;font-size:11px;padding:8px;display:none;" onclick="window.deleteRoom()">🗑️ Eliminar Sala</button>
+                </div>
+                <div id="radio-msgs-container" style="display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap;">
+                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--danger); color:var(--danger);" onclick="window.sendRadioMessage('⚠️ Enemigo')">⚠️ Enemigo</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--success); color:var(--success);" onclick="window.sendRadioMessage('🏥 Médico')">🏥 Médico</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--info); color:var(--info);" onclick="window.sendRadioMessage('🛡️ Defendiendo')">🛡️ Defensa</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--ign-gold); color:var(--ign-gold);" onclick="window.sendRadioMessage('🏃 Avanzando')">🏃 Avanzando</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:8px; font-size:11px; flex:1 1 100%; border-color:#475569; background:#475569; color:white; font-weight:800;" onclick="window.sendRadioMessage('✋ ¡BAJA!')">💀 ESTOY ELIMINADO</button>
+                </div>
+                <div id="chat-box" style="height:120px; overflow-y:auto; background:#fff; border:1px solid #cbd5e0; border-radius:6px; padding:5px; font-size:11px; margin-bottom:5px; display:flex; flex-direction:column; gap:4px;"></div>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="chat-input" class="form-input" placeholder="Mensaje..." style="margin-bottom:0; padding:6px; font-size:11px;" onkeypress="if(event.key==='Enter') window.sendChatMsg()">
+                    <button class="btn-outline" style="margin-bottom:0; width:auto; padding:0 12px; background:var(--ign-blue); color:white; border:none;" onclick="window.sendChatMsg()">➤</button>
+                </div>
+                <button class="btn-outline" style="margin-top:10px;margin-bottom:0;border-color:var(--danger);color:var(--danger);width:100%;" onclick="window.toggleRoom()">🚪 Salir de la Sala</button>
+            </div>
+        </div>
+    </div>
+</div>
  
 <!-- MODALES -->
 <div id="custom-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
@@ -229,13 +247,13 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     <div style="background:white;padding:20px;border-radius:12px;width:340px;max-height:90vh;overflow-y:auto;">
         <h3 style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:16px;">✏️ Editar Elemento</h3>
         <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Nombre</label><input type="text" id="edit-name-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;">
-        <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Bando</label><select id="edit-faction-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;"><option value="General">🏳️ General</option><option value="Rojo">🔴 Bando Rojo</option><option value="Azul">🔵 Bando Azul</option><option value="Organizacion">⚙️ Organización</option><option value="Neutral">⚪ Neutral / Civil</option></select>
+        <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Bando</label><select id="edit-faction-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;"><option value="General">🏳️ General</option><option value="Rojo">🔴 Bando Rojo</option><option value="Azul">🔵 Bando Azul</option><option value="Organizacion">⚙️ Organización</option><option value="Neutral">⚪ Neutral / Civil</option><option value="Marine Raider bcn">💀 Marine Raider bcn</option></select>
         <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Grupo</label><input type="text" id="edit-group-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;" placeholder="Ej: Escuadra Alfa">
         <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">📝 Notas / Comentarios</label><textarea id="edit-notes-input" rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;font-family:inherit;font-size:12px;resize:vertical;" placeholder="Instrucciones, detalles, información táctica..."></textarea>
         <div id="edit-style-options" style="display:none;">
             <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Color</label><select id="edit-color-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;"><option value="#2ecc71">Verde</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#f1c40f">Amarillo</option><option value="#9b59b6">Morado</option><option value="#34495e">Oscuro</option></select>
             <div id="edit-marker-specifics" style="display:none;">
-                <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Icono Militar</label><select id="edit-icon-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;"><option value="punto">🔴 Punto normal</option><option value="base">⛺ Base / Campamento</option><option value="objetivo">🎯 Objetivo</option><option value="bandera">🚩 Respawn</option><option value="combate">⚔️ Combate</option><option value="defensa">🛡️ Defensa</option><option value="vehiculo">🚁 Extracción</option><option value="medico">🏥 Médico</option><option value="radio">📡 Comunicaciones</option></select>
+                <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Icono Militar</label><select id="edit-icon-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;"><option value="punto">🔴 Punto normal</option><option value="base">⛺ Base / Campamento</option><option value="objetivo">🎯 Objetivo</option><option value="bandera">🚩 Respawn</option><option value="combate">⚔️ Combate</option><option value="defensa">🛡️ Defensa</option><option value="vehiculo">🚁 Extracción</option><option value="medico">🏥 Médico</option><option value="radio">📡 Comunicaciones</option><option value="raider">💀 Logo Raider</option></select>
                 <label style="font-size:12px;font-weight:bold;color:#475569;display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;"><input type="checkbox" id="edit-show-label-input" style="width:16px;height:16px;"> Mostrar nombre</label>
                 <label style="font-size:12px;font-weight:bold;color:var(--ign-gold);display:block;margin-bottom:4px;">⭕ Radio de Acción (m)</label><input type="number" id="edit-buffer-input" min="0" step="1" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;">
                 <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
@@ -268,8 +286,8 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
             <p><b>📍 Marcadores, Áreas y Notas:</b> Usa las herramientas de edición para añadir puntos, rutas o zonas. Si tocas un elemento ya creado en el mapa, pulsa <b>"✏️ Editar"</b> para cambiar su color, bando, añadir un radio de acción, un cono de visión direccional, o escribir <b>Notas y Comentarios</b> tácticos que todos podrán leer.</p>
             <p><b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el tiempo estimado a pie o en vehículo.</p>
-            <p><b>🎯 GPS y Brújula:</b> Pulsa la diana (🎯) junto al buscador. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
-            <p><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, 🏥 Médico...) para hacer parpadear tu posición con una alerta. Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.</p>
+            <p><b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
+            <p><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.</p>
             <p><b>🌍 Mapas Offline:</b> ¿Vas a una zona sin cobertura? En la pestaña "Mezclador", pulsa <b>"🔲 Marcar Zona"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.</p>
             <p><b>☁️ Guardado y Exportación:</b> Inicia sesión con Google para sincronizar tus proyectos en la nube de forma segura. También puedes Exportar e Importar tus mapas en formato universal <b>KML o GPX</b> para compartirlos por WhatsApp o usarlos en tu GPS de muñeca.</p>
             <p><b>📸 Capturas e Impresión:</b> Haz fotos limpias del mapa en la "Galería Capturas" y usa el botón <b>"🖨️ Imprimir"</b> para generar archivos PDF o sacar copias físicas a escala topográfica exacta (A4/A3) con brújula y leyenda táctica incluidas.</p>
@@ -359,59 +377,67 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
     function startLiveTracking(roomId, alias) {
         const factionColor = document.getElementById('live-faction').value; if (!window.userLocMarker) window.customAlert("Aviso GPS", "Enciende el GPS (🎯) para que tus compañeros te vean.");
-        transmitInterval = setInterval(async () => { if (window.userLocMarker && auth.currentUser) { const ll = window.userLocMarker.getLatLng(); try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId, auth.currentUser.uid), { alias: alias, color: factionColor, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }); } catch(e) {} } }, 3000);
+        const roleIcons = { 'asalto': '🔫', 'sniper': '🔭', 'medico': '🏥', 'apoyo': '🛡️', 'lider': '⭐', 'navegante': '🧭', 'radio': '📻' };
+        transmitInterval = setInterval(async () => { if (window.userLocMarker && auth.currentUser) { const ll = window.userLocMarker.getLatLng(); const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto'; try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId, auth.currentUser.uid), { alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }); } catch(e) {} } }, 3000);
         const unsubLive = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId), (snapshot) => {
             const now = Date.now();
             snapshot.forEach(docSnap => {
                 const data = docSnap.data(); const id = docSnap.id; if (!auth.currentUser || id === auth.currentUser.uid) return;
                 if (now - data.timestamp > 120000) { if (allyMarkers[id]) { window.alliesLayer.removeLayer(allyMarkers[id]); delete allyMarkers[id]; } return; }
                 let distText = "--"; if (window.userLocMarker) { const dist = window.userLocMarker.getLatLng().distanceTo(L.latLng(data.lat, data.lng)); distText = dist > 1000 ? (dist/1000).toFixed(2) + " km" : Math.round(dist) + " m"; }
-                let displayAlias = data.alias; let extraClass = ""; if (data.msg && data.msg !== "") { displayAlias = `<b>${data.msg}</b><br><span style="font-size:9px">${data.alias}</span>`; extraClass = "radio-pulse"; }
-                const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>A <b>${distText}</b></div>`;
+                
+                const isEliminated = data.msg === '✋ ¡BAJA!';
+                let displayAlias = data.alias; let extraClass = ""; 
+                if (data.msg && data.msg !== "") { displayAlias = `<b>${data.msg}</b><br><span style="font-size:9px">${data.alias}</span>`; if(!isEliminated) extraClass = "radio-pulse"; }
+                
+                const roleIcon = isEliminated ? '💀' : (roleIcons[data.role] || '🔫');
+                const filterStyle = isEliminated ? 'filter: grayscale(100%) opacity(0.6);' : '';
+                const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b></div>`;
+                
                 if (allyMarkers[id]) {
-                    allyMarkers[id].setLatLng([data.lat, data.lng]); const arrow = allyMarkers[id].getElement().querySelector('.ally-arrow'); if (arrow) arrow.style.transform = `rotate(${data.heading}deg)`; const circle = allyMarkers[id].getElement().querySelector('.ally-circle'); const label = allyMarkers[id].getElement().querySelector('.ally-label');
-                    if (circle) { circle.style.backgroundColor = data.color; circle.style.borderColor = data.color; } if (label) { label.style.borderColor = data.color; label.innerHTML = displayAlias; label.className = `ally-label grid-label ${extraClass}`; } if (allyMarkers[id].getPopup()) allyMarkers[id].setPopupContent(popupHtml);
+                    allyMarkers[id].setLatLng([data.lat, data.lng]); 
+                    const container = allyMarkers[id].getElement().querySelector('.ally-container'); if(container) container.style.cssText = `position:relative;width:24px;height:24px;${filterStyle}`;
+                    const arrow = allyMarkers[id].getElement().querySelector('.ally-arrow'); if (arrow) arrow.style.transform = `rotate(${data.heading}deg)`; 
+                    const circle = allyMarkers[id].getElement().querySelector('.ally-circle'); const label = allyMarkers[id].getElement().querySelector('.ally-label');
+                    if (circle) { 
+                        circle.style.backgroundColor = data.color; circle.style.borderColor = data.color; 
+                        if (data.color === '#8b4513' && !isEliminated) { circle.style.backgroundImage = 'url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png")'; circle.style.backgroundSize = 'cover'; circle.style.backgroundPosition = 'center'; circle.style.color = 'white'; circle.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)'; } else { circle.style.backgroundImage = 'none'; circle.style.color = ''; circle.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)'; }
+                        circle.innerHTML = roleIcon; 
+                    } 
+                    if (label) { label.style.borderColor = data.color; label.innerHTML = displayAlias; label.className = `ally-label grid-label ${extraClass}`; } 
+                    if (allyMarkers[id].getPopup()) allyMarkers[id].setPopupContent(popupHtml);
                 } else {
-                    const icon = L.divIcon({ className: 'custom-ally', html: `<div style="position:relative;width:16px;height:16px;"><div class="ally-circle" style="position:absolute;width:100%;height:100%;background-color:${data.color};border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;"></div><div class="ally-arrow" style="position:absolute;top:50%;left:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid rgba(255,255,255,0.8);transform-origin:50% 100%;margin-left:-5px;margin-top:-14px;transform:rotate(${data.heading}deg);z-index:1;"></div><div class="ally-label grid-label ${extraClass}" style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);border-color:${data.color};color:#333;z-index:3;text-align:center;">${displayAlias}</div></div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
+                    let bgStyle = `background-color:${data.color};`; let txtStyle = `color:#333;text-shadow:0 1px 2px rgba(0,0,0,0.5);`;
+                    if (data.color === '#8b4513' && !isEliminated) { bgStyle += 'background-image:url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png");background-size:cover;background-position:center;'; txtStyle = `color:white;text-shadow:0 1px 2px rgba(0,0,0,0.8);`; }
+                    const icon = L.divIcon({ className: 'custom-ally', html: `<div class="ally-container" style="position:relative;width:24px;height:24px;${filterStyle}"><div class="ally-circle" style="position:absolute;width:100%;height:100%;${bgStyle}border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;display:flex;align-items:center;justify-content:center;font-size:12px;${txtStyle}">${roleIcon}</div><div class="ally-arrow" style="position:absolute;top:50%;left:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid rgba(255,255,255,0.8);transform-origin:50% 100%;margin-left:-5px;margin-top:-14px;transform:rotate(${data.heading}deg);z-index:1;"></div><div class="ally-label grid-label ${extraClass}" style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);border-color:${data.color};color:#333;z-index:3;text-align:center;">${displayAlias}</div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
                     allyMarkers[id] = L.marker([data.lat, data.lng], { icon: icon, zIndexOffset: 900 }).bindPopup(popupHtml).addTo(window.alliesLayer);
                 }
             });
         }); roomUnsubs.push(unsubLive);
     }
-    window.sendRadioMessage = function(msg) { if (!currentRoom || !window.userLocMarker) return window.customAlert("Aviso", "Debes estar dentro de una Sala y con el GPS (🎯) activo."); if (currentRadioMsg === msg) { currentRadioMsg = ""; window.customAlert("Comando", "Mensaje cancelado."); } else { currentRadioMsg = msg; window.customAlert("Comando", `Mensaje fijado:\n"${msg}"\n(Pulsa de nuevo para quitarlo)`); } currentRadioMsgTime = Date.now(); if(auth.currentUser) { const alias = document.getElementById('live-alias').value.trim(); const factionColor = document.getElementById('live-faction').value; const ll = window.userLocMarker.getLatLng(); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + currentRoom, auth.currentUser.uid), { alias: alias, color: factionColor, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }).catch(()=>{}); } };
+    
+    window.sendRadioMessage = function(msg) { 
+        if (!currentRoom || !window.userLocMarker) return window.customAlert("Aviso", "Debes estar dentro de una Sala y con el GPS (🎯) activo."); 
+        if (currentRadioMsg === msg) { 
+            currentRadioMsg = ""; window.customAlert("Comando", "Mensaje cancelado."); 
+        } else { 
+            currentRadioMsg = msg; 
+            if (msg === '✋ ¡BAJA!') { window.customAlert("Eliminado", "Has sido marcado como BAJA. Tus compañeros te verán en gris con una calavera."); } 
+            else { window.customAlert("Comando", `Mensaje fijado:\n"${msg}"\n(Pulsa de nuevo para quitarlo)`); }
+        } 
+        currentRadioMsgTime = Date.now(); 
+        if(auth.currentUser) { const alias = document.getElementById('live-alias').value.trim(); const factionColor = document.getElementById('live-faction').value; const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto'; const ll = window.userLocMarker.getLatLng(); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + currentRoom, auth.currentUser.uid), { alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }).catch(()=>{}); } 
+    };
+    
     window.addEventListener('beforeunload', () => { if (currentRoom && auth.currentUser) { deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + currentRoom, auth.currentUser.uid)).catch(()=>{}); } });
 
     let forceSignInMode = false;
     window.iniciarSesionGoogle = async function() {
         const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt: 'select_account' });
         try {
-            if (auth.currentUser && auth.currentUser.isAnonymous && !forceSignInMode) {
-                const result = await linkWithPopup(auth.currentUser, provider);
-                if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user);
-                window.customAlert("Éxito", "¡Sesión iniciada! Tus mapas anónimos ahora están a salvo.");
-            } else {
-                const result = await signInWithPopup(auth, provider);
-                if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user);
-                forceSignInMode = false; window.customAlert("Bienvenido", "Sesión iniciada con éxito. Tus mapas se han sincronizado.");
-            }
+            if (auth.currentUser && auth.currentUser.isAnonymous && !forceSignInMode) { const result = await linkWithPopup(auth.currentUser, provider); if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user); window.customAlert("Éxito", "Sesión iniciada."); } else { const result = await signInWithPopup(auth, provider); if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user); forceSignInMode = false; window.customAlert("Bienvenido", "Sesión iniciada."); }
         } catch (error) {
-            if (error.message && String(error.message).includes('updateAuthUI')) return;
-            if (error.code === 'auth/credential-already-in-use') {
-                try {
-                    const credential = GoogleAuthProvider.credentialFromError(error);
-                    if (credential) {
-                        const result = await signInWithCredential(auth, credential);
-                        if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user);
-                        window.customAlert("Bienvenido", "Has iniciado sesión con tu cuenta existente.");
-                    } else { await signInWithPopup(auth, provider); }
-                } catch (err) { if (!String(err.message).includes('updateAuthUI')) window.customAlert("Error", "No se pudo iniciar sesión. " + err.message); }
-            } else if (error.code === 'auth/unauthorized-domain') {
-                window.customAlert("Dominio Bloqueado", `Para que Google funcione, ve a Firebase > Authentication > Dominios Autorizados y añade tu dominio web.`);
-            } else if (error.code === 'auth/popup-blocked' || String(error.message).includes('cross-origin')) {
-                window.customAlert("Aviso", "El navegador ha bloqueado la ventana de inicio de sesión de Google. Por favor, permite las ventanas emergentes (pop-ups) e inténtalo de nuevo.");
-            } else {
-                window.customAlert("Error", "Fallo al iniciar sesión: " + error.message);
-            }
+            if (error.code === 'auth/credential-already-in-use') { try { const credential = GoogleAuthProvider.credentialFromError(error); if (credential) { const result = await signInWithCredential(auth, credential); if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user); } else { await signInWithPopup(auth, provider); } } catch (err) {} }
         }
     };
     window.cerrarSesion = async function() { try { await signOut(auth); if(window.drawnItems) window.drawnItems.clearLayers(); window.projectName = "Proyecto_AirsoftMaps"; document.getElementById('app-title').innerText = "AirsoftMaps"; if(typeof window.updateLayerTree === 'function') window.updateLayerTree(); await signInAnonymously(auth); } catch(e) {} };
@@ -438,7 +464,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     };
     setTimeout(() => { window.renderOfflineZones(); }, 500);
 
-    const tacticalIcons = { 'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁', 'medico': '🏥', 'radio': '📡', 'hq': '🌟', 'suministros': '📦', 'sniper': '🔭', 'peligro': '⚠️', 'encuentro': '🤝', 'obstaculo': '🧱', 'agua': '💧' };
+    const tacticalIcons = { 'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁', 'medico': '🏥', 'radio': '📡', 'hq': '🌟', 'suministros': '📦', 'sniper': '🔭', 'peligro': '⚠️', 'encuentro': '🤝', 'obstaculo': '🧱', 'agua': '💧', 'raider': '<img src="image_ef21e1.png" style="width:14px;height:14px;border-radius:50%;" onerror="this.src=\'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png\'">' };
     const compassStyles = { modern: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,50)"><g transform="rotate(45)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(135)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(225)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(315)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(0)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#e74c3c"/><polygon points="0,-48 0,0 -10,-10" fill="#c0392b"/></g><g transform="rotate(90)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><g transform="rotate(180)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><g transform="rotate(270)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><circle cx="0" cy="0" r="4" fill="#1e293b"/><circle cx="0" cy="0" r="1.5" fill="#fff"/><text x="0" y="-31" font-family="sans-serif" font-weight="900" font-size="14" fill="#fff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">N</text></g></svg>`, classic: `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><g transform="translate(60,60)"><circle cx="0" cy="0" r="45" fill="#fef9e7" stroke="#8b5a2b" stroke-width="2"/><circle cx="0" cy="0" r="40" fill="none" stroke="#8b5a2b" stroke-width="1" stroke-dasharray="2 2"/><g transform="rotate(45)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(135)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(225)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(315)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(0)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#8b0000"/><polygon points="0,-40 0,0 -8,-8" fill="#5c0000"/></g><g transform="rotate(90)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><g transform="rotate(180)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><g transform="rotate(270)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><circle cx="0" cy="0" r="5" fill="#8b5a2b"/><circle cx="0" cy="0" r="2" fill="#fef9e7"/><text x="0" y="-48" font-family="serif" font-weight="bold" font-size="14" fill="#8b0000" text-anchor="middle">N</text></g></svg>`, military: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,50)"><circle cx="0" cy="0" r="42" fill="rgba(75, 83, 32, 0.1)" stroke="#4b5320" stroke-width="3" stroke-dasharray="6 4"/><circle cx="0" cy="0" r="34" fill="none" stroke="#4b5320" stroke-width="1"/><line x1="0" y1="-46" x2="0" y2="46" stroke="#4b5320" stroke-width="2"/><line x1="-46" y1="0" x2="46" y2="0" stroke="#4b5320" stroke-width="2"/><polygon points="0,-46 6,-25 -6,-25" fill="#ff4500"/><circle cx="0" cy="0" r="10" fill="none" stroke="#4b5320" stroke-width="2"/><circle cx="0" cy="0" r="2" fill="#ff4500"/><text x="14" y="-28" font-family="monospace" font-weight="bold" font-size="12" fill="#4b5320" style="text-shadow: 1px 1px 0px rgba(255,255,255,0.7);">000</text></g></svg>`, minimal: `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g transform="translate(40,40)"><circle cx="0" cy="0" r="30" fill="rgba(255,255,255,0.8)" stroke="#333" stroke-width="2"/><path d="M0,-25 L8,10 L0,2 L-8,10 Z" fill="#e74c3c"/><path d="M0,-25 L0,2 L-8,10 Z" fill="#c0392b"/><circle cx="0" cy="0" r="3" fill="#333"/><text x="0" y="-32" font-family="sans-serif" font-weight="900" font-size="14" fill="#333" text-anchor="middle">N</text></g></svg>` };
     window.updateCompassStyle = function() { document.getElementById('compass-rose').innerHTML = compassStyles[document.getElementById('compassStyle').value]; };
 
@@ -479,7 +505,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     function updateLayerTree() {
         const list = document.getElementById('layer-list'); const layers = drawnItems.getLayers(); if (layers.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">Vacio</div>'; updateLegend(); return; }
         const factions = {}; layers.forEach(layer => { const faction = layer.feature?.properties?.faction || window.projectName; if (!factions[faction]) factions[faction] = []; factions[faction].push(layer); });
-        let html = ''; const factionIcons = { 'General': '🏳️', 'Rojo': '🔴', 'Azul': '🔵', 'Organizacion': '⚙️', 'Neutral': '⚪' };
+        let html = ''; const factionIcons = { 'General': '🏳️', 'Rojo': '🔴', 'Azul': '🔵', 'Organizacion': '⚙️', 'Neutral': '⚪', 'Marine Raider bcn': '<img src="image_ef21e1.png" style="width:14px;height:14px;display:inline-block;vertical-align:middle;border-radius:2px;" onerror="this.src=\'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png\'">' };
         for (const [factionName, factionLayers] of Object.entries(factions)) {
             const allHidden = factionLayers.every(l => l.isHidden); const eyeIcon = allHidden ? '👁️‍🗨️' : '👁️'; const eyeClass = allHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'; const fIcon = factionIcons[factionName] || '📁';
             html += `<div class="faction-header" style="cursor:pointer;" onclick="const content=this.nextElementSibling;const icon=this.querySelector('.toggle-icon');if(content.style.display==='none'){content.style.display='block';icon.innerText='▼';}else{content.style.display='none';icon.innerText='▶';}"><div style="display:flex;align-items:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;margin-right:10px;" title="${factionName}"><span class="toggle-icon" style="margin-right:5px;font-size:10px;width:12px;display:inline-block;">▼</span><span style="margin-right:4px;">${fIcon}</span><span style="overflow:hidden;text-overflow:ellipsis;">${factionName}</span></div><button class="${eyeClass}" onclick="event.stopPropagation(); window.toggleFactionVisibility('${factionName}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0;">${eyeIcon}</button></div><div class="faction-content" style="display:block;">`;
@@ -520,7 +546,13 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
     window.deleteClickHandler = function(e) { window.removeLayerById(L.stamp(e.target)); };
 
-    function getMarkerIconObj(color, type) { if (type === 'images_2') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:28px;height:28px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="images_2.jpg" style="width:100%;height:100%;object-fit:cover;"></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }); if (type === 'bandera') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;">🚩</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }); if (!type || type === 'punto') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);"></div>`, iconSize: [20, 20], iconAnchor: [10, 10] }); return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;">${tacticalIcons[type] || '📍'}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }); }
+    function getMarkerIconObj(color, type) { 
+        if (type === 'images_2') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:28px;height:28px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="images_2.jpg" style="width:100%;height:100%;object-fit:cover;"></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }); 
+        if (type === 'raider') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:black;width:28px;height:28px;border-radius:50%;border:2px solid ${color};box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="image_ef21e1.png" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png'" style="width:100%;height:100%;object-fit:cover;"></div>`, iconSize: [32, 32], iconAnchor: [16, 16] }); 
+        if (type === 'bandera') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;">🚩</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }); 
+        if (!type || type === 'punto') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);"></div>`, iconSize: [20, 20], iconAnchor: [10, 10] }); 
+        return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;">${tacticalIcons[type] || '📍'}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }); 
+    }
 
     window.recalculateAutoRoute = async function() {
         if (autoRoutePoints.length > 1) {
@@ -930,7 +962,15 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     window.toggleTheme = function() { const body = document.body; const btnTheme = document.getElementById('themeToggleBtn'); body.classList.toggle('dark-mode'); if (body.classList.contains('dark-mode')) { btnTheme.innerHTML = '☀️'; btnTheme.title = 'Cambiar a Modo Claro'; } else { btnTheme.innerHTML = '🌙'; btnTheme.title = 'Cambiar a Modo Oscuro'; } };
     initMobileMode(); 
 
-    window.toggleMenu = function() { document.getElementById('panelLateral').classList.toggle('oculto'); };
+    window.toggleMenu = function() { 
+        document.getElementById('panelLateral').classList.toggle('oculto'); 
+        document.getElementById('panelLive').classList.add('oculto'); 
+    };
+    window.toggleLiveMenu = function() { 
+        document.getElementById('panelLive').classList.toggle('oculto'); 
+        document.getElementById('panelLateral').classList.add('oculto'); 
+    };
+
     window.toggleGroup = function(id) {
         const container = document.getElementById(id); if (!container) return; const btn = document.querySelector(`button[onclick*="${id}"]`);
         if (container.style.display === 'none' || container.style.display === '') { container.style.display = 'block'; if (btn) { const icon = btn.querySelector('span:last-child'); if (icon && icon.innerText.includes('▼')) icon.innerText = '▲'; } setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); } 
@@ -959,26 +999,26 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         try {
             const btn = document.querySelector('button[title="Mi Ubicación"]');
             if (locWatchId !== null) {
-                if (!window.isFollowingUser) { window.isFollowingUser = true; if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 }); if (btn) { btn.innerHTML = "🚶‍♂️"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; btn.style.opacity = "1"; } return; } 
-                else { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; window.isFollowingUser = false; if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; window.userLocMarker = null; } if (userLocCircle) { map.removeLayer(userLocCircle); userLocCircle = null; } try { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true); } catch(e) {} orientationHandlerActive = false; if (btn) { btn.innerHTML = '🎯'; btn.style.color = ''; btn.style.borderColor = 'var(--ign-blue)'; btn.style.opacity = '1'; btn.classList.remove('active'); } return; }
+                if (!window.isFollowingUser) { window.isFollowingUser = true; if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 }); if (btn) { btn.innerHTML = "🚶‍♂️ Activar Seguimiento GPS"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; btn.style.opacity = "1"; } return; } 
+                else { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; window.isFollowingUser = false; if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; window.userLocMarker = null; } if (userLocCircle) { map.removeLayer(userLocCircle); userLocCircle = null; } try { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true); } catch(e) {} orientationHandlerActive = false; if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.color = ''; btn.style.borderColor = 'var(--success)'; btn.style.opacity = '1'; btn.classList.remove('active'); } return; }
             }
             if (!navigator.geolocation) { window.customAlert("Error", "Tu navegador no soporta la geolocalización."); return; }
-            if (btn) { btn.innerHTML = "⏳"; btn.style.opacity = "0.7"; }
+            if (btn) { btn.innerHTML = "⏳ Activando..."; btn.style.opacity = "0.7"; }
             window.isFollowingUser = true;
             if (!orientationHandlerActive) { try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { DeviceOrientationEvent.requestPermission().then(permissionState => { if (permissionState === 'granted') { window.addEventListener('deviceorientation', handleDeviceOrientation, true); orientationHandlerActive = true; } }).catch(err => { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); orientationHandlerActive = true; }); } else { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); window.addEventListener('deviceorientation', handleDeviceOrientation, true); orientationHandlerActive = true; } } catch(e) {} }
             locWatchId = navigator.geolocation.watchPosition((pos) => {
                 try {
                     const lat = pos.coords.latitude; const lng = pos.coords.longitude; const acc = pos.coords.accuracy; const heading = pos.coords.heading; const speed = pos.coords.speed; 
                     if (window.isFollowingUser) { map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom()); }
-                    if (btn && btn.innerHTML === "⏳") { btn.innerHTML = "🚶‍♂️"; btn.style.opacity = "1"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
+                    if (btn && btn.innerHTML.includes("⏳")) { btn.innerHTML = "🚶‍♂️ Seguimiento GPS Activo"; btn.style.opacity = "1"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
                     if (!userLocCircle) { userLocCircle = L.circle([lat, lng], { radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15 }).addTo(map); } else { userLocCircle.setLatLng([lat, lng]); userLocCircle.setRadius(acc); }
                     if (!userLocMarker) { const userIcon = L.divIcon({ className: 'custom-user-marker', html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 14px solid rgba(13,110,253,0.8); transform-origin: 50% 100%; margin-left: -6px; margin-top: -14px; transform: rotate(${window.currentDeviceHeading || 0}deg);"></div></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }); userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map); window.userLocMarker = userLocMarker; } else { userLocMarker.setLatLng([lat, lng]); }
                 } catch(e) { console.error(e); }
-            }, (err) => { window.customAlert("Error GPS", err.message); if (btn) { btn.innerHTML = '🎯'; btn.style.opacity = "1"; } }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
+            }, (err) => { window.customAlert("Error GPS", err.message); if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.opacity = "1"; } }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
         } catch(e) {}
     };
 
-    map.on('dragstart', () => { if (locWatchId !== null) { window.isFollowingUser = false; const btn = document.querySelector('button[title="Mi Ubicación"]'); if (btn) { btn.innerHTML = '🚶‍♂️'; btn.style.color = 'var(--ign-gold)'; btn.style.borderColor = 'var(--ign-gold)'; btn.style.opacity = "1"; } } });
+    map.on('dragstart', () => { if (locWatchId !== null) { window.isFollowingUser = false; const btn = document.querySelector('button[title="Mi Ubicación"]'); if (btn) { btn.innerHTML = '🚶‍♂️ Centrar GPS'; btn.style.color = 'var(--ign-gold)'; btn.style.borderColor = 'var(--ign-gold)'; btn.style.opacity = "1"; } } });
 
     // PWA: Convertir en App Instalable (Conversión de icono de .ico a .png dinámica)
     (function() {
@@ -1003,6 +1043,3 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             img.src = 'AirsoftMaps.ico';
         } catch(e) { console.error("Error PWA:", e); }
     })();
-</script>
-</body>
-</html>
