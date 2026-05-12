@@ -357,7 +357,6 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     function enterRoom(roomId, alias, isAdmin) {
         currentRoom = roomId; const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false;
         document.getElementById('room-setup-ui').style.display = 'none'; document.getElementById('room-active-ui').style.display = 'block';
-        document.getElementById('active-room-display').innerText = `[${roomId}]`;
         if (isAdmin) document.getElementById('btn-delete-room').style.display = 'inline-block'; else document.getElementById('btn-delete-room').style.display = 'none';
         startLiveTracking(roomId, alias);
         const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
@@ -376,7 +375,6 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         if (transmitInterval) { clearInterval(transmitInterval); transmitInterval = null; } 
         window.alliesLayer.clearLayers(); allyMarkers = {}; currentRoom = null; currentRadioMsg = ""; 
         document.getElementById('room-setup-ui').style.display = 'block'; document.getElementById('room-active-ui').style.display = 'none'; document.getElementById('chat-box').innerHTML = ''; 
-        document.getElementById('active-room-display').innerText = '';
         window.isChatInitialized = false; window.knownMsgCount = 0; window.unreadMsgCount = 0; window.lastProcessedMsgTime = 0;
         const badge = document.getElementById('chat-badge'); if (badge) badge.style.display = 'none'; 
     }
