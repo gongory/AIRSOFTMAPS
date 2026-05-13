@@ -520,6 +520,32 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 <script>
     window.projectName = "Proyecto_AirsoftMaps";
     window.customAlert = function(title, msg) { if (msg && String(msg).includes('updateAuthUI')) return; document.getElementById('alert-modal-title').innerText = title; document.getElementById('alert-modal-msg').innerText = msg; document.getElementById('alert-modal').style.display = 'flex'; };
+    
+    window.nuevoProyecto = function() {
+        const modal = document.getElementById('confirm-modal');
+        modal.querySelector('h3').innerText = "📄 Nuevo Proyecto";
+        modal.querySelector('p').innerText = "¿Seguro que deseas crear un proyecto nuevo? Se perderán los datos actuales no guardados.";
+        modal.style.display = 'flex';
+        window.acceptConfirmModal = function() {
+            modal.style.display = 'none';
+            window.drawnItems.clearLayers();
+            window.projectName = "Proyecto_AirsoftMaps";
+            document.getElementById('app-title').innerText = "AirsoftMaps";
+            if (typeof window.updateLayerTree === 'function') window.updateLayerTree();
+            window.customAlert("Éxito", "Se ha creado un proyecto en blanco.");
+        };
+        window.closeConfirmModal = function() { modal.style.display = 'none'; };
+    };
+
+    window.renombrarProyecto = async function() {
+        const newName = await askName("Renombrar Proyecto:", window.projectName);
+        if (newName && newName.trim() !== '' && newName !== window.projectName) {
+            window.projectName = newName.trim();
+            document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
+            window.customAlert("Éxito", "Proyecto renombrado correctamente.");
+        }
+    };
+
     if (L.Draw && L.Draw.Polyline) L.Draw.Polyline.prototype._onTouch = function () {};
     L.TileLayer.prototype.createTile = function (coords, done) { const tile = document.createElement('img'); L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile)); L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile)); if (this.options.crossOrigin || this.options.crossOrigin === '') tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin; tile.alt = ''; tile.setAttribute('role', 'presentation'); const url = this.getTileUrl(coords); if ('caches' in window) { caches.open('airsoftmaps-offline').then(cache => { cache.match(url).then(response => { if (response) { response.blob().then(blob => { tile.src = URL.createObjectURL(blob); }); } else { tile.src = url; fetch(url).then(netRes => { if (netRes.ok) cache.put(url, netRes.clone()); }).catch(() => {}); } }); }); } else { tile.src = url; } return tile; };
 
