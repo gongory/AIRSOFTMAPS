@@ -76,7 +76,10 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
 <button class="fab-menu" id="fabBtn" onclick="window.toggleMenu()" title="Herramientas">🛠️</button>
-<button class="fab-menu" id="fabLiveBtn" onclick="window.toggleLiveMenu()" title="Operaciones y GPS">📡</button>
+<button class="fab-menu" id="fabLiveBtn" onclick="window.toggleLiveMenu()" title="Operaciones y GPS">
+    📡
+    <span id="chat-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:white;font-size:10px;font-weight:bold;border-radius:50%;width:18px;height:18px;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.3);">0</span>
+</button>
  
 <div class="sidebar oculto" id="panelLateral">
     <div class="header">
