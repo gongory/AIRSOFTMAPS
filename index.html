@@ -1,4 +1,4 @@
-​<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -229,7 +229,6 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     </div>
 </div>
  
-<!-- MODALES -->
 <div id="custom-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
     <div style="background:white;padding:20px;border-radius:12px;width:300px;box-shadow:0 4px 20px rgba(0,0,0,0.3);"><h3 id="modal-title" style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:16px;">Nombrar elemento</h3><input type="text" id="modal-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;box-sizing:border-box;"><div style="display:flex;justify-content:flex-end;gap:10px;"><button style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;" onclick="window.closeModal()">Cancelar</button><button style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;" onclick="window.confirmModal()">Aceptar</button></div></div>
 </div>
@@ -291,8 +290,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             <p><b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el tiempo estimado a pie o en vehículo.</p>
             <p><b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
             <p><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.</p>
-            <p><b>🌍 Mapas Offline:</b> ¿Vas a una zona sin cobertura? En la pestaña "Mezclador", pulsa <b>"🔲 Marcar Zona"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.</p>
-            <p><b>☁️ Guardado y Exportación:</b> Inicia sesión con Google para sincronizar tus proyectos en la nube de forma segura. También puedes Exportar e Importar tus mapas en formato universal <b>KML o GPX</b> para compartirlos por WhatsApp o usarlos en tu GPS de muñeca.</p>
+            <p><b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña "Mezclador", pulsa <b>"🔲 Marcar Zona"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.</p>
             <p><b>📸 Capturas e Impresión:</b> Haz fotos limpias del mapa en la "Galería Capturas" y usa el botón <b>"🖨️ Imprimir"</b> para generar archivos PDF o sacar copias físicas a escala topográfica exacta (A4/A3) con brújula y leyenda táctica incluidas.</p>
             <p><b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú "Sistema", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).</p>
         </div>
@@ -303,6 +301,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -334,13 +333,57 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             try { await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', window.projectName.replace(/[^a-z0-9_-]/gi, '_')), { name: window.projectName, data: JSON.stringify(geojsonData), updatedAt: Date.now() }); window.customAlert("Éxito", "Guardado en Nube."); } catch (e) { window.customAlert("Error", e.message); } finally { btn.innerText = originalText; btn.disabled = false; }
         }; window.closeModal = () => { modal.style.display = 'none'; };
     };
+
     window.guardarProyecto = function() { const data = window.drawnItems.toGeoJSON(); data.view = { center: window.map.getCenter(), zoom: window.map.getZoom() }; const blob = new Blob([JSON.stringify(data)], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".json"; a.click(); URL.revokeObjectURL(url); };
     window.cargarProyecto = function(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const data = JSON.parse(evt.target.result); window.procesarDatosCargados(data, file.name.replace('.json', '')); } catch(err) { window.customAlert("Error", "Archivo inválido."); } }; reader.readAsText(file); e.target.value = ''; };
     window.exportKML = function() { const data = window.drawnItems.toGeoJSON(); let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + window.projectName + '</name>\n'; data.features.forEach(f => { const p = f.properties || {}; const n = p.layerName || 'Elemento'; const d = p.notes || ''; const c = f.geometry.coordinates; const t = f.geometry.type; kml += `<Placemark><name>${n}</name><description>${d}</description>`; if (t === 'Point') { kml += `<Point><coordinates>${c[0]},${c[1]},0</coordinates></Point>`; } else if (t === 'LineString') { kml += `<LineString><coordinates>${c.map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LineString>`; } else if (t === 'Polygon') { kml += `<Polygon><outerBoundaryIs><LinearRing><coordinates>${c[0].map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon>`; } kml += `</Placemark>\n`; }); kml += '</Document></kml>'; const blob = new Blob([kml], {type: "application/vnd.google-earth.kml+xml"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".kml"; a.click(); URL.revokeObjectURL(url); };
     window.exportGPX = function() { const data = window.drawnItems.toGeoJSON(); let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps" xmlns="http://www.topografix.com/GPX/1/1">\n'; data.features.forEach(f => { const p = f.properties || {}; const n = p.layerName || 'Elemento'; const d = p.notes || ''; const c = f.geometry.coordinates; const t = f.geometry.type; if (t === 'Point') { gpx += `<wpt lat="${c[1]}" lon="${c[0]}"><name>${n}</name><desc>${d}</desc></wpt>\n`; } else if (t === 'LineString') { gpx += `<trk><name>${n}</name><desc>${d}</desc><trkseg>`; c.forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); gpx += `</trkseg></trk>\n`; } else if (t === 'Polygon') { gpx += `<trk><name>${n} (Area)</name><desc>${d}</desc><trkseg>`; c[0].forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); gpx += `</trkseg></trk>\n`; } }); gpx += '</gpx>'; const blob = new Blob([gpx], {type: "application/gpx+xml"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".gpx"; a.click(); URL.revokeObjectURL(url); };
-    window.importKMLGPX = function(e) { window.customAlert("Aviso", "Importación externa desactivada. Usa Cargar Local (JSON)."); };
+    window.importKMLGPX = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        const extension = file.name.split('.').pop().toLowerCase();
+        
+        reader.onload = function(evt) {
+            try {
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(evt.target.result, "text/xml");
+                if (xml.getElementsByTagName("parsererror").length > 0) {
+                    throw new Error("Error de parseo XML");
+                }
+                
+                let geojson;
+                if (extension === 'kml') {
+                    geojson = toGeoJSON.kml(xml);
+                } else if (extension === 'gpx') {
+                    geojson = toGeoJSON.gpx(xml);
+                } else {
+                    return window.customAlert("Error", "Formato no compatible. Usa .kml o .gpx");
+                }
+
+                if (geojson && geojson.features && geojson.features.length > 0) {
+                    // Normalizar propiedades para que sean compatibles con el editor
+                    geojson.features.forEach(f => {
+                        f.properties = f.properties || {};
+                        f.properties.layerName = f.properties.name || f.properties.title || 'Importado';
+                        f.properties.faction = window.projectName;
+                    });
+                    window.procesarDatosCargados(geojson, file.name.split('.')[0]);
+                    window.customAlert("Éxito", `Se han importado ${geojson.features.length} elementos correctamente.`);
+                } else {
+                    window.customAlert("Aviso", "El archivo no contiene elementos geográficos válidos.");
+                }
+            } catch (err) {
+                console.error(err);
+                window.customAlert("Error", "No se pudo procesar el archivo. Asegúrate de que es un KML o GPX válido y no está corrupto.");
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    };
 
     let currentRoom = null; let roomUnsubs = []; let transmitInterval = null, allyMarkers = {}; let currentRadioMsg = "", currentRadioMsgTime = 0; window.lastLocalSyncTime = 0; let unreadMsgCount = 0; let lastProcessedMsgTime = 0;
+    
     window.toggleRoom = async function() {
         if (!auth.currentUser) return window.customAlert("Error", "Conectando al servidor...");
         if (currentRoom) { leaveRoom(); return; }
@@ -357,7 +400,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     function enterRoom(roomId, alias, isAdmin) {
         currentRoom = roomId; const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false;
         document.getElementById('room-setup-ui').style.display = 'none'; document.getElementById('room-active-ui').style.display = 'block';
-document.getElementById('active-room-name').innerText = "📍 " + roomId; document.getElementById('active-room-name').style.display = 'inline-block';
+        document.getElementById('active-room-name').innerText = "📍 " + roomId; document.getElementById('active-room-name').style.display = 'inline-block';
         if (isAdmin) document.getElementById('btn-delete-room').style.display = 'inline-block'; else document.getElementById('btn-delete-room').style.display = 'none';
         startLiveTracking(roomId, alias);
         const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
@@ -775,7 +818,7 @@ document.getElementById('active-room-name').innerText = "📍 " + roomId; docume
                     for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i+1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
                     
                     let timeMinutes = 0; if (rMode === 'driving') timeMinutes = (layer.feature.properties.isAutoRoute && layer.feature.properties.routeDuration) ? (layer.feature.properties.routeDuration / 60) : (distance * 0.001); else if (rMode === 'bike' || rMode === 'bicycle') timeMinutes = distance * 0.004; else timeMinutes = (distance * 0.012) + (elevGain * 0.1);
-                    let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`;
+                    let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`; const distText = distance > 1000 ? (distance/1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
                     baseText = `<div style="min-width:260px;"><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height:120px;width:100%;margin-top:8px;"><canvas id="chart-${id}"></canvas></div></div>`;
                     layer.feature.properties.baseText = baseText; layer.setPopupContent(baseText + actionBtns); window.attachChartListener(layer, id); window.renderChart(layer, id);
                 }
