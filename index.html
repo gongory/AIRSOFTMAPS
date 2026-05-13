@@ -161,6 +161,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             </div>
             <div class="edit-tools-grid" style="margin-bottom:0;">
                 <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('marker')">📍 Marcador</button><button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polyline')">📏 Ruta Manual</button>
+                <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;" onclick="window.enableTool('measure')">📐 Regla Rápida</button>
                 <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;border-color:var(--info);color:var(--info);" onclick="window.enableTool('auto-route')">🗺️ Ruta Inteligente</button>
                 <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polygon')">🔲 Área</button><button class="btn-outline" style="margin-bottom:0;" id="btn-compass" onclick="window.toggleCompass()">🧭 Brújula</button>
                 <button class="btn-outline" id="toggleLegendBtn" style="margin-bottom:0;border-style:dashed;grid-column:span 2;" onclick="window.toggleMapLegend()">📋 Leyenda</button>
@@ -287,6 +288,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;">📖 Manual de Usuario</h2>
         <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
             <p><b>📍 Marcadores, Áreas y Notas:</b> Usa las herramientas de edición para añadir puntos, rutas o zonas. Si tocas un elemento ya creado en el mapa, pulsa <b>"✏️ Editar"</b> para cambiar su color, bando, añadir un radio de acción, un cono de visión direccional, o escribir <b>Notas y Comentarios</b> tácticos que todos podrán leer.</p>
+            <p><b>📐 Regla Rápida:</b> Herramienta para medir distancias al vuelo. Haz clics en el mapa para trazar una línea temporal y ver la distancia exacta paso a paso sin ensuciar tu proyecto.</p>
             <p><b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el tiempo estimado a pie o en vehículo.</p>
             <p><b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
             <p><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.</p>
@@ -615,6 +617,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     const drawOptions = { polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } }, polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } }, marker: {} };
 
     let autoRoutePoints = [], autoRouteLayer = L.featureGroup(), currentAutoRouteLine = null, autoRouteCoordinates = [];
+    let measurePoints = [], measureLayer = L.featureGroup(), measureTempLine = null;
     let activeHandler = null, isLegendVisible = false, isZoomLocked = false, scaleControlObj = null; window.searchMarker = null; 
 
     window.renderChart = function(layer, id) { setTimeout(() => { const ctx = document.getElementById(`chart-${id}`); if (ctx && layer.feature.properties.chartData && window.Chart) { let chartStatus = Chart.getChart(`chart-${id}`); if (chartStatus != undefined) chartStatus.destroy(); new Chart(ctx, { type: 'line', data: { labels: layer.feature.properties.chartData.labels, datasets: [{ label: 'Altitud (m)', data: layer.feature.properties.chartData.data, borderColor: '#e6b800', backgroundColor: 'rgba(230, 184, 0, 0.2)', borderWidth: 2, fill: true, pointRadius: 0, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {font: {size: 9}, maxTicksLimit: 5} }, y: { ticks: {font: {size: 9}} } } } }); } }, 50); };
@@ -715,6 +718,22 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
     window.undoLastPoint = function() {
         if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') { activeHandler.deleteLastVertex(); } 
+        else if (measurePoints && measurePoints.length > 0 && map.hasLayer(measureLayer)) {
+            measurePoints.pop(); measureLayer.clearLayers();
+            if (measureTempLine) { map.removeLayer(measureTempLine); measureTempLine = null; }
+            let totalDist = 0;
+            measurePoints.forEach((p, index) => {
+                L.circleMarker(p, {radius: 4, color: '#e6b800', fillColor: '#fff', fillOpacity: 1, weight: 2}).addTo(measureLayer);
+                if (index > 0) {
+                    totalDist += measurePoints[index-1].distanceTo(p);
+                    L.polyline([measurePoints[index-1], p], {color: '#e6b800', weight: 4, dashArray: '5, 8'}).addTo(measureLayer);
+                    let distText = totalDist > 1000 ? (totalDist/1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m';
+                    L.tooltip({permanent: true, direction: 'auto', className: 'grid-label'}).setLatLng(p).setContent(`📐 ${distText}`).addTo(measureLayer);
+                }
+            });
+            const infoDiv = document.getElementById('auto-route-info');
+            if (infoDiv) { infoDiv.innerHTML = measurePoints.length > 0 ? `📐 Distancia: <b>${(totalDist > 1000 ? (totalDist/1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m')}</b>` : `📐 Modo Regla: Haz clic en el mapa para medir`; }
+        }
         else if (autoRoutePoints && autoRoutePoints.length > 0) {
             autoRoutePoints.pop(); autoRouteLayer.clearLayers(); autoRoutePoints.forEach(p => L.circleMarker(p, {radius: 5, color: '#2ecc71', fillColor: '#fff', fillOpacity: 1}).addTo(autoRouteLayer));
             if (autoRoutePoints.length > 1) {
@@ -736,10 +755,11 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     };
 
     window.enableTool = function(type) {
-        window.stopDrawing(); window.toggleMenu(); document.getElementById('drawing-actions').style.display = 'flex'; document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon' || type === 'auto-route') ? 'block' : 'none';
+        window.stopDrawing(); window.toggleMenu(); document.getElementById('drawing-actions').style.display = 'flex'; document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon' || type === 'auto-route' || type === 'measure') ? 'block' : 'none';
         const finishBtn = document.getElementById('finish-route-btn'); const routeModeSelect = document.getElementById('route-mode-select');
         if (finishBtn) finishBtn.style.display = (type === 'auto-route') ? 'block' : 'none'; if (routeModeSelect) routeModeSelect.style.display = (type === 'auto-route') ? 'block' : 'none';
         if (type === 'delete') { document.getElementById('cancel-crop-btn').innerText = "✕ Salir"; drawnItems.eachLayer(layer => layer.on('click', window.deleteClickHandler)); return; } else { document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar"; }
+        if (type === 'measure') { measurePoints = []; measureLayer.addTo(map); map.on('click', handleMeasureClick); map.on('mousemove', handleMeasureMove); document.getElementById('map-container').style.cursor = 'crosshair'; const infoDiv = document.getElementById('auto-route-info'); if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📐 Modo Regla: Haz clic en el mapa para medir`; } return; }
         if (type === 'auto-route') { autoRoutePoints = []; autoRouteCoordinates = []; autoRouteLayer.addTo(map); map.on('click', handleAutoRouteClick); document.getElementById('map-container').style.cursor = 'crosshair'; return; }
         if (type === 'marker') { drawOptions.marker.icon = getMarkerIconObj(document.getElementById('markerColor').value || '#e74c3c', 'punto'); activeHandler = new L.Draw.Marker(map, drawOptions.marker); }
         if (type === 'polyline') { drawOptions.polyline.shapeOptions.weight = parseInt(document.getElementById('drawWeight').value) || 4; drawOptions.polyline.shapeOptions.color = document.getElementById('drawColor').value || '#2ecc71'; activeHandler = new L.Draw.Polyline(map, drawOptions.polyline); }
@@ -762,6 +782,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         if (activeHandler) { activeHandler.disable(); activeHandler = null; } window.isSelectingOfflineZone = false;
         drawnItems.eachLayer(layer => layer.off('click', window.deleteClickHandler)); document.getElementById('drawing-actions').style.display = 'none';
         map.off('click', handleAutoRouteClick); if (typeof autoRouteLayer !== 'undefined') { autoRouteLayer.clearLayers(); map.removeLayer(autoRouteLayer); }
+        map.off('click', handleMeasureClick); map.off('mousemove', handleMeasureMove); if (typeof measureLayer !== 'undefined') { measureLayer.clearLayers(); map.removeLayer(measureLayer); } if (measureTempLine) { map.removeLayer(measureTempLine); measureTempLine = null; }
         if (typeof currentAutoRouteLine !== 'undefined') currentAutoRouteLine = null; document.getElementById('map-container').style.cursor = '';
         const infoDiv = document.getElementById('auto-route-info'); if(infoDiv) infoDiv.style.display = 'none';
     };
@@ -784,6 +805,30 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
                     if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ${mIcon} Aprox: ${timeText}`; }
                 } else { window.customAlert("Atención", "No se encontró camino conectable."); }
             } catch (error) { window.customAlert("Error", "Error al calcular."); }
+        }
+    }
+
+    function handleMeasureClick(e) {
+        measurePoints.push(e.latlng);
+        L.circleMarker(e.latlng, {radius: 4, color: '#e6b800', fillColor: '#fff', fillOpacity: 1, weight: 2}).addTo(measureLayer);
+        if (measurePoints.length > 1) {
+            L.polyline([measurePoints[measurePoints.length-2], measurePoints[measurePoints.length-1]], {color: '#e6b800', weight: 4, dashArray: '5, 8'}).addTo(measureLayer);
+            let totalDist = 0; for(let i=0; i<measurePoints.length-1; i++) totalDist += measurePoints[i].distanceTo(measurePoints[i+1]);
+            let distText = totalDist > 1000 ? (totalDist/1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m';
+            L.tooltip({permanent: true, direction: 'auto', className: 'grid-label'}).setLatLng(e.latlng).setContent(`📐 ${distText}`).addTo(measureLayer);
+        }
+    }
+
+    function handleMeasureMove(e) {
+        if (measurePoints.length > 0) {
+            if (measureTempLine) map.removeLayer(measureTempLine);
+            measureTempLine = L.polyline([measurePoints[measurePoints.length-1], e.latlng], {color: '#e6b800', weight: 2, dashArray: '5, 8', opacity: 0.6}).addTo(map);
+            let segmentDist = measurePoints[measurePoints.length-1].distanceTo(e.latlng);
+            let totalDist = segmentDist;
+            for(let i=0; i<measurePoints.length-1; i++) totalDist += measurePoints[i].distanceTo(measurePoints[i+1]);
+            let distText = totalDist > 1000 ? (totalDist/1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m';
+            const infoDiv = document.getElementById('auto-route-info');
+            if(infoDiv) { infoDiv.innerHTML = `📐 Distancia: <b>${distText}</b>`; }
         }
     }
 
