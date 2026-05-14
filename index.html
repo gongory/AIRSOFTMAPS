@@ -1331,8 +1331,9 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
             // Calcular diferencia angular relativa al centro de la cámara
             let angleDiff = bearing - heading;
-            // Normalizar entre -180 y +180
-            angleDiff = (angleDiff + 180) % 360 - 180;
+            // Normalizar entre -180 y +180 de forma segura para JavaScript
+            angleDiff = ((angleDiff % 360) + 360) % 360;
+            if (angleDiff > 180) angleDiff -= 360;
 
             // Si está dentro del FOV de la cámara
             if (Math.abs(angleDiff) < fov / 2) {
