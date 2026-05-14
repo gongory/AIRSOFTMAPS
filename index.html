@@ -74,6 +74,15 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     </div>
 </div>
 
+<div id="nav-panel" style="display:none;position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:2500;background:var(--bg-sidebar);border:2px solid #9b59b6;border-radius:12px;padding:10px 20px;box-shadow:var(--shadow);text-align:center;pointer-events:auto;min-width:200px;">
+    <div style="font-size:11px;font-weight:bold;color:#64748b;margin-bottom:5px;" id="nav-target-name">Destino</div>
+    <div style="display:flex;align-items:center;gap:15px;justify-content:center;">
+        <div id="nav-arrow" style="font-size:32px;transform-origin:center;transition:transform 0.2s;line-height:1;margin-bottom:5px;">⬆️</div>
+        <div id="nav-dist" style="font-size:24px;font-weight:900;color:var(--ign-blue);">-- m</div>
+    </div>
+    <button onclick="window.stopNavigation()" style="background:var(--danger);color:white;border:none;padding:6px 15px;border-radius:20px;font-size:12px;font-weight:bold;cursor:pointer;width:100%;">✕ Detener</button>
+</div>
+
 <div class="coord-display" id="liveCoords">Cargando visor...</div>
 <button class="fab-menu" id="fabBtn" onclick="window.toggleMenu()" title="Herramientas">🛠️</button>
 <button class="fab-menu" id="fabLiveBtn" onclick="window.toggleLiveMenu()" title="Operaciones y GPS">
@@ -639,7 +648,13 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
                 layer.feature = feature; layer.isHidden = false;
                 const id = L.stamp(layer);
                 const name = feature.properties.layerName || feature.properties.name || 'Elemento';
-                let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+                let actionBtns = '';
+                if (layer instanceof L.Marker) {
+                    const latlng = layer.getLatLng();
+                    actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                } else {
+                    actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+                }
                 if (feature.properties.baseText) layer.bindPopup(feature.properties.baseText + actionBtns);
                 window.drawnItems.addLayer(layer);
                 if (layer instanceof L.Marker) {
@@ -923,7 +938,14 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         } else if (layer.options) { layer.feature.properties.color = layer.options.color; layer.feature.properties.weight = layer.options.weight; layer.feature.properties.fillOpacity = layer.options.fillOpacity; }
         
         layer.feature.properties.notes = "";
-        let baseText = 'Elemento'; let notesHtml = ''; let actionBtns = notesHtml + `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+        let baseText = 'Elemento'; let notesHtml = ''; 
+        let actionBtns = notesHtml;
+        if (e.layerType === 'marker') {
+            const latlng = layer.getLatLng();
+            actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${layerName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+        } else {
+            actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+        }
         drawnItems.addLayer(layer); updateLayerTree(); window.stopDrawing();
 
         if (e.layerType === 'marker') {
@@ -999,7 +1021,13 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             layer.feature.properties.notes = document.getElementById('edit-notes-input').value.trim();
             if (newName !== layer.feature.properties.layerName) { const oldName = layer.feature.properties.layerName; layer.feature.properties.layerName = newName; if (layer.feature.properties.baseText) { layer.feature.properties.baseText = layer.feature.properties.baseText.replace(oldName, newName); } }
             let notesHtml = layer.feature.properties.notes ? `<div style="margin-top:5px;padding:5px;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:4px;font-size:11px;color:#475569;max-height:80px;overflow-y:auto;word-wrap:break-word;"><i>${layer.feature.properties.notes.replace(/\n/g, '<br>')}</i></div>` : '';
-            const actionBtns = notesHtml + `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+            let actionBtns = notesHtml;
+            if (isMarker) {
+                const latlng = layer.getLatLng();
+                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${newName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+            } else {
+                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+            }
 
             if (isShape) {
                 const newColor = document.getElementById('edit-color-input').value; const newWeight = parseInt(document.getElementById('edit-weight-input').value);
@@ -1188,7 +1216,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         const type = document.getElementById('gridType').value; let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}`;
         if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`; else if (type === 'utm') { const u = latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
         
-        let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️ Eliminar</button></div>`;
+        let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
         let baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
         newMarker.bindPopup(baseText + actionBtns).openPopup(); newMarker.feature.properties.baseText = baseText; drawnItems.addLayer(newMarker); updateLayerTree();
         try {
@@ -1242,10 +1270,53 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
     window.isFollowingUser = false; window.currentDeviceHeading = 0; let locWatchId = null; let userLocMarker = null; let userLocCircle = null; let orientationHandlerActive = false;
 
+    window.navTargetLatLng = null;
+    window.navLine = null;
+
+    window.startNavigation = function(lat, lng, name) {
+        if (!window.userLocMarker) return window.customAlert("GPS Requerido", "Por favor, activa el GPS (🎯) en el panel de Operaciones para usar la navegación táctica.");
+        window.navTargetLatLng = L.latLng(lat, lng);
+        document.getElementById('nav-target-name').innerText = "Destino: " + name;
+        document.getElementById('nav-panel').style.display = 'block';
+        if (!window.navLine) {
+            window.navLine = L.polyline([window.userLocMarker.getLatLng(), window.navTargetLatLng], {color: '#9b59b6', weight: 4, dashArray: '10, 10'}).addTo(map);
+        }
+        window.updateNavigationUI();
+        map.closePopup();
+    };
+
+    window.stopNavigation = function() {
+        window.navTargetLatLng = null;
+        document.getElementById('nav-panel').style.display = 'none';
+        if (window.navLine) { map.removeLayer(window.navLine); window.navLine = null; }
+    };
+
+    window.updateNavigationUI = function() {
+        if (!window.navTargetLatLng || !window.userLocMarker) return;
+        const currentPos = window.userLocMarker.getLatLng();
+        if (window.navLine) window.navLine.setLatLngs([currentPos, window.navTargetLatLng]);
+        const dist = currentPos.distanceTo(window.navTargetLatLng);
+        const distText = dist > 1000 ? (dist/1000).toFixed(2) + " km" : Math.round(dist) + " m";
+        document.getElementById('nav-dist').innerText = distText;
+        
+        const lat1 = currentPos.lat * Math.PI / 180;
+        const lon1 = currentPos.lng * Math.PI / 180;
+        const lat2 = window.navTargetLatLng.lat * Math.PI / 180;
+        const lon2 = window.navTargetLatLng.lng * Math.PI / 180;
+        const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+        let bearing = Math.atan2(y, x) * 180 / Math.PI;
+        bearing = (bearing + 360) % 360;
+        
+        const deviceHeading = window.currentDeviceHeading || 0;
+        const arrowRotation = bearing - deviceHeading;
+        document.getElementById('nav-arrow').style.transform = `rotate(${arrowRotation}deg)`;
+    };
+
     function handleDeviceOrientation(event) {
         let heading = null;
         if (event.webkitCompassHeading !== undefined) { heading = event.webkitCompassHeading; } else if (event.absolute === true && event.alpha !== null) { heading = 360 - event.alpha; } else if (event.alpha !== null) { heading = 360 - event.alpha; }
-        if (heading !== null) { window.currentDeviceHeading = heading; const arrow = document.getElementById('user-dir-arrow'); if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; } }
+        if (heading !== null) { window.currentDeviceHeading = heading; const arrow = document.getElementById('user-dir-arrow'); if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; } window.updateNavigationUI(); }
     }
 
     window.toggleLocation = function() {
@@ -1253,7 +1324,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             const btn = document.querySelector('button[title="Mi Ubicación"]');
             if (locWatchId !== null) {
                 if (!window.isFollowingUser) { window.isFollowingUser = true; if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 }); if (btn) { btn.innerHTML = "🚶‍♂️ Activar Seguimiento GPS"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; btn.style.opacity = "1"; } return; } 
-                else { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; window.isFollowingUser = false; if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; window.userLocMarker = null; } if (userLocCircle) { map.removeLayer(userLocCircle); userLocCircle = null; } try { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true); } catch(e) {} orientationHandlerActive = false; if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.color = ''; btn.style.borderColor = 'var(--success)'; btn.style.opacity = '1'; btn.classList.remove('active'); } return; }
+                else { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; window.isFollowingUser = false; if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; window.userLocMarker = null; } if (userLocCircle) { map.removeLayer(userLocCircle); userLocCircle = null; } try { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true); } catch(e) {} orientationHandlerActive = false; if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.color = ''; btn.style.borderColor = 'var(--success)'; btn.style.opacity = '1'; btn.classList.remove('active'); } window.stopNavigation(); return; }
             }
             if (!navigator.geolocation) { window.customAlert("Error", "Tu navegador no soporta la geolocalización."); return; }
             if (btn) { btn.innerHTML = "⏳ Activando..."; btn.style.opacity = "0.7"; }
@@ -1266,6 +1337,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
                     if (btn && btn.innerHTML.includes("⏳")) { btn.innerHTML = "🚶‍♂️ Seguimiento GPS Activo"; btn.style.opacity = "1"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
                     if (!userLocCircle) { userLocCircle = L.circle([lat, lng], { radius: acc, color: '#0d6efd', weight: 1, fillOpacity: 0.15 }).addTo(map); } else { userLocCircle.setLatLng([lat, lng]); userLocCircle.setRadius(acc); }
                     if (!userLocMarker) { const userIcon = L.divIcon({ className: 'custom-user-marker', html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 14px solid rgba(13,110,253,0.8); transform-origin: 50% 100%; margin-left: -6px; margin-top: -14px; transform: rotate(${window.currentDeviceHeading || 0}deg);"></div></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }); userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map); window.userLocMarker = userLocMarker; } else { userLocMarker.setLatLng([lat, lng]); }
+                    window.updateNavigationUI();
                 } catch(e) { console.error(e); }
             }, (err) => { window.customAlert("Error GPS", err.message); if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.opacity = "1"; } }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
         } catch(e) {}
