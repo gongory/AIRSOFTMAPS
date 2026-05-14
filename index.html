@@ -122,6 +122,10 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><button class="btn-outline" style="margin-bottom:0;font-size:11px;" onclick="window.exportKML()">⬇️ Exportar KML</button><button class="btn-outline" style="margin-bottom:0;font-size:11px;" onclick="window.exportGPX()">⬇️ Exportar GPX</button></div>
                 <label class="btn-outline" for="kml-gpx-loader" style="margin-bottom:0;font-size:11px;cursor:pointer;">⬆️ Importar Archivo</label><input type="file" id="kml-gpx-loader" style="position:absolute;width:0;height:0;opacity:0;z-index:-1;" onchange="window.importKMLGPX(event)">
             </div>
+            <div style="border-top:1px dashed #cbd5e0;margin-top:15px;padding-top:10px;">
+                <label style="font-size:11px;font-weight:bold;color:var(--success);display:block;margin-bottom:8px;">📡 Sincronización Sin Internet</label>
+                <button class="btn-outline" style="margin-bottom:0;border-color:var(--success);color:var(--success);" onclick="window.openOffGridModal()">Compartir Off-Grid</button>
+            </div>
         </div>
  
         <button class="btn-outline" onclick="window.toggleGroup('mtn-group-container')" style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span>🗺️ Información MTN</span><span>▼</span></button>
@@ -307,6 +311,27 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
 <div id="image-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:4000;align-items:center;justify-content:center;"><div style="position:relative;max-width:95%;max-height:95%;display:flex;flex-direction:column;align-items:center;"><button onclick="window.closeImageModal()" style="position:absolute;top:-40px;right:0;background:none;border:none;color:white;font-size:32px;cursor:pointer;" title="Cerrar">✕</button><img id="image-modal-content" src="" style="max-width:100%;max-height:90vh;border-radius:8px;"></div></div>
 
+<div id="offgrid-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
+    <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:350px;position:relative;">
+        <h3 style="margin-top:0;color:var(--success);font-size:18px;">📡 Sync Off-Grid</h3>
+        <p style="font-size:12px;color:#475569;margin-bottom:15px;line-height:1.4;">Comparte el mapa o envía coordenadas a tus compañeros cuando <b>no hay cobertura de internet</b>.</p>
+        <button class="btn-outline" style="background:var(--success);color:white;border:none;margin-bottom:15px;" onclick="window.shareOffGridFile()">📲 Enviar Mapa por Bluetooth</button>
+        <div style="border-top:1px dashed #cbd5e0; margin-bottom:15px; padding-top:15px;">
+            <label style="font-size:11px;font-weight:bold;color:#64748b;">Exportar a Radio / SMS (Solo Marcadores):</label>
+            <div style="display:flex;gap:5px;margin-bottom:15px;margin-top:5px;">
+                <input type="text" id="offgrid-code-export" class="form-input" style="margin-bottom:0;font-family:monospace;font-size:10px;background:#f8fafc;" readonly>
+                <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 12px;" onclick="window.copyOffGridCode()">Copiar</button>
+            </div>
+            <label style="font-size:11px;font-weight:bold;color:#64748b;">Recibir código Táctico:</label>
+            <div style="display:flex;gap:5px;margin-top:5px;margin-bottom:5px;">
+                <input type="text" id="offgrid-code-import" class="form-input" placeholder="Pega el código AM:..." style="margin-bottom:0;font-family:monospace;font-size:10px;">
+                <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 12px;background:var(--ign-blue);color:white;border:none;" onclick="window.importOffGridCode()">Cargar</button>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;"><button class="btn-outline" style="width:auto;border-color:var(--danger);color:var(--danger);margin-bottom:0;padding:8px 15px;" onclick="document.getElementById('offgrid-modal').style.display='none'">Cerrar</button></div>
+    </div>
+</div>
+
 <div id="manual-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
     <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:650px;max-height:85vh;overflow-y:auto;position:relative;">
         <button onclick="window.closeManual()" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;">✕</button>
@@ -318,6 +343,7 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             <p><b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
             <p><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.</p>
             <p><b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña "Mezclador", pulsa <b>"🔲 Marcar Zona"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.</p>
+            <p><b>📡 Sync Off-Grid:</b> Si no tienes internet pero quieres pasarle tu mapa al compañero, ve a Gestión de Proyecto y usa <b>"Compartir Off-Grid"</b>. Podrás enviar el proyecto completo por Bluetooth, o generar un "código de texto táctico" súper ligero para copiar y pegar por SMS o redes de radio como Meshtastic.</p>
             <p><b>📸 Capturas e Impresión:</b> Haz fotos limpias del mapa en la "Galería Capturas" y usa el botón <b>"🖨️ Imprimir"</b> para generar archivos PDF o sacar copias físicas a escala topográfica exacta (A4/A3) con brújula y leyenda táctica incluidas.</p>
             <p><b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú "Sistema", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).</p>
             <p><b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón "🎯 Ir". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).</p>
@@ -456,6 +482,94 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         };
         reader.readAsText(file);
         e.target.value = '';
+    };
+
+    window.openOffGridModal = function() {
+        document.getElementById('offgrid-modal').style.display = 'flex';
+        const simplified = [];
+        window.drawnItems.eachLayer(l => {
+           if (l instanceof L.Marker && l.feature && l.feature.properties && !l.feature.properties.isAutoRoute) {
+               simplified.push({
+                   n: (l.feature.properties.layerName || '').substring(0,12),
+                   l: parseFloat(l.getLatLng().lat.toFixed(5)),
+                   g: parseFloat(l.getLatLng().lng.toFixed(5)),
+                   c: l.feature.properties.color || '#e74c3c',
+                   i: l.feature.properties.iconType || 'punto'
+               });
+           }
+        });
+        const code = "AM:" + btoa(encodeURIComponent(JSON.stringify(simplified)));
+        document.getElementById('offgrid-code-export').value = code;
+    };
+
+    window.copyOffGridCode = function() {
+        const input = document.getElementById('offgrid-code-export');
+        input.select();
+        document.execCommand('copy');
+        window.customAlert('Copiado', 'Código táctico copiado al portapapeles. Pégalo en tu app de SMS o Meshtastic y envíalo a tus compañeros.');
+    };
+
+    window.shareOffGridFile = async function() {
+        const data = window.drawnItems.toGeoJSON();
+        data.view = { center: window.map.getCenter(), zoom: window.map.getZoom() };
+        const jsonStr = JSON.stringify(data);
+        const file = new File([jsonStr], window.projectName + ".json", { type: 'application/json' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    title: 'Mapa Táctico - ' + window.projectName,
+                    text: 'Sincronización Off-Grid de AirsoftMaps',
+                    files: [file]
+                });
+            } catch (err) {
+                console.log(err);
+            }
+        } else {
+            window.customAlert("Aviso", "Tu dispositivo o navegador no soporta el envío directo (Web Share API). Usa 'Guardar Local' en Gestión de Proyecto y envía el archivo manualmente por Bluetooth.");
+        }
+    };
+
+    window.importOffGridCode = function() {
+        const code = document.getElementById('offgrid-code-import').value.trim();
+        if (!code.startsWith("AM:")) return window.customAlert("Error", "Código no válido. Debe empezar por AM:");
+        try {
+            const json = JSON.parse(decodeURIComponent(atob(code.substring(3))));
+            let count = 0;
+            json.forEach(m => {
+                const color = m.c || '#e74c3c';
+                const iconType = m.i || 'punto';
+                const newMarker = L.marker([m.l, m.g], { icon: getMarkerIconObj(color, iconType) });
+                const id = L.stamp(newMarker);
+                
+                newMarker.feature = { type: 'Feature', properties: {} };
+                newMarker.feature.properties.layerName = m.n || 'Recepción Off-Grid';
+                newMarker.feature.properties.faction = window.projectName;
+                newMarker.feature.properties.color = color;
+                newMarker.feature.properties.iconType = iconType;
+                newMarker.feature.properties.bufferRadius = 0;
+                newMarker.feature.properties.coneEnabled = false;
+                newMarker.feature.properties.showLabel = false;
+                newMarker.isHidden = false;
+                
+                const lat = m.l; const lng = m.g;
+                let coordText = `Lat: ${lat}<br>Lon: ${lng}`;
+                let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lng}, '${m.n.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
+                let baseText = `<div><b>📍 ${m.n}</b><br>${coordText}</div>`;
+                newMarker.bindPopup(baseText + actionBtns);
+                newMarker.feature.properties.baseText = baseText;
+                
+                window.drawnItems.addLayer(newMarker);
+                count++;
+            });
+            window.updateLayerTree();
+            document.getElementById('offgrid-modal').style.display = 'none';
+            document.getElementById('offgrid-code-import').value = '';
+            window.customAlert("Éxito", `Se han importado ${count} marcadores correctamente.`);
+            if (window.drawnItems.getLayers().length > 0) window.map.fitBounds(window.drawnItems.getBounds());
+        } catch (e) {
+            window.customAlert("Error", "El código está corrupto o mal copiado.");
+        }
     };
 
     let currentRoom = null; let roomUnsubs = []; let transmitInterval = null, allyMarkers = {}; let currentRadioMsg = "", currentRadioMsgTime = 0; window.lastLocalSyncTime = 0; let unreadMsgCount = 0; let lastProcessedMsgTime = 0;
