@@ -326,6 +326,52 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
 
     function listenToProjects() { if (!currentUser) return; const projectsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'projects'); unsubscribeProjects = onSnapshot(projectsRef, (snapshot) => { cloudProjects = []; snapshot.forEach(doc => { cloudProjects.push({ id: doc.id, ...doc.data() }); }); renderCloudProjects(); }); }
 
+    function renderCloudProjects() {
+        const list = document.getElementById('cloud-project-list'); if (!list) return;
+        if (!cloudProjects || cloudProjects.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay proyectos en la nube</div>'; return; }
+        let html = ''; cloudProjects.forEach(p => { const date = new Date(p.updatedAt || Date.now()).toLocaleString('es-ES'); html += `<div style="padding:10px; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:8px;"><div style="font-size:13px; font-weight:bold; color:var(--ign-blue); word-break:break-all;">${p.name}</div><div style="font-size:10px; color:#64748b;">Actualizado: ${date}</div><div style="display:flex; gap:5px;"><button style="flex:1; padding:6px; background:var(--ign-blue); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.cargarProyectoNube('${p.id}')">⬇️ Cargar</button><button style="padding:6px; background:var(--danger); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.eliminarProyectoNube('${p.id}')">🗑️</button></div></div>`; });
+        list.innerHTML = html;
+    }
+    window.renderCloudProjects = renderCloudProjects;
+
+    window.abrirNube = function() {
+        if (!currentUser) return window.customAlert("Error", "No conectado.");
+        document.getElementById('cloud-modal').style.display = 'flex';
+        renderCloudProjects();
+    };
+
+    window.cargarProyectoNube = async function(id) {
+        if (!currentUser) return;
+        try {
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = JSON.parse(docSnap.data().data);
+                window.procesarDatosCargados(data, docSnap.data().name);
+                document.getElementById('cloud-modal').style.display = 'none';
+                window.customAlert("Éxito", "Proyecto cargado desde la nube.");
+            } else {
+                window.customAlert("Error", "El proyecto no existe.");
+            }
+        } catch (e) { window.customAlert("Error", "No se pudo cargar el proyecto: " + e.message); }
+    };
+
+    window.eliminarProyectoNube = async function(id) {
+        if (!currentUser) return;
+        const modal = document.getElementById('confirm-modal');
+        modal.querySelector('h3').innerText = "🗑️ Eliminar Proyecto";
+        modal.querySelector('p').innerText = "¿Seguro que deseas eliminar este proyecto de la nube?";
+        modal.style.display = 'flex';
+        window.acceptConfirmModal = async function() {
+            modal.style.display = 'none';
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id));
+                window.customAlert("Éxito", "Proyecto eliminado.");
+            } catch (e) { window.customAlert("Error", "No se pudo eliminar: " + e.message); }
+        };
+        window.closeConfirmModal = function() { modal.style.display = 'none'; };
+    };
+
     window.guardarEnNube = function(btn) {
         if (!currentUser) return window.customAlert("Error", "No conectado.");
         const modal = document.getElementById('custom-modal'); const input = document.getElementById('modal-input'); document.getElementById('modal-title').innerText = "Guardar en nube como:"; input.value = window.projectName; modal.style.display = 'flex'; setTimeout(() => input.select(), 100);
