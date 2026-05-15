@@ -14,43 +14,106 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
 <style>
-:root{--ign-blue:#003366;--ign-gold:#e6b800;--danger:#dc3545;--success:#28a745;--info:#0d6efd;--shadow:0 4px 12px rgba(0,0,0,0.15);--bg-sidebar:#ffffff;--light-gray:#f8fafc}
-body,html{margin:0;padding:0;height:100%;font-family:'Segoe UI',sans-serif;overflow:hidden;background:#f0f0f0}
-#map-container{display:flex;flex-direction:column;position:relative;height:100vh;width:100%} #map{flex:1;width:100%;background:#eee}
-.sidebar{position:absolute;top:10px;right:10px;z-index:1001;width:340px;max-width:calc(100vw - 20px);background:var(--bg-sidebar);border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;max-height:calc(100vh - 20px);transition:transform .4s;border:1px solid #e2e8f0}
-.sidebar.oculto{transform:translateX(120%)}
-.header{background:var(--ign-blue);color:#fff;padding:16px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between}
-.content{padding:16px;overflow-y:auto;flex:1;scroll-behavior:smooth}
-.section-title{font-size:11px;font-weight:800;color:#64748b;margin-bottom:12px;text-transform:uppercase;border-bottom:2px solid #f1f5f9;padding-bottom:6px;margin-top:20px;letter-spacing:.5px}
-.btn-outline{background:#fff;color:var(--ign-blue);border:1.5px solid var(--ign-blue);width:100%;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;margin-bottom:10px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box}
-.btn-outline:hover,.btn-outline.active{background:var(--ign-blue);color:#fff}
-.form-input,.form-select{width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:12px;box-sizing:border-box;font-size:13px;background:#fff}
-.mtn-card{background:#fff;border:1px solid var(--ign-gold);border-left:4px solid var(--ign-gold);padding:12px;border-radius:6px;margin-bottom:15px}
-.coord-display{position:absolute;bottom:110px;left:10px;z-index:999;background:rgba(255,255,255,.95);padding:8px 16px;border-radius:30px;font-size:12px;font-family:'Consolas',monospace;border:1px solid #e2e8f0;font-weight:600;box-shadow:var(--shadow);pointer-events:auto;cursor:grab;user-select:none;min-width:260px;text-align:center;}
-.fab-menu{position:absolute;z-index:1000;color:#fff;border:none;border-radius:8px;width:42px;height:42px;font-size:20px;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;padding:0}
-#fabBtn{top:15px;right:15px;background:var(--ign-blue);}
-#fabLiveBtn{top:65px;right:15px;background:#9b59b6;}
-.grid-label{background:rgba(255,255,255,.9);padding:2px 5px;border-radius:3px;font-size:10px;font-weight:700;border:1px solid currentColor;white-space:nowrap;pointer-events:none}
-.gallery-item{margin-bottom:10px;border:1px solid #ddd;padding:5px;background:#fff;border-radius:4px} .gallery-item img{width:100%;display:block;border-radius:4px}
-.hide-controls .leaflet-top,.hide-controls .leaflet-control-attribution,.hide-controls .fab-menu,.hide-controls .coord-display,.hide-controls .sidebar,.hide-controls #drawing-actions{visibility:hidden!important}
-.leaflet-control-scale-line{border:2px solid #222!important;background-color:rgba(255,255,255,.9)!important;background-image:linear-gradient(to bottom,#222,#222),linear-gradient(to right,#fff 50%,#222 50%)!important;background-size:100% 2px,100% 6px!important;background-position:0 calc(100% - 6px),0 100%!important;background-repeat:no-repeat!important;color:#000!important;font-weight:900!important;font-size:12px!important;text-align:center!important;line-height:1.2!important;padding:4px 5px 12px 5px!important;box-shadow:0 4px 8px rgba(0,0,0,.4)!important;}
-.layer-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #e2e8f0;font-size:12px}
-.faction-header{background:#f1f5f9;padding:8px;font-weight:700;font-size:12px;color:var(--ign-blue);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cbd5e0}
-.map-legend{position:absolute;bottom:110px;right:20px;z-index:998;background:rgba(255,255,255,.95);padding:12px;border-radius:10px;box-shadow:var(--shadow);border:1px solid #cbd5e0;font-size:12px;min-width:150px;display:none;pointer-events:auto;cursor:grab;}
-@keyframes radioPulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); transform: translateX(-50%) scale(1); } 50% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); transform: translateX(-50%) scale(1.1); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); transform: translateX(-50%) scale(1); } }
+/* ESTÉTICA ATAK / TÁCTICA HUD */
+:root {
+    --ign-blue: #1e293b; 
+    --ign-gold: #fbbf24; 
+    --danger: #ef4444; 
+    --success: #22c55e; 
+    --info: #3b82f6; 
+    --shadow: 0 4px 15px rgba(0,0,0,0.6); 
+    --bg-sidebar: rgba(15, 23, 42, 0.85); 
+    --light-gray: rgba(30, 41, 59, 0.8);
+    --border-color: rgba(255, 255, 255, 0.2);
+    --text-main: #f8fafc;
+}
+body, html { margin:0; padding:0; height:100%; font-family: 'Roboto', 'Segoe UI', sans-serif; overflow:hidden; background:#000; color: var(--text-main); }
+#map-container { display:flex; flex-direction:column; position:relative; height:100vh; width:100%; } 
+#map { flex:1; width:100%; background:#111; }
+
+/* Leaflet UI Overrides para integrar con la estética oscura */
+.leaflet-bar a { background-color: rgba(15,23,42,0.8) !important; color: white !important; border-color: var(--border-color) !important; backdrop-filter: blur(4px); }
+.leaflet-bar a:hover { background-color: rgba(30,41,59,0.9) !important; }
+.leaflet-control-zoom { border: none !important; box-shadow: var(--shadow) !important; margin-left: 15px !important; margin-top: 25px !important; }
+
+/* Paneles Laterales - Estilo HUD transparente */
+.sidebar { position:absolute; top:15px; right:15px; z-index:1001; width:340px; max-width:calc(100vw - 30px); background:var(--bg-sidebar); border-radius:8px; box-shadow:var(--shadow); display:flex; flex-direction:column; max-height:calc(100vh - 30px); transition:transform .3s cubic-bezier(0.4, 0, 0.2, 1); border:1px solid var(--border-color); backdrop-filter:blur(10px); }
+.sidebar.oculto { transform:translateX(120%); opacity: 0; pointer-events: none; }
+.header { background: rgba(0,0,0,0.4); color:var(--text-main); padding:14px 16px; border-radius:8px 8px 0 0; display:flex; align-items:center; justify-content:space-between; border-bottom: 1px solid var(--border-color); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 13px; }
+.content { padding:16px; overflow-y:auto; flex:1; scroll-behavior:smooth; }
+.content::-webkit-scrollbar { width: 6px; }
+.content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+.section-title { font-size:11px; font-weight:800; color: var(--ign-gold); margin-bottom:12px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px; margin-top:20px; letter-spacing:1px; }
+
+/* Botones estilo táctico */
+.btn-outline { background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid var(--border-color); width:100%; padding:10px; border-radius:6px; cursor:pointer; font-weight:600; margin-bottom:10px; font-size:12px; display:flex; align-items:center; justify-content:center; gap:8px; box-sizing:border-box; transition: all 0.2s; backdrop-filter: blur(4px); text-transform: uppercase; }
+.btn-outline:hover, .btn-outline.active { background: rgba(255,255,255,0.1); color: var(--ign-gold); border-color: var(--ign-gold); box-shadow: 0 0 10px rgba(250, 204, 21, 0.2); }
+
+.form-input, .form-select { width:100%; padding:10px; border-radius:6px; border:1px solid var(--border-color); margin-bottom:12px; box-sizing:border-box; font-size:13px; background:rgba(0,0,0,0.5); color:white; }
+.form-input:focus, .form-select:focus { outline: none; border-color: var(--ign-gold); }
+
+.mtn-card { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-left: 4px solid var(--ign-gold); padding:12px; border-radius:6px; margin-bottom:15px; }
+
+/* Coordenadas HUD */
+.coord-display { position:absolute; bottom:25px; left:15px; z-index:999; background:rgba(0,0,0,0.7); padding:8px 12px; border-radius:6px; font-size:11px; font-family:'Courier New', monospace; border:1px solid rgba(255,255,255,0.15); color:#cbd5e1; font-weight:600; box-shadow:var(--shadow); pointer-events:auto; cursor:grab; user-select:none; min-width:auto; text-align:left; backdrop-filter:blur(4px); }
+
+/* BARRA DE HERRAMIENTAS ATAK (Botones circulares arriba a la derecha en fila) */
+.fab-menu { position:absolute; z-index:1000; color: white; border: 1px solid rgba(255,255,255,0.25); border-radius:50%; width:46px; height:46px; font-size:20px; cursor:pointer; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; padding:0; background:rgba(15,23,42,0.85); backdrop-filter:blur(4px); transition: all 0.2s; }
+.fab-menu:hover { background: rgba(30,41,59,0.95); border-color: var(--ign-gold); color: var(--ign-gold); transform: scale(1.05); }
+#fabBtn { top:15px; right:15px; }
+#fabLiveBtn { top:15px; right:75px; } /* Recolocados lado a lado, como en la foto */
+
+.grid-label { background:rgba(0,0,0,0.7); padding:2px 5px; border-radius:4px; font-size:10px; font-weight:700; border:1px solid currentColor; white-space:nowrap; pointer-events:none; color: white !important; }
+
+.gallery-item { margin-bottom:10px; border:1px solid var(--border-color); padding:5px; background:rgba(0,0,0,0.3); border-radius:6px; } 
+.gallery-item img { width:100%; display:block; border-radius:4px; }
+
+.hide-controls .leaflet-top, .hide-controls .leaflet-control-attribution, .hide-controls .fab-menu, .hide-controls .coord-display, .hide-controls .sidebar, .hide-controls #drawing-actions { visibility:hidden!important; }
+
+/* Control de Escala (esquina inferior izquierda) */
+.leaflet-control-scale-line { border: 2px solid white !important; background-color: rgba(0,0,0,0.6) !important; color: white !important; font-weight: 900 !important; font-size: 11px !important; text-align: center !important; line-height: 1.2 !important; padding: 4px 5px !important; box-shadow: var(--shadow) !important; border-top: none !important; backdrop-filter: blur(2px); font-family: 'Courier New', monospace; }
+
+.layer-item { display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:12px; }
+.faction-header { background:rgba(0,0,0,0.4); padding:8px; font-weight:700; font-size:12px; color:var(--ign-gold); display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); }
+
+/* Leyenda del Mapa */
+.map-legend { position:absolute; bottom:25px; right:20px; z-index:998; background:rgba(15,23,42,0.85); padding:12px; border-radius:8px; box-shadow:var(--shadow); border:1px solid var(--border-color); font-size:12px; min-width:150px; display:none; pointer-events:auto; cursor:grab; backdrop-filter: blur(4px); color: white; }
+
+@keyframes radioPulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); transform: translateX(-50%) scale(1); } 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); transform: translateX(-50%) scale(1.1); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: translateX(-50%) scale(1); } }
 .radio-pulse { animation: radioPulse 1.5s infinite; border-color: var(--danger) !important; color: var(--danger) !important; z-index: 1000 !important; }
-body.mobile-mode .sidebar{top:auto!important;bottom:0!important;left:0!important;right:0!important;width:100%!important;max-width:100%!important;height:85vh!important;max-height:85vh!important;border-radius:24px 24px 0 0!important;}
-body.mobile-mode .sidebar.oculto{transform:translateY(120%)!important} body.mobile-mode .sidebar:not(.oculto){transform:translateY(0)!important}
-body.mobile-mode .fab-menu{top:auto!important;width:60px!important;height:60px!important;font-size:28px!important;border-radius:50%!important;}
-body.mobile-mode #fabBtn{bottom:30px!important;right:20px!important;}
-body.mobile-mode #fabLiveBtn{bottom:100px!important;right:20px!important;}
-body.mobile-mode .leaflet-control-zoom{display:none!important}
-body.dark-mode{--bg-sidebar:#1e293b;--ign-blue:#0f172a;background:#0f172a;color:#f8fafc}
-body.dark-mode .sidebar, body.dark-mode .content, body.dark-mode .mtn-card, body.dark-mode .gallery-item{background:var(--bg-sidebar); border-color:#334155; color:#f8fafc}
-body.dark-mode .btn-outline{background:#334155;color:#f8fafc;border-color:#475569}
-body.dark-mode .form-input,body.dark-mode .form-select{background:#334155;color:#fff;border-color:#475569}
-body.dark-mode .map-legend,body.dark-mode .coord-display{background:rgba(30,41,59,.95)!important;border-color:#475569!important;color:#f8fafc!important}
-body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)}
+
+/* Adaptación para Pantallas de Móvil */
+body.mobile-mode .sidebar { top:auto!important; bottom:0!important; left:0!important; right:0!important; width:100%!important; max-width:100%!important; height:85vh!important; max-height:85vh!important; border-radius:16px 16px 0 0!important; border-bottom:none!important; }
+body.mobile-mode .sidebar.oculto { transform:translateY(120%)!important; } 
+body.mobile-mode .sidebar:not(.oculto) { transform:translateY(0)!important; }
+body.mobile-mode .fab-menu { top:auto!important; width:50px!important; height:50px!important; font-size:24px!important; }
+body.mobile-mode #fabBtn { bottom:30px!important; right:15px!important; top: auto!important; }
+body.mobile-mode #fabLiveBtn { bottom:95px!important; right:15px!important; top: auto!important; }
+body.mobile-mode .leaflet-control-zoom { display:none!important; }
+body.mobile-mode .coord-display { bottom: 30px; right: 80px; left: auto; max-width: 60%; font-size: 10px; }
+
+/* ANULACIONES GLOBALES (Fuerza la estética en el HTML que tenías programado con color blanco) */
+[style*="background:#f1f5f9"], [style*="background: #f1f5f9"], [style*="background:#f8fafc"] { background: rgba(0,0,0,0.3) !important; border-color: var(--border-color) !important; color: var(--text-main) !important; }
+[style*="background:#fff"], [style*="background: #fff"], [style*="background:white"], [style*="background: white"] { background: rgba(15,23,42,0.9) !important; border-color: var(--border-color) !important; color: var(--text-main) !important; }
+[style*="background:rgba(255,255,255,0.95)"] { background: rgba(15,23,42,0.95) !important; border-color: var(--border-color) !important; color: var(--text-main) !important; }
+[style*="color:#64748b"], [style*="color:#475569"] { color: #94a3b8 !important; }
+[style*="color:var(--ign-blue)"] { color: var(--ign-gold) !important; }
+[style*="border-radius:8px"], [style*="border-radius:12px"], [style*="border-radius:6px"], [style*="border-radius:30px"] { border-radius: 6px !important; }
+[style*="border:1px solid #cbd5e0"], [style*="border-bottom:1px dashed #cbd5e0"], [style*="border-top:1px dashed #cbd5e0"], [style*="border:2px solid #9b59b6"] { border-color: var(--border-color) !important; }
+
+/* Popups y Modales */
+#custom-modal > div, #alert-modal > div, #cloud-modal > div, #confirm-modal > div, #edit-modal > div, #rename-folder-modal > div, #offgrid-modal > div, #manual-modal > div { background: var(--bg-sidebar) !important; border: 1px solid rgba(255,255,255,0.2) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important; color: white !important; backdrop-filter: blur(10px); }
+h2, h3 { color: white !important; border-bottom-color: rgba(255,255,255,0.1) !important;}
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: rgba(15,23,42,0.95) !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important; border-radius: 6px !important; }
+#chat-box, #active-members-list { background: rgba(0,0,0,0.4) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+
+/* NVG / MODO VISIÓN NOCTURNA (Rojo táctico) */
+body.dark-mode { --bg-sidebar: rgba(10,0,0,0.9); --ign-gold: #ff3b30; --success: #ff3b30; --info: #ff3b30; --border-color: rgba(255,59,48,0.3); --text-main: #ff8888; background: #000; }
+body.dark-mode .leaflet-tile-pane { filter: sepia(100%) hue-rotate(-50deg) saturate(600%) brightness(0.6) contrast(1.5) invert(100%); }
+body.dark-mode .coord-display, body.dark-mode .grid-label, body.dark-mode .leaflet-control-scale-line { color: #ff3b30 !important; border-color: #ff3b30 !important; }
+body.dark-mode .btn-outline:hover { box-shadow: 0 0 10px rgba(255,59,48,0.4); }
+body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow: 0 0 10px rgba(255,59,48,0.4); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -194,6 +257,18 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             <button class="btn-outline" style="margin-bottom:10px;border-width:2px;" onclick="window.captureMap()">📸 Tomar Captura</button>
             <div id="gallery"></div>
         </div>
+
+        <button class="btn-outline" onclick="window.toggleGroup('ai-group-container')" style="margin-bottom:10px;justify-content:space-between;border-color:var(--info);color:var(--info);"><span>🤖 Inteligencia IA ✨</span><span>▼</span></button>
+        <div id="ai-group-container" style="display:none;padding:10px;background:var(--bg-sidebar);border-radius:4px;margin-bottom:15px;border:2px solid var(--border-color);">
+            <p style="font-size:10px; color:var(--text-main); margin-top:0; font-family:monospace;">Asesor táctico de Mando Central conectado.</p>
+            <button class="btn-outline" style="border-color:var(--info);color:var(--info); margin-bottom:8px;" onclick="window.generateSITREP(this)">✨ Solicitar SITREP</button>
+            <div id="ai-sitrep-output" style="display:none; font-size:11px; color:#fff; background:#000; padding:8px; border:1px solid var(--info); border-radius:2px; max-height:150px; overflow-y:auto; white-space:pre-wrap; font-family:monospace; margin-bottom:15px;"></div>
+            
+            <textarea id="ai-chat-input" rows="2" class="form-input" style="font-size:11px; margin-bottom:8px;" placeholder="Ej: ¿Cuál es el mejor flanco para atacar el objetivo?"></textarea>
+            <button class="btn-outline" style="border-color:var(--ign-gold);color:var(--ign-gold); margin-bottom:0;" onclick="window.askTacticalAI(this)">✨ Consultar IA</button>
+            <div id="ai-chat-output" style="display:none; font-size:11px; color:var(--ign-gold); background:#000; padding:8px; border:1px solid var(--ign-gold); border-radius:2px; max-height:150px; overflow-y:auto; white-space:pre-wrap; font-family:monospace; margin-top:8px;"></div>
+        </div>
+
         <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;" onclick="window.enableTool('delete')">🗑️ Borrar Individual</button>
     </div>
 </div>
@@ -1017,27 +1092,61 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         }
     }
 
-    function handleMeasureClick(e) {
+    function calculateAzimuth(p1, p2) {
+        const lat1 = p1.lat * Math.PI / 180;
+        const lon1 = p1.lng * Math.PI / 180;
+        const lat2 = p2.lat * Math.PI / 180;
+        const lon2 = p2.lng * Math.PI / 180;
+        const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+        let brng = Math.atan2(y, x) * 180 / Math.PI;
+        return (brng + 360) % 360;
+    }
+
+    async function handleMeasureClick(e) {
         measurePoints.push(e.latlng);
         L.circleMarker(e.latlng, {radius: 4, color: '#e6b800', fillColor: '#fff', fillOpacity: 1, weight: 2}).addTo(measureLayer);
         if (measurePoints.length > 1) {
-            L.polyline([measurePoints[measurePoints.length-2], measurePoints[measurePoints.length-1]], {color: '#e6b800', weight: 4, dashArray: '5, 8'}).addTo(measureLayer);
+            const p1 = measurePoints[measurePoints.length-2];
+            const p2 = measurePoints[measurePoints.length-1];
+            L.polyline([p1, p2], {color: '#e6b800', weight: 4, dashArray: '5, 8'}).addTo(measureLayer);
             let totalDist = 0; for(let i=0; i<measurePoints.length-1; i++) totalDist += measurePoints[i].distanceTo(measurePoints[i+1]);
             let distText = totalDist > 1000 ? (totalDist/1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m';
-            L.tooltip({permanent: true, direction: 'auto', className: 'grid-label'}).setLatLng(e.latlng).setContent(`📐 ${distText}`).addTo(measureLayer);
+            let azimut = calculateAzimuth(p1, p2);
+            
+            const ttip = L.tooltip({permanent: true, direction: 'auto', className: 'grid-label'})
+                .setLatLng(e.latlng)
+                .setContent(`📐 ${distText}<br>🧭 Azimut: ${azimut.toFixed(1)}°<br>⛰️ Desnivel: <i>Calc...</i>`)
+                .addTo(measureLayer);
+
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${p1.lat.toFixed(5)},${p2.lat.toFixed(5)}&longitude=${p1.lng.toFixed(5)},${p2.lng.toFixed(5)}`);
+                const data = await res.json();
+                if (data && data.elevation && data.elevation.length === 2) {
+                    const elevDiff = data.elevation[1] - data.elevation[0];
+                    const elevText = elevDiff > 0 ? `<span style="color:var(--success)">+${elevDiff.toFixed(0)}m</span>` : (elevDiff < 0 ? `<span style="color:var(--danger)">${elevDiff.toFixed(0)}m</span>` : `0m`);
+                    ttip.setContent(`📐 ${distText}<br>🧭 Azimut: ${azimut.toFixed(1)}°<br>⛰️ Desnivel: ${elevText}`);
+                } else {
+                    ttip.setContent(`📐 ${distText}<br>🧭 Azimut: ${azimut.toFixed(1)}°<br>⛰️ Desnivel: N/A`);
+                }
+            } catch (err) {
+                ttip.setContent(`📐 ${distText}<br>🧭 Azimut: ${azimut.toFixed(1)}°<br>⛰️ Desnivel: Error`);
+            }
         }
     }
 
     function handleMeasureMove(e) {
         if (measurePoints.length > 0) {
             if (measureTempLine) map.removeLayer(measureTempLine);
-            measureTempLine = L.polyline([measurePoints[measurePoints.length-1], e.latlng], {color: '#e6b800', weight: 2, dashArray: '5, 8', opacity: 0.6}).addTo(map);
-            let segmentDist = measurePoints[measurePoints.length-1].distanceTo(e.latlng);
+            const p1 = measurePoints[measurePoints.length-1];
+            measureTempLine = L.polyline([p1, e.latlng], {color: '#e6b800', weight: 2, dashArray: '5, 8', opacity: 0.6}).addTo(map);
+            let segmentDist = p1.distanceTo(e.latlng);
             let totalDist = segmentDist;
             for(let i=0; i<measurePoints.length-1; i++) totalDist += measurePoints[i].distanceTo(measurePoints[i+1]);
             let distText = totalDist > 1000 ? (totalDist/1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m';
+            let azimut = calculateAzimuth(p1, e.latlng);
             const infoDiv = document.getElementById('auto-route-info');
-            if(infoDiv) { infoDiv.innerHTML = `📐 Distancia: <b>${distText}</b>`; }
+            if(infoDiv) { infoDiv.innerHTML = `📐 Distancia: <b>${distText}</b> | 🧭 Azimut: <b>${azimut.toFixed(1)}°</b>`; }
         }
     }
 
@@ -1614,6 +1723,103 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             img.src = 'AirsoftMaps.ico';
         } catch(e) { console.error("Error PWA:", e); }
     })();
+
+    // --- INTEGRACIÓN DE INTELIGENCIA TÁCTICA CON GEMINI API ✨ ---
+    const apiKey = ""; // API Key proveída por el entorno de ejecución
+    
+    async function callGeminiAPI(promptText) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const payload = { contents: [{ parts: [{ text: promptText }] }] };
+        let retries = 5;
+        let delay = 1000;
+        
+        for (let i = 0; i < retries; i++) {
+            try {
+                const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const data = await res.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Mando Central: Sin respuesta útil detectada.";
+            } catch (e) {
+                if (i === retries - 1) throw e;
+                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+            }
+        }
+    }
+
+    function getMapContextForAI() {
+        let context = "Elementos actuales desplegados en el teatro de operaciones (AirsoftMaps):\n";
+        let count = 0;
+        if(window.drawnItems) {
+            window.drawnItems.eachLayer(layer => {
+                count++;
+                const props = layer.feature?.properties || {};
+                const name = props.layerName || 'Elemento Desconocido';
+                const faction = props.faction || 'General';
+                if (layer instanceof L.Marker) {
+                    const ll = layer.getLatLng();
+                    context += `- Marcador [${props.iconType}]: "${name}" | Bando: ${faction} | Ubicación: Lat:${ll.lat.toFixed(5)}, Lon:${ll.lng.toFixed(5)}\n`;
+                } else if (layer instanceof L.Polygon) {
+                    context += `- Zona Controlada: "${name}" | Bando: ${faction}\n`;
+                } else if (layer instanceof L.Polyline) {
+                    context += `- Ruta de movimiento: "${name}" | Bando: ${faction}\n`;
+                }
+            });
+        }
+        if (window.userLocMarker) {
+            const ll = window.userLocMarker.getLatLng();
+            context += `\n- Posición del propio operador (TÚ): Lat:${ll.lat.toFixed(5)}, Lon:${ll.lng.toFixed(5)}\n`;
+        }
+        if(count === 0 && !window.userLocMarker) return "El mapa está vacío. No hay elementos tácticos detectados en sensores.";
+        return context;
+    }
+
+    window.generateSITREP = async function(btn) {
+        const outputDiv = document.getElementById('ai-sitrep-output');
+        const oldTxt = btn.innerHTML;
+        btn.innerHTML = "⏳ Escaneando Sensores...";
+        btn.disabled = true;
+        outputDiv.style.display = 'block';
+        outputDiv.innerText = "Transmisión encriptada a Mando Central en curso...";
+        
+        try {
+            const mapData = getMapContextForAI();
+            const prompt = `Actúa como la Inteligencia Artificial del HUD táctico (ATAK) de un equipo de operaciones especiales en una simulación militar de Airsoft. Aquí están los datos telemetry actuales del mapa:\n\n${mapData}\n\nGenera un SITREP (Situation Report) muy inmersivo, táctico y conciso. Analiza la distribución de fuerzas, amenazas y posición, usando lenguaje militar/radio directo y profesional. Evita usar asteriscos de markdown excesivos.`;
+            const response = await callGeminiAPI(prompt);
+            outputDiv.innerText = response;
+        } catch (e) {
+            outputDiv.innerText = "[ERROR DE CONEXIÓN SATELITAL] " + e.message;
+        } finally {
+            btn.innerHTML = oldTxt;
+            btn.disabled = false;
+        }
+    };
+
+    window.askTacticalAI = async function(btn) {
+        const input = document.getElementById('ai-chat-input');
+        const outputDiv = document.getElementById('ai-chat-output');
+        const question = input.value.trim();
+        if (!question) return window.customAlert("Comunicaciones", "Ingresa una consulta para el Oficial de Inteligencia.");
+        
+        const oldTxt = btn.innerHTML;
+        btn.innerHTML = "⏳ Encriptando Consulta...";
+        btn.disabled = true;
+        outputDiv.style.display = 'block';
+        outputDiv.innerText = "Procesando...";
+        
+        try {
+            const mapData = getMapContextForAI();
+            const prompt = `Actúa como un Analista de Inteligencia Táctica que asiste a un operador de Airsoft sobre el terreno a través de una terminal estilo ATAK. \n\nDatos de telemetría del mapa:\n${mapData}\n\nPregunta del operador desde el campo: "${question}".\n\nAnaliza las coordenadas y elementos proporcionados y responde de forma directa, concisa y usando terminología táctica / militar inmersiva.`;
+            const response = await callGeminiAPI(prompt);
+            outputDiv.innerText = response;
+            input.value = '';
+        } catch (e) {
+            outputDiv.innerText = "[PÉRDIDA DE SEÑAL] " + e.message;
+        } finally {
+            btn.innerHTML = oldTxt;
+            btn.disabled = false;
+        }
+    };
+    // -----------------------------------------------------------
 </script>
 </body>
 </html>
