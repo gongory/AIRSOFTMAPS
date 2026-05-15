@@ -1403,15 +1403,13 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         const myPos = window.userLocMarker.getLatLng();
         const heading = window.currentDeviceHeading || 0;
         const overlay = document.getElementById('ar-overlay');
-        overlay.innerHTML = ''; // Limpiar overlay en cada frame
+        overlay.innerHTML = ''; 
 
-        const fov = 60; // Campo de visión estimado de la cámara (grados)
-        const maxDist = 2000; // Distancia máxima a mostrar en AR (metros)
+        const fov = 60;
+        const maxDist = 2000; 
 
-        // Combinar marcadores del proyecto y aliados
         const arElements = [];
         
-        // Marcadores del proyecto
         window.drawnItems.eachLayer(layer => {
             if (layer instanceof L.Marker && !layer.isHidden) {
                 const name = layer.feature?.properties?.layerName || 'Marcador';
@@ -1421,7 +1419,6 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             }
         });
 
-        // Aliados de la sala
         if(window.alliesLayer) {
             window.alliesLayer.eachLayer(layer => {
                 const popupStr = layer.getPopup()?.getContent() || '';
@@ -1433,9 +1430,8 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
         }
 
         arElements.forEach(el => {
-            // Calcular bearing hacia el elemento
             const lat1 = myPos.lat * Math.PI / 180;
-            const lon1 = myPos.lng * Math.PI / 180;
+            const lon1 = myPos.lng * Math.PI / 180; 
             const lat2 = el.pos.lat * Math.PI / 180;
             const lon2 = el.pos.lng * Math.PI / 180;
             const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
@@ -1443,20 +1439,15 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
             let bearing = Math.atan2(y, x) * 180 / Math.PI;
             bearing = (bearing + 360) % 360;
 
-            // Calcular diferencia angular relativa al centro de la cámara
             let angleDiff = bearing - heading;
-            // Normalizar entre -180 y +180 de forma segura para JavaScript
             angleDiff = ((angleDiff % 360) + 360) % 360;
             if (angleDiff > 180) angleDiff -= 360;
 
-            // Si está dentro del FOV de la cámara
             if (Math.abs(angleDiff) < fov / 2) {
-                // Calcular posición X en pantalla (0 a 100%)
                 const screenX = 50 + (angleDiff / (fov / 2)) * 50;
                 
-                // Calcular tamaño basado en distancia
                 const scale = Math.max(0.3, 1 - (el.dist / maxDist));
-                const yOffset = 50 - (scale * 20); // Elevar un poco los más lejanos
+                const yOffset = 50 - (scale * 20);
 
                 const distText = el.dist > 1000 ? (el.dist/1000).toFixed(2) + "km" : Math.round(el.dist) + "m";
                 const icon = el.type === 'ally' ? '👤' : '📍';
@@ -1482,12 +1473,11 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
                 arStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
                 video.srcObject = arStream;
                 arContainer.style.display = 'block';
-                document.body.classList.add('hide-controls'); // Ocultar UI de mapa
+                document.body.classList.add('hide-controls'); 
                 renderAROverlay();
             } catch (err) {
                 console.error("Error al acceder a la cámara:", err);
                 try{
-                     // Fallback si no hay cámara trasera (ej. PC/Tablet)
                      arStream = await navigator.mediaDevices.getUserMedia({ video: true });
                      video.srcObject = arStream;
                      arContainer.style.display = 'block';
@@ -1512,8 +1502,68 @@ body.dark-mode .leaflet-tile-pane{filter:invert(100%) hue-rotate(180deg) brightn
     function handleDeviceOrientation(event) {
         let heading = null;
         if (event.webkitCompassHeading !== undefined) { heading = event.webkitCompassHeading; } else if (event.absolute === true && event.alpha !== null) { heading = 360 - event.alpha; } else if (event.alpha !== null) { heading = 360 - event.alpha; }
-        if (heading !== null) { window.currentDeviceHeading = heading; const arrow = document.getElementById('user-dir-arrow'); if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; } window.updateNavigationUI(); }
+        if (heading !== null) { 
+            window.currentDeviceHeading = heading; 
+            const arrow = document.getElementById('user-dir-arrow'); 
+            if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; } 
+            window.updateNavigationUI(); 
+        }
     }
+
+    // --- MOTOR DEL BOTÓN "🎯 IR" (NAVEGACIÓN TÁCTICA) ---
+    window.navTarget = null;
+
+    window.startNavigation = function(lat, lng, name) {
+        window.navTarget = L.latLng(lat, lng);
+        if(document.getElementById('nav-target-name')) document.getElementById('nav-target-name').innerText = name || 'Destino';
+        if(document.getElementById('nav-panel')) document.getElementById('nav-panel').style.display = 'block';
+        
+        // Forzar encendido de GPS si no está activo
+        if (typeof locWatchId === 'undefined' || locWatchId === null) {
+            window.toggleLocation(); 
+        }
+        
+        window.updateNavigationUI();
+        window.map.closePopup();
+    };
+
+    window.stopNavigation = function() {
+        window.navTarget = null;
+        if(document.getElementById('nav-panel')) document.getElementById('nav-panel').style.display = 'none';
+    };
+
+    window.updateNavigationUI = function() {
+        // Solo calcular si hay destino y el GPS ya encontró nuestra posición
+        if (!window.navTarget || !window.userLocMarker) return;
+        
+        const myLoc = window.userLocMarker.getLatLng();
+        const dist = myLoc.distanceTo(window.navTarget);
+        
+        // Actualizar el texto de los metros/km
+        let distText = dist > 1000 ? (dist / 1000).toFixed(2) + " km" : Math.round(dist) + " m";
+        if(document.getElementById('nav-dist')) document.getElementById('nav-dist').innerText = distText;
+        
+        // Motor matemático: Calcular ángulo hacia el objetivo (Bearing)
+        const lat1 = myLoc.lat * Math.PI / 180;
+        const lon1 = myLoc.lng * Math.PI / 180;
+        const lat2 = window.navTarget.lat * Math.PI / 180;
+        const lon2 = window.navTarget.lng * Math.PI / 180;
+        const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+        let bearing = Math.atan2(y, x) * 180 / Math.PI;
+        bearing = (bearing + 360) % 360;
+        
+        // Combinar con el giroscopio del móvil (hacia dónde miramos físicamente)
+        const heading = window.currentDeviceHeading || 0;
+        let relativeRotation = bearing - heading;
+        
+        // Girar la flecha
+        const arrow = document.getElementById('nav-arrow');
+        if (arrow) {
+            arrow.style.transform = `rotate(${relativeRotation}deg)`;
+        }
+    };
+    // ----------------------------------------------------
 
     window.toggleLocation = function() {
         try {
