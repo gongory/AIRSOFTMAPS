@@ -214,6 +214,14 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 <div id="offline-progress" style="display:none;font-size:11px;font-weight:bold;color:#475569;text-align:center;width:100%;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-bottom:10px;"><div id="offline-bar" style="width:0%;background:var(--success);color:white;padding:2px 0;transition:width 0.3s;">0%</div></div>
                 <div id="offline-zones-list" style="max-height:150px;overflow-y:auto;background:#fff;border:1px solid #cbd5e0;border-radius:8px;padding:5px;margin-top:5px;"><div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay zonas descargadas</div></div>
             </div>
+            <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
+                <label style="font-size:10px;font-weight:bold;color:var(--info);display:block;margin-bottom:4px;">Herramientas 3D In-App</label>
+                <div style="display:flex; gap:5px; margin-bottom:5px;">
+                    <button class="btn-outline" id="btn-tilt-3d" style="margin-bottom:0;border-color:var(--info);color:var(--info);padding:8px 5px;font-size:11px;" onclick="window.toggle3DTilt()">📐 Perspectiva 2.5D</button>
+                    <button class="btn-outline" style="margin-bottom:0;border-color:var(--ign-gold);color:var(--ign-gold);padding:8px 5px;font-size:11px;" onclick="window.toggleOSMBuildings()">🏙️ Estructuras 3D</button>
+                </div>
+                <button class="btn-outline" style="margin-bottom:0;width:100%;border-color:#e67e22;color:#e67e22;padding:8px 5px;font-size:11px;" onclick="window.openInApp3D()">🛰️ Dron de Reconocimiento 3D</button>
+            </div>
         </div>
  
         <button class="btn-outline" onclick="window.toggleGroup('grid-group-container')" style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span>📍 Sistema y Cuadrícula</span><span>▼</span></button>
@@ -336,6 +344,16 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 
 <div id="cloud-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
     <div style="background:white;padding:20px;border-radius:12px;width:320px;max-height:80vh;display:flex;flex-direction:column;"><h3 style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:16px;text-align:center;">☁️ Mis Proyectos</h3><div id="cloud-project-list" style="flex:1;overflow-y:auto;margin-bottom:15px;border:1px solid #cbd5e0;border-radius:8px;padding:5px;min-height:100px;"></div><button style="padding:8px 15px;border-radius:6px;border:1px solid #cbd5e0;background:white;color:#475569;cursor:pointer;width:100%;" onclick="document.getElementById('cloud-modal').style.display='none'">Cerrar</button></div>
+</div>
+
+<div id="iframe-3d-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:4500;align-items:center;justify-content:center;flex-direction:column;">
+    <div style="width:95%;height:90%;background:#000;border:2px solid var(--ign-gold);border-radius:8px;position:relative;display:flex;flex-direction:column;box-shadow:0 0 30px rgba(251,191,36,0.2);">
+        <div style="background:var(--bg-sidebar);padding:10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--ign-gold);border-radius:8px 8px 0 0;">
+            <span style="color:var(--ign-gold);font-weight:bold;font-family:'Courier New', monospace;">🛰️ SEÑAL DE DRON TÁCTICO 3D</span>
+            <button onclick="document.getElementById('iframe-3d-modal').style.display='none'; document.getElementById('iframe-3d-viewer').src='';" style="background:var(--danger);color:white;border:1px solid var(--danger);padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:bold;text-transform:uppercase;font-size:11px;">✕ Desconectar</button>
+        </div>
+        <iframe id="iframe-3d-viewer" src="" style="width:100%;flex:1;border:none;border-radius:0 0 8px 8px;background:#000;"></iframe>
+    </div>
 </div>
 
 <div id="ar-view-container" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:3500;background:black;">
@@ -1819,7 +1837,59 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             btn.disabled = false;
         }
     };
-    // -----------------------------------------------------------
+
+    window.is3DTilt = false;
+    window.toggle3DTilt = function() {
+        window.is3DTilt = !window.is3DTilt;
+        const container = document.getElementById('map-container');
+        const mapEl = document.getElementById('map');
+        const btn = document.getElementById('btn-tilt-3d');
+        if (window.is3DTilt) {
+            container.style.perspective = '1200px';
+            mapEl.style.transform = 'rotateX(60deg) scale(1.3) translateY(-10%)';
+            mapEl.style.transformOrigin = '50% 100%';
+            mapEl.style.transition = 'transform 0.5s ease';
+            btn.innerHTML = '🎯 Vista Cenital';
+            btn.style.color = 'var(--success)';
+            btn.style.borderColor = 'var(--success)';
+        } else {
+            mapEl.style.transform = 'none';
+            btn.innerHTML = '📐 Perspectiva 2.5D';
+            btn.style.color = 'var(--info)';
+            btn.style.borderColor = 'var(--info)';
+            setTimeout(() => { container.style.perspective = 'none'; }, 500);
+        }
+    };
+
+    window.toggleOSMBuildings = function() {
+        if (!window.osmBuildingsLayer) {
+            if (!window.OSMBuildings) {
+                window.customAlert("Conectando...", "Inyectando malla de estructuras 3D. Haz zoom para ver los edificios.");
+                const script = document.createElement('script');
+                script.src = 'https://cdn.osmbuildings.org/classic/0.2.2b/OSMBuildings-Leaflet.js';
+                script.onload = () => {
+                    window.osmBuildingsLayer = new OSMBuildings(map).load('https://{s}.data.osmbuildings.org/0.2/anonymous/tile/{z}/{x}/{y}.json');
+                };
+                document.head.appendChild(script);
+            } else {
+                window.osmBuildingsLayer = new OSMBuildings(map).load('https://{s}.data.osmbuildings.org/0.2/anonymous/tile/{z}/{x}/{y}.json');
+            }
+        } else {
+            map.removeLayer(window.osmBuildingsLayer);
+            window.osmBuildingsLayer = null;
+        }
+    };
+
+    window.openInApp3D = function() {
+        const center = window.map.getCenter();
+        const lat = center.lat.toFixed(6);
+        const lng = center.lng.toFixed(6);
+        // Usa F4Map para visualizar terreno, árboles y edificios en 3D sin salir de la app
+        const url = `https://demo.f4map.com/#lat=${lat}&lon=${lng}&zoom=18&camera.theta=60&camera.phi=-45`;
+        document.getElementById('iframe-3d-viewer').src = url;
+        document.getElementById('iframe-3d-modal').style.display = 'flex';
+        window.toggleMenu(); // Cierra el menú lateral para dejar la pantalla limpia
+    };
 </script>
 </body>
 </html>
