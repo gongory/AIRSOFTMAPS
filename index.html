@@ -262,17 +262,6 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <div id="gallery"></div>
         </div>
 
-        <button class="btn-outline" onclick="window.toggleGroup('ai-group-container')" style="margin-bottom:10px;justify-content:space-between;border-color:var(--info);color:var(--info);"><span>🤖 Inteligencia IA ✨</span><span>▼</span></button>
-        <div id="ai-group-container" style="display:none;padding:10px;background:var(--bg-sidebar);border-radius:4px;margin-bottom:15px;border:2px solid var(--border-color);">
-            <p style="font-size:10px; color:var(--text-main); margin-top:0; font-family:monospace;">Asesor táctico de Mando Central conectado.</p>
-            <button class="btn-outline" style="border-color:var(--info);color:var(--info); margin-bottom:8px;" onclick="window.generateSITREP(this)">✨ Solicitar SITREP</button>
-            <div id="ai-sitrep-output" style="display:none; font-size:11px; color:#fff; background:#000; padding:8px; border:1px solid var(--info); border-radius:2px; max-height:150px; overflow-y:auto; white-space:pre-wrap; font-family:monospace; margin-bottom:15px;"></div>
-            
-            <textarea id="ai-chat-input" rows="2" class="form-input" style="font-size:11px; margin-bottom:8px;" placeholder="Ej: ¿Cuál es el mejor flanco para atacar el objetivo?"></textarea>
-            <button class="btn-outline" style="border-color:var(--ign-gold);color:var(--ign-gold); margin-bottom:0;" onclick="window.askTacticalAI(this)">✨ Consultar IA</button>
-            <div id="ai-chat-output" style="display:none; font-size:11px; color:var(--ign-gold); background:#000; padding:8px; border:1px solid var(--ign-gold); border-radius:2px; max-height:150px; overflow-y:auto; white-space:pre-wrap; font-family:monospace; margin-top:8px;"></div>
-        </div>
-
         <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;" onclick="window.enableTool('delete')">🗑️ Borrar Individual</button>
     </div>
 </div>
@@ -1737,102 +1726,6 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             img.src = 'AirsoftMaps.ico';
         } catch(e) { console.error("Error PWA:", e); }
     })();
-
-    // --- INTEGRACIÓN DE INTELIGENCIA TÁCTICA CON GEMINI API ✨ ---
-    const apiKey = ""; // API Key proveída por el entorno de ejecución
-    
-    async function callGeminiAPI(promptText) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-        const payload = { contents: [{ parts: [{ text: promptText }] }] };
-        let retries = 5;
-        let delay = 1000;
-        
-        for (let i = 0; i < retries; i++) {
-            try {
-                const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                const data = await res.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Mando Central: Sin respuesta útil detectada.";
-            } catch (e) {
-                if (i === retries - 1) throw e;
-                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-            }
-        }
-    }
-
-    function getMapContextForAI() {
-        let context = "Elementos actuales desplegados en el teatro de operaciones (AirsoftMaps):\n";
-        let count = 0;
-        if(window.drawnItems) {
-            window.drawnItems.eachLayer(layer => {
-                count++;
-                const props = layer.feature?.properties || {};
-                const name = props.layerName || 'Elemento Desconocido';
-                const faction = props.faction || 'General';
-                if (layer instanceof L.Marker) {
-                    const ll = layer.getLatLng();
-                    context += `- Marcador [${props.iconType}]: "${name}" | Bando: ${faction} | Ubicación: Lat:${ll.lat.toFixed(5)}, Lon:${ll.lng.toFixed(5)}\n`;
-                } else if (layer instanceof L.Polygon) {
-                    context += `- Zona Controlada: "${name}" | Bando: ${faction}\n`;
-                } else if (layer instanceof L.Polyline) {
-                    context += `- Ruta de movimiento: "${name}" | Bando: ${faction}\n`;
-                }
-            });
-        }
-        if (window.userLocMarker) {
-            const ll = window.userLocMarker.getLatLng();
-            context += `\n- Posición del propio operador (TÚ): Lat:${ll.lat.toFixed(5)}, Lon:${ll.lng.toFixed(5)}\n`;
-        }
-        if(count === 0 && !window.userLocMarker) return "El mapa está vacío. No hay elementos tácticos detectados en sensores.";
-        return context;
-    }
-
-    window.generateSITREP = async function(btn) {
-        const outputDiv = document.getElementById('ai-sitrep-output');
-        const oldTxt = btn.innerHTML;
-        btn.innerHTML = "⏳ Escaneando Sensores...";
-        btn.disabled = true;
-        outputDiv.style.display = 'block';
-        outputDiv.innerText = "Transmisión encriptada a Mando Central en curso...";
-        
-        try {
-            const mapData = getMapContextForAI();
-            const prompt = `Actúa como la Inteligencia Artificial del HUD táctico (ATAK) de un equipo de operaciones especiales en una simulación militar de Airsoft. Aquí están los datos telemetry actuales del mapa:\n\n${mapData}\n\nGenera un SITREP (Situation Report) muy inmersivo, táctico y conciso. Analiza la distribución de fuerzas, amenazas y posición, usando lenguaje militar/radio directo y profesional. Evita usar asteriscos de markdown excesivos.`;
-            const response = await callGeminiAPI(prompt);
-            outputDiv.innerText = response;
-        } catch (e) {
-            outputDiv.innerText = "[ERROR DE CONEXIÓN SATELITAL] " + e.message;
-        } finally {
-            btn.innerHTML = oldTxt;
-            btn.disabled = false;
-        }
-    };
-
-    window.askTacticalAI = async function(btn) {
-        const input = document.getElementById('ai-chat-input');
-        const outputDiv = document.getElementById('ai-chat-output');
-        const question = input.value.trim();
-        if (!question) return window.customAlert("Comunicaciones", "Ingresa una consulta para el Oficial de Inteligencia.");
-        
-        const oldTxt = btn.innerHTML;
-        btn.innerHTML = "⏳ Encriptando Consulta...";
-        btn.disabled = true;
-        outputDiv.style.display = 'block';
-        outputDiv.innerText = "Procesando...";
-        
-        try {
-            const mapData = getMapContextForAI();
-            const prompt = `Actúa como un Analista de Inteligencia Táctica que asiste a un operador de Airsoft sobre el terreno a través de una terminal estilo ATAK. \n\nDatos de telemetría del mapa:\n${mapData}\n\nPregunta del operador desde el campo: "${question}".\n\nAnaliza las coordenadas y elementos proporcionados y responde de forma directa, concisa y usando terminología táctica / militar inmersiva.`;
-            const response = await callGeminiAPI(prompt);
-            outputDiv.innerText = response;
-            input.value = '';
-        } catch (e) {
-            outputDiv.innerText = "[PÉRDIDA DE SEÑAL] " + e.message;
-        } finally {
-            btn.innerHTML = oldTxt;
-            btn.disabled = false;
-        }
-    };
 
     window.openInApp3D = function() {
         const center = window.map.getCenter();
