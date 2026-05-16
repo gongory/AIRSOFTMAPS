@@ -302,11 +302,11 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                     <div id="members-container" style="display:flex; flex-direction:column; gap:2px;"></div>
                 </div>
                 <div id="radio-msgs-container" style="display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap;">
-                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--danger); color:var(--danger);" onclick="window.sendRadioMessage('⚠️ Enemigo')">⚠️ Enemigo</button>
-                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--success); color:var(--success);" onclick="window.sendRadioMessage('🏥 Médico')">🏥 Médico</button>
-                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--info); color:var(--info);" onclick="window.sendRadioMessage('🛡️ Defendiendo')">🛡️ Defensa</button>
-                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--ign-gold); color:var(--ign-gold);" onclick="window.sendRadioMessage('🏃 Avanzando')">🏃 Avanzando</button>
-                    <button class="btn-outline" style="margin-bottom:0; padding:8px; font-size:11px; flex:1 1 100%; border-color:#475569; background:#475569; color:white; font-weight:800;" onclick="window.sendRadioMessage('✋ ¡BAJA!')">💀 ESTOY ELIMINADO</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--danger); color:var(--danger);" onclick="window.sendRadioMessage('⚠️ Enemigo', this)">⚠️ Enemigo</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--success); color:var(--success);" onclick="window.sendRadioMessage('🏥 Médico', this)">🏥 Médico</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--info); color:var(--info);" onclick="window.sendRadioMessage('🛡️ Defendiendo', this)">🛡️ Defensa</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--ign-gold); color:var(--ign-gold);" onclick="window.sendRadioMessage('🏃 Avanzando', this)">🏃 Avanzando</button>
+                    <button class="btn-outline" style="margin-bottom:0; padding:8px; font-size:11px; flex:1 1 100%; border-color:#475569; background:#475569; color:white; font-weight:800;" onclick="window.sendRadioMessage('✋ ¡BAJA!', this)">💀 ESTOY ELIMINADO</button>
                 </div>
                 <div id="chat-box" style="height:120px; overflow-y:auto; background:#fff; border:1px solid #cbd5e0; border-radius:6px; padding:5px; font-size:11px; margin-bottom:5px; display:flex; flex-direction:column; gap:4px;"></div>
                 <div style="display:flex; gap:5px;">
@@ -680,7 +680,33 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         const unsubChat = onSnapshot(chatCol, (snap) => { let messages = []; snap.forEach(d => messages.push(d.data())); messages.sort((a,b) => a.timestamp - b.timestamp); renderChat(messages); }); roomUnsubs.push(unsubChat);
     }
 
-    function leaveRoom() { if (!currentRoom) return; if (auth.currentUser) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + currentRoom, auth.currentUser.uid)).catch(()=>{}); roomUnsubs.forEach(u => u()); roomUnsubs = []; if (transmitInterval) { clearInterval(transmitInterval); transmitInterval = null; } window.alliesLayer.clearLayers(); allyMarkers = {}; currentRoom = null; currentRadioMsg = ""; document.getElementById('room-setup-ui').style.display = 'block'; document.getElementById('room-active-ui').style.display = 'none'; document.getElementById('active-room-name').style.display = 'none'; document.getElementById('chat-box').innerHTML = ''; const memContainer = document.getElementById('members-container'); if (memContainer) memContainer.innerHTML = ''; const memCount = document.getElementById('members-count'); if (memCount) memCount.innerText = '0'; lastProcessedMsgTime = 0; unreadMsgCount = 0; const badge = document.getElementById('chat-badge'); if (badge) badge.style.display = 'none'; }
+    function leaveRoom() { 
+        if (!currentRoom) return; 
+        if (auth.currentUser) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + currentRoom, auth.currentUser.uid)).catch(()=>{}); 
+        roomUnsubs.forEach(u => u()); roomUnsubs = []; 
+        if (transmitInterval) { clearInterval(transmitInterval); transmitInterval = null; } 
+        window.alliesLayer.clearLayers(); allyMarkers = {}; currentRoom = null; currentRadioMsg = ""; 
+        
+        const radioBtns = document.getElementById('radio-msgs-container').querySelectorAll('button');
+        radioBtns.forEach(b => {
+            b.style.boxShadow = 'none';
+            b.style.transform = 'scale(1)';
+            if (b.dataset.origBg !== undefined) b.style.backgroundColor = b.dataset.origBg;
+        });
+
+        document.getElementById('room-setup-ui').style.display = 'block'; 
+        document.getElementById('room-active-ui').style.display = 'none'; 
+        document.getElementById('active-room-name').style.display = 'none'; 
+        document.getElementById('chat-box').innerHTML = ''; 
+        const memContainer = document.getElementById('members-container'); 
+        if (memContainer) memContainer.innerHTML = ''; 
+        const memCount = document.getElementById('members-count'); 
+        if (memCount) memCount.innerText = '0'; 
+        lastProcessedMsgTime = 0; unreadMsgCount = 0; 
+        const badge = document.getElementById('chat-badge'); 
+        if (badge) badge.style.display = 'none'; 
+    }
+    
     window.deleteRoom = async function() { if (!currentRoom) return; const modal = document.getElementById('confirm-modal'); modal.querySelector('h3').innerText = "🗑️ Eliminar Sala"; modal.querySelector('p').innerText = "¿Eliminar esta sala, chat y mapas compartidos?"; modal.style.display = 'flex'; window.acceptConfirmModal = async function() { modal.style.display = 'none'; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoom)); } catch (e) {} }; window.closeConfirmModal = function() { modal.style.display = 'none'; }; };
     window.syncDrawingsToRoom = async function() {
         if (!currentRoom || !auth.currentUser) return; const btn = document.getElementById('btn-sync-map'); const oldTxt = btn.innerText; btn.innerText = "⏳ Subiendo..."; btn.disabled = true;
@@ -764,12 +790,26 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         }); roomUnsubs.push(unsubLive);
     }
     
-    window.sendRadioMessage = function(msg) { 
+    window.sendRadioMessage = function(msg, btn) { 
         if (!currentRoom || !window.userLocMarker) return window.customAlert("Aviso", "Debes estar dentro de una Sala y con el GPS (🎯) activo."); 
+        
+        const radioBtns = document.getElementById('radio-msgs-container').querySelectorAll('button');
+        radioBtns.forEach(b => {
+            b.style.boxShadow = 'none';
+            b.style.transform = 'scale(1)';
+            if (b.dataset.origBg !== undefined) b.style.backgroundColor = b.dataset.origBg;
+        });
+
         if (currentRadioMsg === msg) { 
             currentRadioMsg = ""; window.customAlert("Comando", "Mensaje cancelado."); 
         } else { 
             currentRadioMsg = msg; 
+            if (btn) {
+                if (btn.dataset.origBg === undefined) btn.dataset.origBg = btn.style.backgroundColor || 'transparent';
+                btn.style.boxShadow = '0 0 12px ' + (btn.style.borderColor || 'white');
+                btn.style.transform = 'scale(1.05)';
+                btn.style.backgroundColor = msg === '✋ ¡BAJA!' ? '#ef4444' : 'rgba(255,255,255,0.25)';
+            }
             if (msg === '✋ ¡BAJA!') {
                 window.customAlert("Eliminado", "Has sido marcado como BAJA. Tus compañeros te verán en gris con una calavera en el mapa.");
             } else {
