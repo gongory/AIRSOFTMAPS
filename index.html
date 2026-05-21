@@ -1288,6 +1288,162 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         if (oVal !== 'none') { currentOverlay = baseLayers[oVal]; currentOverlay.setOpacity(op); window.map.addLayer(currentOverlay); } else { currentOverlay = null; }
     };
 
+    // --- BLOQUE RESTAURADO: GPS, NAVEGACIÓN, EXPORTACIÓN Y CAPTURAS ---
+
+    function handleDeviceOrientation(event) {
+        let heading = null;
+        if (event.webkitCompassHeading !== undefined) heading = event.webkitCompassHeading;
+        else if (event.absolute === true && event.alpha !== null) heading = 360 - event.alpha;
+        else if (event.alpha !== null) heading = 360 - event.alpha;
+        
+        if (heading !== null) { 
+            let orientationAngle = 0;
+            if (screen.orientation && screen.orientation.angle) orientationAngle = screen.orientation.angle;
+            else if (typeof window.orientation !== 'undefined') orientationAngle = window.orientation;
+            heading = (heading + orientationAngle) % 360;
+            window.currentDeviceHeading = heading; 
+            const arrow = document.getElementById('user-dir-arrow'); 
+            if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; } 
+            if (typeof window.updateNavigationUI === 'function') window.updateNavigationUI(); 
+            const cb = document.getElementById('compass-auto-rotate');
+            if (cb && cb.checked) {
+                const svg = document.getElementById('compass-rose').querySelector('svg');
+                if (svg) { svg.style.transition = 'transform 0.1s ease-out'; svg.style.transform = `rotate(${-heading}deg)`; }
+            }
+        }
+    }
+
+    window.toggleLocation = function() {
+        const btn = document.querySelector('button[title="Mi Ubicación"]');
+        const arBtn = document.getElementById('ar-view-btn');
+        if (window.locWatchId !== null) {
+            if (!window.isFollowingUser) { 
+                window.isFollowingUser = true; 
+                if (window.userLocMarker) window.map.flyTo(window.userLocMarker.getLatLng(), 17, { duration: 1.5 }); 
+                if (btn) { btn.innerHTML = "🚶‍♂️ Activar Seguimiento GPS"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; btn.style.opacity = "1"; } 
+                return; 
+            } else { 
+                navigator.geolocation.clearWatch(window.locWatchId); window.locWatchId = null; window.isFollowingUser = false; 
+                if (window.userLocMarker) { window.map.removeLayer(window.userLocMarker); window.userLocMarker = null; } 
+                try { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true); } catch(e) {} 
+                window.orientationHandlerActive = false; 
+                if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.color = ''; btn.style.borderColor = 'var(--success)'; btn.style.opacity = '1'; btn.classList.remove('active'); } 
+                if(arBtn) arBtn.style.display = 'none'; window.stopNavigation(); 
+                return; 
+            }
+        }
+        if (!navigator.geolocation) return window.customAlert("Error", "Geolocalización no soportada.");
+        if (btn) { btn.innerHTML = "⏳ Activando..."; btn.style.opacity = "0.7"; }
+        window.isFollowingUser = true;
+        if (!window.orientationHandlerActive) { 
+            try { 
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { 
+                    DeviceOrientationEvent.requestPermission().then(permissionState => { 
+                        if (permissionState === 'granted') { window.addEventListener('deviceorientation', handleDeviceOrientation, true); window.orientationHandlerActive = true; } 
+                    }).catch(err => { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); window.orientationHandlerActive = true; }); 
+                } else { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); window.addEventListener('deviceorientation', handleDeviceOrientation, true); window.orientationHandlerActive = true; } 
+            } catch(e) {} 
+        }
+        window.locWatchId = navigator.geolocation.watchPosition((pos) => {
+            try {
+                const lat = pos.coords.latitude; const lng = pos.coords.longitude; 
+                if (window.isFollowingUser) window.map.setView([lat, lng], window.map.getZoom() < 16 ? 17 : window.map.getZoom());
+                if (btn && btn.innerHTML.includes("⏳")) { btn.innerHTML = "🚶‍♂️ Seguimiento GPS Activo"; btn.style.opacity = "1"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; if(arBtn) arBtn.style.display = 'block'; }
+                if (!window.userLocMarker) { 
+                    const userIcon = L.divIcon({ className: 'custom-user-marker', html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 14px solid rgba(13,110,253,0.8); transform-origin: 50% 100%; margin-left: -6px; margin-top: -14px; transform: rotate(${window.currentDeviceHeading || 0}deg);"></div></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }); 
+                    window.userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(window.map); 
+                } else { window.userLocMarker.setLatLng([lat, lng]); }
+                window.updateNavigationUI();
+            } catch(e) { console.error(e); }
+        }, (err) => { window.customAlert("Error GPS", err.message); if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.opacity = "1"; } }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
+    };
+
+    window.startNavigation = function(lat, lng, name) {
+        window.navTarget = L.latLng(lat, lng);
+        if(document.getElementById('nav-target-name')) document.getElementById('nav-target-name').innerText = name || 'Destino';
+        if(document.getElementById('nav-panel')) document.getElementById('nav-panel').style.display = 'block';
+        if (window.locWatchId === null) window.toggleLocation(); 
+        window.updateNavigationUI();
+        window.map.closePopup();
+        if (window.innerWidth <= 768) { const p = document.getElementById('panelLateral'); if(p) p.classList.add('oculto'); }
+    };
+
+    window.stopNavigation = function() {
+        window.navTarget = null;
+        if(document.getElementById('nav-panel')) document.getElementById('nav-panel').style.display = 'none';
+    };
+
+    window.updateNavigationUI = function() {
+        if (!window.navTarget || !window.userLocMarker) return;
+        const myLoc = window.userLocMarker.getLatLng();
+        const dist = myLoc.distanceTo(window.navTarget);
+        let distText = dist > 1000 ? (dist / 1000).toFixed(2) + " km" : Math.round(dist) + " m";
+        if(document.getElementById('nav-dist')) document.getElementById('nav-dist').innerText = distText;
+        
+        const lat1 = myLoc.lat * Math.PI / 180; const lon1 = myLoc.lng * Math.PI / 180;
+        const lat2 = window.navTarget.lat * Math.PI / 180; const lon2 = window.navTarget.lng * Math.PI / 180;
+        const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+        let bearing = Math.atan2(y, x) * 180 / Math.PI; bearing = (bearing + 360) % 360;
+        
+        const heading = window.currentDeviceHeading || 0;
+        let relativeRotation = bearing - heading;
+        
+        const arrow = document.getElementById('nav-arrow');
+        if (arrow) arrow.style.transform = `rotate(${relativeRotation}deg)`;
+    };
+
+    window.guardarProyecto = function() { const data = window.drawnItems.toGeoJSON(); data.view = { center: window.map.getCenter(), zoom: window.map.getZoom() }; const blob = new Blob([JSON.stringify(data)], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".json"; a.click(); URL.revokeObjectURL(url); };
+    window.cargarProyecto = function(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const data = JSON.parse(evt.target.result); window.procesarDatosCargados(data, file.name.replace('.json', '')); } catch(err) { window.customAlert("Error", "Archivo inválido."); } }; reader.readAsText(file); e.target.value = ''; };
+    
+    window.exportKML = function() { const data = window.drawnItems.toGeoJSON(); let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + window.projectName + '</name>\n'; data.features.forEach(f => { const p = f.properties || {}; const n = p.layerName || 'Elemento'; const d = p.notes || ''; const c = f.geometry.coordinates; const t = f.geometry.type; kml += `<Placemark><name>${n}</name><description>${d}</description>`; if (t === 'Point') { kml += `<Point><coordinates>${c[0]},${c[1]},0</coordinates></Point>`; } else if (t === 'LineString') { kml += `<LineString><coordinates>${c.map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LineString>`; } else if (t === 'Polygon') { kml += `<Polygon><outerBoundaryIs><LinearRing><coordinates>${c[0].map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon>`; } kml += `</Placemark>\n`; }); kml += '</Document></kml>'; const blob = new Blob([kml], {type: "application/vnd.google-earth.kml+xml"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".kml"; a.click(); URL.revokeObjectURL(url); };
+    
+    window.exportGPX = function() { const data = window.drawnItems.toGeoJSON(); let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps" xmlns="http://www.topografix.com/GPX/1/1">\n'; data.features.forEach(f => { const p = f.properties || {}; const n = p.layerName || 'Elemento'; const d = p.notes || ''; const c = f.geometry.coordinates; const t = f.geometry.type; if (t === 'Point') { gpx += `<wpt lat="${c[1]}" lon="${c[0]}"><name>${n}</name><desc>${d}</desc></wpt>\n`; } else if (t === 'LineString') { gpx += `<trk><name>${n}</name><desc>${d}</desc><trkseg>`; c.forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); gpx += `</trkseg></trk>\n`; } else if (t === 'Polygon') { gpx += `<trk><name>${n} (Area)</name><desc>${d}</desc><trkseg>`; c[0].forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); gpx += `</trkseg></trk>\n`; } }); gpx += '</gpx>'; const blob = new Blob([gpx], {type: "application/gpx+xml"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".gpx"; a.click(); URL.revokeObjectURL(url); };
+    
+    window.importKMLGPX = function(e) {
+        const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); const extension = file.name.split('.').pop().toLowerCase();
+        reader.onload = function(evt) {
+            try {
+                const parser = new DOMParser(); const xml = parser.parseFromString(evt.target.result, "text/xml");
+                if (xml.getElementsByTagName("parsererror").length > 0) throw new Error("Error de parseo XML");
+                let geojson;
+                if (extension === 'kml') geojson = toGeoJSON.kml(xml);
+                else if (extension === 'gpx') geojson = toGeoJSON.gpx(xml);
+                else return window.customAlert("Error", "Formato no compatible. Usa .kml o .gpx");
+
+                if (geojson && geojson.features && geojson.features.length > 0) {
+                    geojson.features.forEach(f => { f.properties = f.properties || {}; f.properties.layerName = f.properties.name || f.properties.title || 'Importado'; f.properties.faction = window.projectName; });
+                    window.procesarDatosCargados(geojson, file.name.split('.')[0]);
+                    window.customAlert("Éxito", `Se han importado ${geojson.features.length} elementos correctamente.`);
+                } else { window.customAlert("Aviso", "El archivo no contiene elementos geográficos válidos."); }
+            } catch (err) { window.customAlert("Error", "No se pudo procesar el archivo. Asegúrate de que es un KML o GPX válido."); }
+        };
+        reader.readAsText(file); e.target.value = '';
+    };
+
+    window.captureMap = async function() {
+        try {
+            const captureName = await askName("Nombre para captura:", "Mapa_AirsoftMaps"); const safeName = captureName.endsWith('.jpg') ? captureName : captureName + '.jpg';
+            window.toggleMenu(); document.body.classList.add('hide-controls'); const captureId = Date.now(); window.captures = window.captures || {}; const legendEl = document.getElementById('map-legend'); const compassEl = document.getElementById('compass-rose'); const numScaleEl = document.getElementById('numeric-scale-widget'); const geoScaleEl = document.querySelector('.leaflet-control-scale');
+            window.captures[captureId] = { legend: (isLegendVisible && legendEl) ? legendEl.outerHTML : '', compass: (compassEl && compassEl.style.display !== 'none') ? compassEl.outerHTML : '', numScale: numScaleEl ? numScaleEl.outerHTML : '', geoScale: geoScaleEl ? geoScaleEl.outerHTML : '' };
+            setTimeout(async () => {
+                try {
+                    const canvas = await html2canvas(document.getElementById('map-container'), { useCORS: true, allowTaint: false, scale: 1, logging: false, ignoreElements: (el) => { if (!el.classList) return false; if (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution') || el.id === 'map-legend' || el.id === 'compass-rose' || el.id === 'numeric-scale-widget' || el.classList.contains('leaflet-control-scale')) return true; return false; } });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.80); const item = document.createElement('div'); item.className = 'gallery-item'; 
+                    item.innerHTML = `<img src="${imgData}" style="cursor:zoom-in;" onclick="window.openImageModal(this.src)"><div style="font-size:13px;font-weight:bold;color:var(--ign-blue);text-align:center;margin:5px 0;">${captureName}</div><div style="display:flex;justify-content:space-between;align-items:center;padding:5px;flex-wrap:wrap;gap:5px;"><button onclick="window.openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none;background:none;color:var(--success);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">👁️ Ver</button><button onclick="window.printImage(this.closest('.gallery-item').querySelector('img').src, this.parentElement.previousElementSibling.innerText)" style="border:none;background:none;color:var(--ign-gold);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🖨️ Imprimir</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue);font-weight:bold;text-decoration:none;font-size:12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none;background:none;color:var(--danger);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🗑️ Borrar</button></div>`;
+                    document.getElementById('gallery').prepend(item); window.customAlert("Éxito", "Captura realizada correctamente."); setTimeout(() => window.toggleGroup('gallery-container'), 300);
+                } catch (error) { window.customAlert("Error", "No se pudo generar la captura. Intenta alejar el zoom un poco."); } finally { document.body.classList.remove('hide-controls'); window.toggleMenu(); }
+            }, 600); 
+        } catch (e) {}
+    };
+
+    window.printImage = function(src, title) {
+        const printWin = window.open('', '_blank'); 
+        if(!printWin) return window.customAlert("Aviso", "Habilita las ventanas emergentes (popups) para poder imprimir.");
+        printWin.document.write(`<html><head><title>${title || 'Impresión'}</title><style>body{margin:0;background:#333;display:flex;justify-content:center;align-items:center;height:100vh;}img{max-width:100%;max-height:100%;box-shadow:0 0 10px rgba(0,0,0,0.5);}@media print { body{background:#fff;} img{box-shadow:none;} }</style></head><body><img src="${src}" onload="setTimeout(() => { window.print(); window.close(); }, 500);"></body></html>`);
+        printWin.document.close();
+    };
+
     window.map.on('dragstart', () => { 
         if (window.locWatchId !== null) { 
             window.isFollowingUser = false; 
@@ -1366,3 +1522,155 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 const result = await signInWithPopup(auth, provider); 
                 window.updateAuthUI(result.user); window.customAlert("Bienvenido", "Sesión iniciada."); 
             }
+        } catch (error) {
+            if (error.code === 'auth/credential-already-in-use') { 
+                try { 
+                    const credential = GoogleAuthProvider.credentialFromError(error); 
+                    if (credential) { 
+                        const result = await signInWithCredential(auth, credential); 
+                        window.updateAuthUI(result.user); 
+                    } else { await signInWithPopup(auth, provider); } 
+                } catch (err) { window.customAlert("Error", "Error al vincular cuenta."); } 
+            } else { window.customAlert("Error", "No se pudo iniciar sesión: " + error.message); }
+        }
+    };
+
+    window.cerrarSesion = async function() { 
+        try { 
+            await signOut(auth); 
+            if(window.drawnItems) window.drawnItems.clearLayers(); 
+            window.projectName = "Proyecto_AirsoftMaps"; 
+            document.getElementById('app-title').innerText = "AirsoftMaps"; 
+            if(typeof window.updateLayerTree === 'function') window.updateLayerTree(); 
+            await signInAnonymously(auth); 
+        } catch(e) {} 
+    };
+
+    function listenToProjects() { 
+        if (!currentUser) return; 
+        const projectsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'projects'); 
+        unsubscribeProjects = onSnapshot(projectsRef, (snapshot) => { 
+            cloudProjects = []; snapshot.forEach(doc => { cloudProjects.push({ id: doc.id, ...doc.data() }); }); 
+            if (typeof renderCloudProjects === 'function') window.renderCloudProjects(); 
+        }); 
+    }
+
+    window.renderCloudProjects = function() {
+        const list = document.getElementById('cloud-project-list'); if (!list) return;
+        if (!cloudProjects || cloudProjects.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay proyectos en la nube</div>'; return; }
+        let html = ''; 
+        cloudProjects.forEach(p => { 
+            const date = new Date(p.updatedAt || Date.now()).toLocaleString('es-ES'); 
+            html += `<div style="padding:10px; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:8px;"><div style="font-size:13px; font-weight:bold; color:var(--ign-blue); word-break:break-all;">${p.name}</div><div style="font-size:10px; color:#64748b;">Actualizado: ${date}</div><div style="display:flex; gap:5px;"><button style="flex:1; padding:6px; background:var(--ign-blue); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.cargarProyectoNube('${p.id}')">⬇️ Cargar</button><button style="padding:6px; background:var(--danger); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.eliminarProyectoNube('${p.id}')">🗑️</button></div></div>`; 
+        }); list.innerHTML = html;
+    };
+
+    window.abrirNube = function() {
+        if (!currentUser) return window.customAlert("Error", "No conectado al servidor.");
+        document.getElementById('cloud-modal').style.display = 'flex'; window.renderCloudProjects();
+    };
+
+    window.cargarProyectoNube = async function(id) {
+        if (!currentUser) return;
+        try {
+            const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id));
+            if (docSnap.exists()) {
+                const data = JSON.parse(docSnap.data().data); window.procesarDatosCargados(data, docSnap.data().name);
+                document.getElementById('cloud-modal').style.display = 'none'; window.customAlert("Éxito", "Proyecto cargado desde la nube.");
+            } else { window.customAlert("Error", "El proyecto no existe."); }
+        } catch (e) { window.customAlert("Error", "No se pudo cargar el proyecto: " + e.message); }
+    };
+
+    window.eliminarProyectoNube = async function(id) {
+        if (!currentUser) return;
+        const modal = document.getElementById('confirm-modal');
+        modal.querySelector('h3').innerText = "🗑️ Eliminar Proyecto"; modal.querySelector('p').innerText = "¿Seguro que deseas eliminar este proyecto de la nube?";
+        modal.style.display = 'flex';
+        window.acceptConfirmModal = async function() {
+            modal.style.display = 'none';
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id)); window.customAlert("Éxito", "Proyecto eliminado."); } catch (e) { window.customAlert("Error", e.message); }
+        }; window.closeConfirmModal = function() { modal.style.display = 'none'; };
+    };
+
+    window.guardarEnNube = function(btn) {
+        if (!currentUser) return window.customAlert("Error", "Asegúrate de estar autenticado antes de guardar en la nube.");
+        const modal = document.getElementById('custom-modal'); const input = document.getElementById('modal-input'); 
+        document.getElementById('modal-title').innerText = "Guardar en nube como:"; input.value = window.projectName; modal.style.display = 'flex'; setTimeout(() => input.select(), 100);
+        window.confirmModal = async () => {
+            modal.style.display = 'none'; window.projectName = input.value.trim() || window.projectName; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
+            const originalText = btn.innerText; btn.innerText = "⏳..."; btn.disabled = true;
+            const geojsonData = window.drawnItems.toGeoJSON();
+            geojsonData.features.forEach((feature, index) => { if (feature && feature.properties) { feature.id = "am_" + Date.now() + "_" + index; feature.properties.name = feature.properties.layerName || 'Elemento'; feature.properties.title = feature.properties.layerName || 'Elemento'; feature.properties['marker-color'] = feature.properties.color || '#e74c3c'; feature.properties['stroke'] = feature.properties.color || '#2ecc71'; } });
+            geojsonData.view = { center: window.map.getCenter(), zoom: window.map.getZoom() };
+            try { await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', window.projectName.replace(/[^a-z0-9_-]/gi, '_')), { name: window.projectName, data: JSON.stringify(geojsonData), updatedAt: Date.now() }); window.customAlert("Éxito", "Proyecto Guardado en Nube correctamente."); } catch (e) { window.customAlert("Error", e.message); } finally { btn.innerText = originalText; btn.disabled = false; }
+        }; window.closeModal = () => { modal.style.display = 'none'; };
+    };
+
+    window.toggleRoom = async function() {
+        if (!auth.currentUser) return window.customAlert("Error", "Aún conectando al servidor...");
+        if (window.currentRoom) { window.leaveRoom(); return; }
+        const roomId = document.getElementById('room-id').value.trim(); const pass = document.getElementById('room-pass').value; const alias = document.getElementById('live-alias').value.trim();
+        if (!roomId || !pass || !alias) return window.customAlert("Aviso", "Rellena el nombre de sala, contraseña y tu indicativo.");
+        const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "⏳ Entrando..."; btn.disabled = true;
+        try {
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId); const roomSnap = await getDoc(roomRef);
+            if (roomSnap.exists()) { 
+                const data = roomSnap.data(); if (data.password !== pass) { window.customAlert("Error", "Contraseña incorrecta para esta sala."); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false; return; } 
+                window.enterRoom(roomId, alias, data.creatorUid === auth.currentUser.uid); 
+            } else { await setDoc(roomRef, { password: pass, creatorUid: auth.currentUser.uid, createdAt: Date.now(), geojson: "" }); window.enterRoom(roomId, alias, true); }
+        } catch (e) { window.customAlert("Error", "Error de red."); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false; }
+    };
+
+    window.enterRoom = function(roomId, alias, isAdmin) {
+        window.currentRoom = roomId; const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false;
+        document.getElementById('room-setup-ui').style.display = 'none'; document.getElementById('room-active-ui').style.display = 'block'; document.getElementById('active-room-name').innerText = "📍 " + roomId; document.getElementById('active-room-name').style.display = 'inline-block';
+        if (isAdmin) document.getElementById('btn-delete-room').style.display = 'inline-block'; else document.getElementById('btn-delete-room').style.display = 'none';
+        if (typeof window.startLiveTracking === 'function') window.startLiveTracking(roomId, alias);
+        
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+        const unsubRoom = onSnapshot(roomRef, (docSnap) => {
+            if (!docSnap.exists()) { window.customAlert("Sala Cerrada", "La sala ha sido eliminada."); window.leaveRoom(); return; }
+            const data = docSnap.data(); 
+            if (data.geojson && data.lastUpdateUid !== auth.currentUser.uid && data.lastUpdateTime !== window.lastLocalSyncTime) { 
+                window.lastLocalSyncTime = data.lastUpdateTime; 
+                try { const parsed = JSON.parse(data.geojson); window.procesarDatosCargados(parsed, "Sala: " + roomId, true); window.customAlert("Mapa Actualizado", "Un compañero ha actualizado los mapas en directo."); } catch(e) {} 
+            }
+        }); window.roomUnsubs = window.roomUnsubs || []; window.roomUnsubs.push(unsubRoom);
+        
+        const chatCol = collection(db, 'artifacts', appId, 'public', 'data', 'chat_' + roomId);
+        const unsubChat = onSnapshot(chatCol, (snap) => { let messages = []; snap.forEach(d => messages.push(d.data())); messages.sort((a,b) => a.timestamp - b.timestamp); if (typeof window.renderChat === 'function') window.renderChat(messages); }); window.roomUnsubs.push(unsubChat);
+    };
+
+    window.leaveRoom = function() { 
+        if (!window.currentRoom) return; 
+        if (auth.currentUser) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + window.currentRoom, auth.currentUser.uid)).catch(()=>{}); 
+        if(window.roomUnsubs) window.roomUnsubs.forEach(u => u()); window.roomUnsubs = []; 
+        if (window.transmitInterval) { clearInterval(window.transmitInterval); window.transmitInterval = null; } 
+        if (window.alliesLayer) window.alliesLayer.clearLayers(); 
+        window.allyMarkers = {}; window.currentRoom = null; window.currentRadioMsg = ""; 
+        const radioBtns = document.getElementById('radio-msgs-container').querySelectorAll('button'); radioBtns.forEach(b => { b.style.boxShadow = 'none'; b.style.transform = 'scale(1)'; if (b.dataset.origBg !== undefined) b.style.backgroundColor = b.dataset.origBg; });
+        document.getElementById('room-setup-ui').style.display = 'block'; document.getElementById('room-active-ui').style.display = 'none'; document.getElementById('active-room-name').style.display = 'none'; document.getElementById('chat-box').innerHTML = ''; 
+        const memContainer = document.getElementById('members-container'); if (memContainer) memContainer.innerHTML = ''; const memCount = document.getElementById('members-count'); if (memCount) memCount.innerText = '0'; 
+        window.lastProcessedMsgTime = 0; window.unreadMsgCount = 0; const badge = document.getElementById('chat-badge'); if (badge) badge.style.display = 'none'; 
+    };
+
+    window.deleteRoom = async function() { 
+        if (!window.currentRoom || !auth.currentUser) return; 
+        const modal = document.getElementById('confirm-modal'); modal.querySelector('h3').innerText = "🗑️ Eliminar Sala"; modal.querySelector('p').innerText = "¿Eliminar esta sala, chat y mapas compartidos?"; modal.style.display = 'flex'; 
+        window.acceptConfirmModal = async function() { modal.style.display = 'none'; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.currentRoom)); } catch (e) {} }; window.closeConfirmModal = function() { modal.style.display = 'none'; }; 
+    };
+
+    window.syncDrawingsToRoom = async function() {
+        if (!window.currentRoom || !auth.currentUser) return; 
+        const btn = document.getElementById('btn-sync-map'); const oldTxt = btn.innerText; btn.innerText = "⏳ Subiendo..."; btn.disabled = true;
+        const geojsonData = window.drawnItems.toGeoJSON(); geojsonData.features.forEach((feature, index) => { if (feature && feature.properties) { feature.id = "am_" + Date.now() + "_" + index; feature.properties.name = feature.properties.layerName || 'Elemento'; feature.properties.title = feature.properties.layerName || 'Elemento'; feature.properties['marker-color'] = feature.properties.color || '#e74c3c'; feature.properties['stroke'] = feature.properties.color || '#2ecc71'; } });
+        try { const nowTime = Date.now(); await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', window.currentRoom), { geojson: JSON.stringify(geojsonData), lastUpdateUid: auth.currentUser.uid, lastUpdateTime: nowTime }); window.lastLocalSyncTime = nowTime; window.customAlert("Éxito", "Mapa compartido con la sala."); } catch(e) { window.customAlert("Error", "No se pudo sincronizar el mapa."); } btn.innerText = oldTxt; btn.disabled = false;
+    };
+
+    window.sendChatMsg = async function() { 
+        const input = document.getElementById('chat-input'); const txt = input.value.trim(); if (!txt || !window.currentRoom || !auth.currentUser) return; input.value = ''; const alias = document.getElementById('live-alias').value.trim() || 'Desconocido'; 
+        try { await setDoc(doc(collection(db, 'artifacts', appId, 'public', 'data', 'chat_' + window.currentRoom)), { sender: alias, text: txt, timestamp: Date.now(), uid: auth.currentUser.uid }); } catch(e) {} 
+    };
+</script>
+</body>
+</html>
