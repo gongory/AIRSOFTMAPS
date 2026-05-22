@@ -445,20 +445,20 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     window.gpsCircle = null;
 
     window.customAlert = function(title, msg) { if (msg && String(msg).includes('updateAuthUI')) return; document.getElementById('alert-modal-title').innerText = title; document.getElementById('alert-modal-msg').innerText = msg; document.getElementById('alert-modal').style.display = 'flex'; };
-
+    
     // --- HELPERS Y UTILIDADES RESTAURADAS ---
-    window.getGridStep = function(z) { return (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : z > 5 ? 1.0 : 5.0); };
-    window.getAlphaFromNumber = function(num) { let letters = ''; while (num >= 0) { letters = String.fromCharCode(65 + (num % 26)) + letters; num = Math.floor(num / 26) - 1; } return letters; };
-    window.formatDMS = function(deg, isLat) { const abs = Math.abs(deg); const d = Math.floor(abs), m = Math.floor((abs - d) * 60), s = ((abs - d - m/60) * 3600).toFixed(1); const ref = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W'); return `${d}°${m}'${s}"${ref}`; };
-    window.latLonToUTM = function(lat, lon) {
+    function getGridStep(z) { return (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : z > 5 ? 1.0 : 5.0); }
+    function getAlphaFromNumber(num) { let letters = ''; while (num >= 0) { letters = String.fromCharCode(65 + (num % 26)) + letters; num = Math.floor(num / 26) - 1; } return letters; }
+    function formatDMS(deg, isLat) { const abs = Math.abs(deg); const d = Math.floor(abs), m = Math.floor((abs - d) * 60), s = ((abs - d - m/60) * 3600).toFixed(1); const ref = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W'); return `${d}°${m}'${s}"${ref}`; }
+    function latLonToUTM(lat, lon) {
         const a = 6378137.0, f = 1 / 298.257223563, k0 = 0.9996; let huso = Math.floor((lon + 180) / 6) + 1; const lon0 = (huso - 1) * 6 - 180 + 3; const phi = lat * Math.PI / 180, lambda = lon * Math.PI / 180, lambda0 = lon0 * Math.PI / 180;
         const e2 = 2 * f - f * f, ep2 = e2 / (1 - e2); const N = a / Math.sqrt(1 - e2 * Math.sin(phi) * Math.sin(phi)); const T = Math.tan(phi) ** 2, C = ep2 * Math.cos(phi) ** 2, A = (lambda - lambda0) * Math.cos(phi);
         const M = a * ((1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256) * phi - (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 * e2 * e2 / 1024) * Math.sin(2 * phi) + (15 * e2 / 256 + 45 * e2 * e2 / 1024) * Math.sin(4 * phi) - (35 * e2 / 3072) * Math.sin(6 * phi));
         const x = k0 * N * (A + (1 - T + C) * A ** 3 / 6 + (5 - 18 * T + T ** 2 + 72 * C - 58 * ep2) * A ** 5 / 120) + 500000.0;
         let y = k0 * (M + N * Math.tan(phi) * (A ** 2 / 2 + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24 + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720)); if (lat < 0) y += 10000000.0;
         const letters = "CDEFGHJKLMNPQRSTUVWXX"; let index = Math.floor((lat + 80) / 8); if (index < 0) index = 0; if (index > 20) index = 20; return { x, y, huso, banda: letters[index] };
-    };
-    window.utmToLatLon = function(zone, x, y, isSouth) {
+    }
+    function utmToLatLon(zone, x, y, isSouth) {
         const a = 6378137.0, f = 1 / 298.257223563, k0 = 0.9996; const e2 = 2 * f - f * f, ep2 = e2 / (1 - e2); if (isSouth) y -= 10000000.0;
         const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2)); const M = y / k0; const mu = M / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * Math.pow(e2, 3) / 256));
         const phi1 = mu + (3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32) * Math.sin(2 * mu) + (21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32) * Math.sin(4 * mu) + (151 * Math.pow(e1, 3) / 96) * Math.sin(6 * mu);
@@ -466,34 +466,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         const latRad = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * Math.pow(D, 4) / 24 + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * Math.pow(D, 6) / 720);
         const lonRad = (D - (1 + 2 * T1 + C1) * Math.pow(D, 3) / 6 + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * Math.pow(D, 5) / 120) / Math.cos(phi1); const lon0 = (zone - 1) * 6 - 180 + 3;
         return { lat: latRad * 180 / Math.PI, lon: (lonRad * 180 / Math.PI) + lon0 };
-    };
-    window.getMTNLeaf = function(lat, lon) { const refLat = 44.0, refLon = -9.5; const row = Math.floor((refLat - lat) / (10/60)) + 1; const col = Math.floor((lon - refLon) / (20/60)) + 1; return (row * 30 + col).toString().padStart(4, '0'); };
-
-    // --- FUNCIONES EXTRA RESTAURADAS (CONOS, ETIQUETAS Y RADIOS) ---
-    window.updateMarkerBuffer = function(layer) { if (!(layer instanceof L.Marker)) return; const radius = parseFloat(layer.feature?.properties?.bufferRadius) || 0; if (radius > 0) { if (layer.bufferCircle) { layer.bufferCircle.setLatLng(layer.getLatLng()); layer.bufferCircle.setRadius(radius); layer.bufferCircle.setStyle({color: layer.feature.properties.color}); } else { layer.bufferCircle = L.circle(layer.getLatLng(), { radius: radius, color: layer.feature.properties.color, weight: 2, fillOpacity: 0.15, dashArray: '5, 5', interactive: false }).addTo(window.map); layer.bufferCircle.isHidden = layer.isHidden || false; } layer.bufferCircle.setStyle({ opacity: layer.bufferCircle.isHidden?0:1, fillOpacity: layer.bufferCircle.isHidden?0:0.15 }); } else if (layer.bufferCircle) { window.map.removeLayer(layer.bufferCircle); layer.bufferCircle = null; } }
-    window.getDestination = function(latlng, heading, dist) { const R = 6378137, brng = heading * Math.PI / 180, lat1 = latlng.lat * Math.PI / 180, lon1 = latlng.lng * Math.PI / 180; const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist / R) + Math.cos(lat1) * Math.sin(dist / R) * Math.cos(brng)); const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist / R) * Math.cos(lat1), Math.cos(dist / R) - Math.sin(lat1) * Math.sin(lat2)); return L.latLng(lat2 * 180 / Math.PI, lon2 * 180 / Math.PI); }
-    window.getConeLatLngs = function(latlng, radius, angle, spread) { const points = [latlng]; const startAngle = angle - spread / 2; const steps = Math.max(10, Math.floor(spread / 5)); for (let i = 0; i <= steps; i++) { points.push(window.getDestination(latlng, startAngle + (i / steps) * spread, radius)); } return points; }
-    window.updateMarkerCone = function(layer) { if (!(layer instanceof L.Marker)) return; const props = layer.feature?.properties || {}; if (props.coneEnabled) { const radius = parseFloat(props.coneDist) || 100; const angle = parseFloat(props.coneAngle) || 0; const spread = parseFloat(props.coneSpread) || 60; const latlngs = window.getConeLatLngs(layer.getLatLng(), radius, angle, spread); const coneColor = props.coneColor || props.color || '#f1c40f'; if (layer.conePolygon) { layer.conePolygon.setLatLngs(latlngs); layer.conePolygon.setStyle({color: coneColor}); } else { layer.conePolygon = L.polygon(latlngs, { color: coneColor, weight: 1, fillOpacity: 0.2, interactive: false, dashArray: '4, 4' }).addTo(window.map); layer.conePolygon.isHidden = layer.isHidden || false; } layer.conePolygon.setStyle({ opacity: layer.conePolygon.isHidden?0:1, fillOpacity: layer.conePolygon.isHidden?0:0.2 }); } else if (layer.conePolygon) { window.map.removeLayer(layer.conePolygon); layer.conePolygon = null; } }
-
-    // Función de Etiqueta (Tooltip) 100% Corregida
-    window.updateMarkerLabel = function(layer) { 
-        if (!(layer instanceof L.Marker)) return; 
-        const props = layer.feature?.properties || {}; 
-        const title = props.layerName || props.name || 'Marcador'; 
-        
-        // Siempre desvinculamos primero para evitar bugs de Leaflet al cambiar iconos
-        layer.unbindTooltip();
-
-        if (props.showLabel === true || String(props.showLabel) === 'true') { 
-            // Pequeño retraso para asegurar que el DOM del nuevo icono está listo
-            setTimeout(() => {
-                layer.bindTooltip(title, { permanent: true, direction: 'top', offset: [0, -15], className: 'grid-label' }).openTooltip(); 
-                if (layer.isHidden && layer.getTooltip()) layer.getTooltip().setOpacity(0); 
-            }, 10);
-        }
-    };
-    function updateMarkerLabel(layer) { window.updateMarkerLabel(layer); }
-    // ---------------------------------------------------------------
+    }
+    function getMTNLeaf(lat, lon) { const refLat = 44.0, refLon = -9.5; const row = Math.floor((refLat - lat) / (10/60)) + 1; const col = Math.floor((lon - refLon) / (20/60)) + 1; return (row * 30 + col).toString().padStart(4, '0'); }
 
     // Modales y UI
     window.openManual = function() { document.getElementById('manual-modal').style.display = 'flex'; };
@@ -520,7 +494,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     
     window.updateMtnInfo = function() { 
         if(!window.map) return;
-        const center = window.map.getCenter(); const hoja = window.getMTNLeaf(center.lat, center.lng); 
+        const center = window.map.getCenter(); const hoja = getMTNLeaf(center.lat, center.lng); 
         const infoDiv = document.getElementById('mtnInfo'); 
         if (infoDiv) infoDiv.innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div><a href="https://centrodedescargas.cnig.es/CentroDescargas/buscar.do?serie=MTN50&numHoja=${hoja}" target="_blank" style="font-size:10px; color:var(--info); text-decoration:none;">Descargar Hoja Oficial</a>`; 
     };
@@ -613,8 +587,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 
                 const lat = m.l; const lng = m.g;
                 let coordText = `Lat: ${lat}<br>Lon: ${lng}`;
-                const safeName = String(m.n || '').replace(/['"\n\r\\]/g, " ").trim();
-                let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lng}, '${safeName}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
+                let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lng}, '${m.n.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
                 let baseText = `<div><b>📍 ${m.n}</b><br>${coordText}</div>`;
                 newMarker.bindPopup(baseText + actionBtns);
                 newMarker.feature.properties.baseText = baseText;
@@ -640,6 +613,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         activeHandler = new L.Draw.Rectangle(window.map, { shapeOptions: { color: '#28a745', weight: 2, fillOpacity: 0.2 } }); 
         activeHandler.enable();
     };
+    // --- FIN HELPERS RESTAURADOS ---
 
     // Drag & Drop Seguro con fixPosition para evitar expansión CSS
     function dragElement(elmnt) {
@@ -729,191 +703,6 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     if (L.Draw && L.Draw.Polyline) L.Draw.Polyline.prototype._onTouch = function () {};
     L.TileLayer.prototype.createTile = function (coords, done) { const tile = document.createElement('img'); L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile)); L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile)); if (this.options.crossOrigin || this.options.crossOrigin === '') tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin; tile.alt = ''; tile.setAttribute('role', 'presentation'); const url = this.getTileUrl(coords); if ('caches' in window) { caches.open('airsoftmaps-offline').then(cache => { cache.match(url).then(response => { if (response) { response.blob().then(blob => { tile.src = URL.createObjectURL(blob); }); } else { tile.src = url; fetch(url).then(netRes => { if (netRes.ok) cache.put(url, netRes.clone()); }).catch(() => {}); } }); }); } else { tile.src = url; } return tile; };
 
-    // --- RESTAURANDO FUNCIONES DE IMPORTACIÓN/EXPORTACIÓN Y CAPTURA ---
-    window.captureMap = function() {
-        if (typeof html2canvas === 'undefined') return window.customAlert("Error", "Herramienta de captura no cargada.");
-        const mapContainer = document.getElementById('map-container');
-        const btn = document.querySelector('button[onclick="window.captureMap()"]');
-        const oldText = btn ? btn.innerText : '📸 Tomar Captura';
-        if (btn) btn.innerText = "⏳ Capturando...";
-        
-        html2canvas(mapContainer, { useCORS: true, allowTaint: true }).then(canvas => {
-            const imgData = canvas.toDataURL("image/jpeg", 0.8);
-            
-            const div = document.createElement('div');
-            div.className = 'gallery-item';
-            
-            const imgEl = document.createElement('img');
-            imgEl.src = imgData;
-            imgEl.style.cursor = 'pointer';
-            imgEl.onclick = () => {
-                document.getElementById('image-modal-content').src = imgData;
-                document.getElementById('image-modal').style.display = 'flex';
-            };
-            
-            const actionsDiv = document.createElement('div');
-            actionsDiv.style.display = 'flex';
-            actionsDiv.style.gap = '5px';
-            actionsDiv.style.marginTop = '5px';
-            
-            const btnDescargar = document.createElement('button');
-            btnDescargar.innerText = '💾 Descargar';
-            btnDescargar.style.flex = '1';
-            btnDescargar.style.background = 'var(--ign-blue)';
-            btnDescargar.style.color = 'white';
-            btnDescargar.style.border = 'none';
-            btnDescargar.style.padding = '5px';
-            btnDescargar.style.borderRadius = '4px';
-            btnDescargar.style.cursor = 'pointer';
-            btnDescargar.onclick = (e) => {
-                e.stopPropagation();
-                const a = document.createElement('a'); 
-                a.href = imgData; 
-                a.download = window.projectName + "_captura.jpg"; 
-                a.click();
-            };
-            
-            const btnBorrar = document.createElement('button');
-            btnBorrar.innerText = '🗑️';
-            btnBorrar.style.background = 'var(--danger)';
-            btnBorrar.style.color = 'white';
-            btnBorrar.style.border = 'none';
-            btnBorrar.style.padding = '5px';
-            btnBorrar.style.borderRadius = '4px';
-            btnBorrar.style.cursor = 'pointer';
-            btnBorrar.onclick = (e) => {
-                e.stopPropagation();
-                div.remove();
-            };
-            
-            actionsDiv.appendChild(btnDescargar);
-            actionsDiv.appendChild(btnBorrar);
-            
-            div.appendChild(imgEl);
-            div.appendChild(actionsDiv);
-            
-            document.getElementById('gallery').prepend(div);
-            if (btn) btn.innerText = oldText;
-            window.customAlert("Éxito", "Captura guardada en la Galería.");
-        }).catch(err => { 
-            if (btn) btn.innerText = oldText;
-            window.customAlert("Error", "No se pudo tomar la captura."); 
-        });
-    };
-
-    window.closeImageModal = function() {
-        document.getElementById('image-modal').style.display = 'none';
-    };
-
-    window.guardarProyecto = function() { 
-        const data = window.drawnItems.toGeoJSON(); 
-        data.view = { center: window.map.getCenter(), zoom: window.map.getZoom() }; 
-        const blob = new Blob([JSON.stringify(data)], {type: "application/json"}); 
-        const url = URL.createObjectURL(blob); 
-        const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".json"; a.click(); URL.revokeObjectURL(url); 
-    };
-    
-    window.cargarProyecto = function(e) { 
-        const file = e.target.files[0]; 
-        if (!file) return; 
-        const reader = new FileReader(); 
-        reader.onload = function(evt) { 
-            try { 
-                const data = JSON.parse(evt.target.result); 
-                window.procesarDatosCargados(data, file.name.replace('.json', '')); 
-            } catch(err) { 
-                window.customAlert("Error", "Archivo inválido."); 
-            } 
-        }; 
-        reader.readAsText(file); 
-        e.target.value = ''; 
-    };
-
-    window.exportKML = function() { 
-        const data = window.drawnItems.toGeoJSON(); 
-        let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + window.projectName + '</name>\n'; 
-        data.features.forEach(f => { 
-            const p = f.properties || {}; 
-            const n = p.layerName || p.name || 'Elemento'; 
-            const d = p.notes || ''; 
-            const c = f.geometry.coordinates; 
-            const t = f.geometry.type; 
-            kml += `<Placemark><name>${n}</name><description>${d}</description>`; 
-            if (t === 'Point') { 
-                kml += `<Point><coordinates>${c[0]},${c[1]},0</coordinates></Point>`; 
-            } else if (t === 'LineString') { 
-                kml += `<LineString><coordinates>${c.map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LineString>`; 
-            } else if (t === 'Polygon') { 
-                kml += `<Polygon><outerBoundaryIs><LinearRing><coordinates>${c[0].map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon>`; 
-            } 
-            kml += `</Placemark>\n`; 
-        }); 
-        kml += '</Document></kml>'; 
-        const blob = new Blob([kml], {type: "application/vnd.google-earth.kml+xml"}); 
-        const url = URL.createObjectURL(blob); 
-        const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".kml"; a.click(); URL.revokeObjectURL(url); 
-    };
-
-    window.exportGPX = function() { 
-        const data = window.drawnItems.toGeoJSON(); 
-        let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps" xmlns="http://www.topografix.com/GPX/1/1">\n'; 
-        data.features.forEach(f => { 
-            const p = f.properties || {}; 
-            const n = p.layerName || p.name || 'Elemento'; 
-            const d = p.notes || ''; 
-            const c = f.geometry.coordinates; 
-            const t = f.geometry.type; 
-            if (t === 'Point') { 
-                gpx += `<wpt lat="${c[1]}" lon="${c[0]}"><name>${n}</name><desc>${d}</desc></wpt>\n`; 
-            } else if (t === 'LineString') { 
-                gpx += `<trk><name>${n}</name><desc>${d}</desc><trkseg>`; 
-                c.forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); 
-                gpx += `</trkseg></trk>\n`; 
-            } else if (t === 'Polygon') { 
-                gpx += `<trk><name>${n} (Area)</name><desc>${d}</desc><trkseg>`; 
-                c[0].forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); 
-                gpx += `</trkseg></trk>\n`; 
-            } 
-        }); 
-        gpx += '</gpx>'; 
-        const blob = new Blob([gpx], {type: "application/gpx+xml"}); 
-        const url = URL.createObjectURL(blob); 
-        const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".gpx"; a.click(); URL.revokeObjectURL(url); 
-    };
-
-    window.importKMLGPX = function(e) {
-        const file = e.target.files[0]; 
-        if (!file) return; 
-        const reader = new FileReader(); 
-        const extension = file.name.split('.').pop().toLowerCase();
-        reader.onload = function(evt) {
-            try {
-                const parser = new DOMParser(); 
-                const xml = parser.parseFromString(evt.target.result, "text/xml");
-                if (xml.getElementsByTagName("parsererror").length > 0) throw new Error("Error de parseo XML");
-                
-                let geojson;
-                if (extension === 'kml' && typeof toGeoJSON !== 'undefined') geojson = toGeoJSON.kml(xml);
-                else if (extension === 'gpx' && typeof toGeoJSON !== 'undefined') geojson = toGeoJSON.gpx(xml);
-                else return window.customAlert("Error", "Formato no compatible. Usa .kml o .gpx");
-
-                if (geojson && geojson.features && geojson.features.length > 0) {
-                    geojson.features.forEach(f => { 
-                        f.properties = f.properties || {}; 
-                        f.properties.layerName = f.properties.name || f.properties.title || 'Importado'; 
-                        f.properties.faction = window.projectName; 
-                    });
-                    window.procesarDatosCargados(geojson, file.name.split('.')[0]);
-                    window.customAlert("Éxito", `Se han importado ${geojson.features.length} elementos correctamente.`);
-                } else { window.customAlert("Aviso", "El archivo no contiene elementos geográficos válidos."); }
-            } catch (err) { window.customAlert("Error", "No se pudo procesar el archivo. Asegúrate de que es un KML o GPX válido."); }
-        };
-        reader.readAsText(file); 
-        e.target.value = '';
-    };
-    // --- FIN BLOQUE EXPORTAR E IMPORTAR ---
-
-    // --- CORRECCIÓN CRÍTICA DE ARCHIVOS IMPORTADOS ---
     window.procesarDatosCargados = function(geojsonData, nombreProyecto, isSala = false) {
         if (!isSala) { window.drawnItems.clearLayers(); window.projectName = nombreProyecto; document.getElementById('app-title').innerText = "AirsoftMaps - " + nombreProyecto; }
         else { window.drawnItems.clearLayers(); }
@@ -933,28 +722,23 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             onEachFeature: function(feature, layer) {
                 layer.feature = feature; layer.isHidden = false;
                 const id = L.stamp(layer);
-                const name = feature.properties.layerName || feature.properties.name || feature.properties.title || 'Elemento';
-                
-                // Evitamos que saltos de línea o comillas rompan los botones de "Ir" / "Editar"
-                const safeName = String(name).replace(/['"\n\r\\]/g, " ").trim();
-                
+                const name = feature.properties.layerName || feature.properties.name || 'Elemento';
                 let actionBtns = '';
+                
                 if (layer instanceof L.Marker) {
                     const latlng = layer.getLatLng();
-                    actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${safeName}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                    actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
                 } else {
                     actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
                 }
-                
-                // INYECCIÓN CRÍTICA: SI NO HAY TEXTO BASE (ej: importaciones), LO CREAMOS PARA QUE HAYA BOTONES FUNCIONALES
+
+                // Generar texto base si viene de importación externa KML/GPX
                 if (!feature.properties.baseText) {
-                    const rawDesc = feature.properties.desc || feature.properties.description || '';
-                    const safeDesc = String(rawDesc).replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     if (layer instanceof L.Marker) {
                         const latlng = layer.getLatLng();
-                        feature.properties.baseText = `<div style="font-size:12px;max-height:120px;overflow-y:auto;"><b>📍 ${safeName}</b><br>Lat: ${latlng.lat.toFixed(5)}<br>Lon: ${latlng.lng.toFixed(5)}<br><i style="color:#64748b;">${safeDesc}</i></div>`;
+                        feature.properties.baseText = `<div style="font-size:12px;"><b>📍 ${name}</b><br>Lat: ${latlng.lat.toFixed(5)}<br>Lon: ${latlng.lng.toFixed(5)}</div>`;
                     } else {
-                        feature.properties.baseText = `<div style="font-size:12px;max-height:120px;overflow-y:auto;"><b>🗺️ ${safeName}</b><br><i style="color:#64748b;">${safeDesc}</i></div>`;
+                        feature.properties.baseText = `<div style="font-size:12px;"><b>🗺️ ${name}</b></div>`;
                     }
                 }
                 
@@ -962,15 +746,9 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 window.drawnItems.addLayer(layer);
                 
                 if (layer instanceof L.Marker) {
-                    if(typeof window.updateMarkerBuffer === 'function') window.updateMarkerBuffer(layer);
-                    if(typeof window.updateMarkerLabel === 'function') {
-                        // Si el archivo KML/GPX pide mostrar el nombre, lo activamos
-                        if(String(feature.properties.showLabel) === 'true' || feature.properties.showName) {
-                            layer.feature.properties.showLabel = true;
-                        }
-                        window.updateMarkerLabel(layer);
-                    }
-                    if(typeof window.updateMarkerCone === 'function') window.updateMarkerCone(layer);
+                    if(typeof updateMarkerBuffer === 'function') updateMarkerBuffer(layer);
+                    if(typeof updateMarkerLabel === 'function') updateMarkerLabel(layer);
+                    if(typeof updateMarkerCone === 'function') updateMarkerCone(layer);
                 } else if (layer instanceof L.Polyline && feature.properties.isAutoRoute && feature.properties.autoRouteOriginalPoints) {
                     const pts = feature.properties.autoRouteOriginalPoints;
                     layer.endMarker = L.marker(pts[pts.length-1], { icon: getMarkerIconObj(feature.properties.color || '#2ecc71', 'bandera'), zIndexOffset: 1000 }).addTo(window.map);
@@ -1073,7 +851,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         const type = document.getElementById('gridType').value; 
         const color = document.getElementById('gridColor').value; 
         const weight = parseFloat(document.getElementById('gridWeight').value);
-        let step = window.getGridStep(z); 
+        let step = getGridStep(z); 
         let sLat = Math.floor(b.getSouth() / step) * step; let eLat = Math.ceil(b.getNorth() / step) * step; 
         let sLng = Math.floor(b.getWest() / step) * step; let eLng = Math.ceil(b.getEast() / step) * step;
         
@@ -1081,21 +859,21 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         for (let lat = sLat; lat <= eLat; lat += step) { 
             L.polyline([[lat, b.getWest()], [lat, b.getEast()]], lineStyle).addTo(gridLayer); 
             if (type !== 'alpha') { 
-                let label = (type === 'utm') ? `Y:${window.latLonToUTM(lat, b.getCenter().lng).y.toFixed(0)}` : (type === 'dms' ? window.formatDMS(lat, true) : lat.toFixed(3)); 
+                let label = (type === 'utm') ? `Y:${latLonToUTM(lat, b.getCenter().lng).y.toFixed(0)}` : (type === 'dms' ? formatDMS(lat, true) : lat.toFixed(3)); 
                 L.marker([lat, b.getWest()], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [-5, 10], style: `color:${color}` }) }).addTo(gridLayer); 
             } 
         }
         for (let lng = sLng; lng <= eLng; lng += step) { 
             L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], lineStyle).addTo(gridLayer); 
             if (type !== 'alpha') { 
-                let label = (type === 'utm') ? `X:${window.latLonToUTM(b.getCenter().lat, lng).x.toFixed(0)}` : (type === 'dms' ? window.formatDMS(lng, false) : lng.toFixed(3)); 
+                let label = (type === 'utm') ? `X:${latLonToUTM(b.getCenter().lat, lng).x.toFixed(0)}` : (type === 'dms' ? formatDMS(lng, false) : lng.toFixed(3)); 
                 L.marker([b.getNorth(), lng], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [30, -5], style: `color:${color}` }) }).addTo(gridLayer); 
             } 
         }
         if (type === 'alpha') {
             const topEdgeLat = b.getNorth(); const leftEdgeLng = b.getWest();
             for (let lng = sLng; lng < eLng; lng += step) { 
-                let lngIndex = Math.floor((lng + 180) / step); let letter = window.getAlphaFromNumber(lngIndex); 
+                let lngIndex = Math.floor((lng + 180) / step); let letter = getAlphaFromNumber(lngIndex); 
                 L.marker([topEdgeLat, lng + step/2], { icon: L.divIcon({ className: 'alpha-grid-header', html: `<div style="color:${color}; font-size:15px; font-weight:900; background:rgba(255,255,255,0.95); border:2px solid ${color}; width: 28px; height: 28px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">${letter}</div>`, iconSize: [32, 32], iconAnchor: [16, -10] }), interactive: false }).addTo(gridLayer); 
             }
             for (let lat = sLat; lat < eLat; lat += step) { 
@@ -1218,7 +996,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         if (layer.conePolygon) { layer.conePolygon.isHidden = layer.isHidden; layer.conePolygon.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.2 }); } if (layer.bufferCircle) { layer.bufferCircle.isHidden = layer.isHidden; layer.bufferCircle.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.15 }); } if (layer.endMarker) { layer.endMarker.isHidden = layer.isHidden; layer.endMarker.setOpacity(layer.isHidden?0:1); } updateLayerTree();
     };
 
-    window.toggleMarkerLabel = function(id) { const layer = drawnItems.getLayer(id); if (!layer || !(layer instanceof L.Marker)) return; layer.feature.properties.showLabel = !layer.feature.properties.showLabel; window.updateMarkerLabel(layer); updateLayerTree(); };
+    window.toggleMarkerLabel = function(id) { const layer = drawnItems.getLayer(id); if (!layer || !(layer instanceof L.Marker)) return; layer.feature.properties.showLabel = !layer.feature.properties.showLabel; updateMarkerLabel(layer); updateLayerTree(); };
 
     window.toggleFactionVisibility = function(factionName) {
         const layers = drawnItems.getLayers().filter(l => (l.feature?.properties?.faction || window.projectName) === factionName); if (layers.length === 0) return; const hideAll = !layers.every(l => l.isHidden);
@@ -1339,20 +1117,18 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         layer.feature.properties.notes = "";
         let baseText = 'Elemento'; let notesHtml = ''; 
         let actionBtns = notesHtml;
-        const safeName = String(layerName).replace(/['"\n\r\\]/g, " ").trim();
-
         if (e.layerType === 'marker') {
             const latlng = layer.getLatLng();
-            actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${safeName}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+            actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${layerName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
         } else {
             actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
         }
-        drawnItems.addLayer(layer); window.updateLayerTree(); window.stopDrawing();
+        drawnItems.addLayer(layer); updateLayerTree(); window.stopDrawing();
 
         if (e.layerType === 'marker') {
             const latlng = layer.getLatLng(); const lat = latlng.lat; const lng = latlng.lng; const type = document.getElementById('gridType').value;
             let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lng.toFixed(5)}`;
-            if (type === 'dms') { coordText = `Lat: ${window.formatDMS(lat, true)}<br>Lon: ${window.formatDMS(lng, false)}`; } else if (type === 'utm') { const u = window.latLonToUTM(lat, lng); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = window.getGridStep(map.getZoom()); let lngIndex = Math.floor((lng + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${window.getAlphaFromNumber(lngIndex)}${latIndex}`; }
+            if (type === 'dms') { coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lng, false)}`; } else if (type === 'utm') { const u = latLonToUTM(lat, lng); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lng + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
             baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>Calculando...</i></div>`; layer.bindPopup(baseText + actionBtns).openPopup(); 
             try { const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lng.toFixed(5)}`); const data = await res.json(); baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Alt: <b>${data.elevation[0]} m</b></div>`; } catch (error) { baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Alt: Error</div>`; }
             layer.feature.properties.baseText = baseText; layer.setPopupContent(baseText + actionBtns);
@@ -1396,8 +1172,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 
     window.editLayerById = function(id) {
         const layer = drawnItems.getLayer(id); if (!layer) return; const modal = document.getElementById('edit-modal');
-        const nameVal = layer.feature.properties.layerName || layer.feature.properties.name || layer.feature.properties.title || '';
-        document.getElementById('edit-name-input').value = nameVal; document.getElementById('edit-group-input').value = layer.feature.properties.grupo || '';
+        document.getElementById('edit-name-input').value = layer.feature.properties.layerName || ''; document.getElementById('edit-group-input').value = layer.feature.properties.grupo || '';
         document.getElementById('edit-notes-input').value = layer.feature.properties.notes || '';
         const factionSelect = document.getElementById('edit-faction-input'); const currentFaction = layer.feature.properties.faction || window.projectName;
         let factionExists = Array.from(factionSelect.options).some(opt => opt.value === currentFaction);
@@ -1419,23 +1194,15 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 
         window.confirmEditModal = function() {
             modal.style.display = 'none'; let routeModeChanged = false;
-            const newName = document.getElementById('edit-name-input').value.trim() || nameVal || 'Marcador'; 
-            layer.feature.properties.faction = document.getElementById('edit-faction-input').value; layer.feature.properties.grupo = document.getElementById('edit-group-input').value.trim();
+            const newName = document.getElementById('edit-name-input').value.trim() || layer.feature.properties.layerName; layer.feature.properties.faction = document.getElementById('edit-faction-input').value; layer.feature.properties.grupo = document.getElementById('edit-group-input').value.trim();
             layer.feature.properties.notes = document.getElementById('edit-notes-input').value.trim();
-            layer.feature.properties.layerName = newName; layer.feature.properties.name = newName;
-            
+            if (newName !== layer.feature.properties.layerName) { const oldName = layer.feature.properties.layerName; layer.feature.properties.layerName = newName; if (layer.feature.properties.baseText) { layer.feature.properties.baseText = layer.feature.properties.baseText.replace(oldName, newName); } }
             let notesHtml = layer.feature.properties.notes ? `<div style="margin-top:5px;padding:5px;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:4px;font-size:11px;color:#475569;max-height:80px;overflow-y:auto;word-wrap:break-word;"><i>${layer.feature.properties.notes.replace(/\n/g, '<br>')}</i></div>` : '';
             let actionBtns = notesHtml;
-            const safeName = String(newName).replace(/['"\n\r\\]/g, " ").trim();
-
             if (isMarker) {
                 const latlng = layer.getLatLng();
-                const type = document.getElementById('gridType').value; let coordText = `Lat: ${latlng.lat.toFixed(5)}<br>Lon: ${latlng.lng.toFixed(5)}`;
-                if (type === 'dms') { coordText = `Lat: ${window.formatDMS(latlng.lat, true)}<br>Lon: ${window.formatDMS(latlng.lng, false)}`; } else if (type === 'utm') { const u = window.latLonToUTM(latlng.lat, latlng.lng); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = window.getGridStep(window.map.getZoom()); let lngIndex = Math.floor((latlng.lng + 180) / step); let latIndex = Math.floor((latlng.lat + 90) / step); coordText = `Celda Táctica: ${window.getAlphaFromNumber(lngIndex)}${latIndex}`; }
-                layer.feature.properties.baseText = `<div style="font-size:12px;"><b>📍 ${newName}</b><br>${coordText}</div>`;
-                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${safeName}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${newName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
             } else {
-                layer.feature.properties.baseText = `<div style="font-size:12px;"><b>🗺️ ${newName}</b></div>`;
                 actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
             }
 
@@ -1478,23 +1245,23 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 }
             } else if (isMarker) {
                 const newColor = document.getElementById('edit-color-input').value; const newIconType = document.getElementById('edit-icon-input').value; layer.setIcon(getMarkerIconObj(newColor, newIconType)); layer.feature.properties.color = newColor; layer.feature.properties.iconType = newIconType; layer.feature.properties.bufferRadius = parseFloat(document.getElementById('edit-buffer-input').value) || 0; layer.feature.properties.showLabel = document.getElementById('edit-show-label-input').checked; layer.feature.properties.coneEnabled = document.getElementById('edit-cone-enable').checked; layer.feature.properties.coneColor = document.getElementById('edit-cone-color-input').value; layer.feature.properties.coneAngle = parseFloat(document.getElementById('edit-cone-angle-range').value); layer.feature.properties.coneSpread = parseFloat(document.getElementById('edit-cone-spread-range').value); layer.feature.properties.coneDist = parseFloat(document.getElementById('edit-cone-dist').value) || 100;
-                window.updateMarkerBuffer(layer); window.updateMarkerLabel(layer); window.updateMarkerCone(layer);
+                updateMarkerBuffer(layer); updateMarkerLabel(layer); updateMarkerCone(layer);
             }
             if (!routeModeChanged) { layer.setPopupContent(layer.feature.properties.baseText + actionBtns); if (layer.feature.properties.chartData) window.renderChart(layer, id); }
-            window.updateLayerTree(); 
+            updateLayerTree(); 
         };
         window.closeEditModal = () => modal.style.display = 'none';
     };
 
-    window.removeLayerById = function(id) { const layer = drawnItems.getLayer(id); if (layer) { if (layer.bufferCircle) window.map.removeLayer(layer.bufferCircle); if (layer.conePolygon) window.map.removeLayer(layer.conePolygon); if (layer.endMarker) window.map.removeLayer(layer.endMarker); drawnItems.removeLayer(layer); window.updateLayerTree(); } };
+    window.removeLayerById = function(id) { const layer = drawnItems.getLayer(id); if (layer) { if (layer.bufferCircle) window.map.removeLayer(layer.bufferCircle); if (layer.conePolygon) window.map.removeLayer(layer.conePolygon); if (layer.endMarker) window.map.removeLayer(layer.endMarker); drawnItems.removeLayer(layer); updateLayerTree(); } };
 
     window.buscarLugar = async function() {
         const q = document.getElementById('searchInput').value.trim(); if (!q) return;
         const type = document.getElementById('gridType').value; let foundLat = null, foundLon = null, popupText = "Búsqueda: " + q;
         if (type === 'decimal') { const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/); if (coordMatch) { const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]); if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { foundLat = lat; foundLon = lon; } } } 
         else if (type === 'dms') { const parts = q.match(/(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([NS])[,;\s]*(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([EWO])/i); if (parts) { let lat = parseFloat(parts[1]) + parseFloat(parts[2])/60 + parseFloat(parts[3])/3600; if (parts[4].toUpperCase() === 'S') lat = -lat; let lon = parseFloat(parts[5]) + parseFloat(parts[6])/60 + parseFloat(parts[7])/3600; if (parts[8].toUpperCase() === 'W' || parts[8].toUpperCase() === 'O') lon = -lon; foundLat = lat; foundLon = lon; } } 
-        else if (type === 'utm') { const parts = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i); if (parts) { const zone = parseInt(parts[1]); const band = parts[2] ? parts[2].toUpperCase() : 'N'; const x = parseFloat(parts[3]); const y = parseFloat(parts[4]); const isSouth = "CDEFGHJKLM".includes(band); const ll = window.utmToLatLon(zone, x, y, isSouth); if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; } } } 
-        else if (type === 'alpha') { const parts = q.toUpperCase().match(/^([A-Z]+)(\d+)$/); if (parts) { const letters = parts[1]; const latIndex = parseInt(parts[2]); let lngIndex = 0; for (let i = 0; i < letters.length; i++) { lngIndex = lngIndex * 26 + (letters.charCodeAt(i) - 64); } lngIndex -= 1; let step = window.getGridStep(window.map.getZoom()); foundLon = -180 + (lngIndex * step) + (step / 2); foundLat = -90 + (latIndex * step) + (step / 2); } }
+        else if (type === 'utm') { const parts = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i); if (parts) { const zone = parseInt(parts[1]); const band = parts[2] ? parts[2].toUpperCase() : 'N'; const x = parseFloat(parts[3]); const y = parseFloat(parts[4]); const isSouth = "CDEFGHJKLM".includes(band); const ll = utmToLatLon(zone, x, y, isSouth); if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; } } } 
+        else if (type === 'alpha') { const parts = q.toUpperCase().match(/^([A-Z]+)(\d+)$/); if (parts) { const letters = parts[1]; const latIndex = parseInt(parts[2]); let lngIndex = 0; for (let i = 0; i < letters.length; i++) { lngIndex = lngIndex * 26 + (letters.charCodeAt(i) - 64); } lngIndex -= 1; let step = getGridStep(window.map.getZoom()); foundLon = -180 + (lngIndex * step) + (step / 2); foundLat = -90 + (latIndex * step) + (step / 2); } }
 
         if (foundLat !== null && foundLon !== null) { addEditableMarkerFromSearch(foundLat, foundLon, popupText); return; }
         try {
@@ -1507,15 +1274,14 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         if (isZoomLocked) window.toggleZoomLock();
         window.map.setView([lat, lon], 15);
         const color = '#3498db'; const newMarker = L.marker([lat, lon], { icon: getMarkerIconObj(color, 'punto') }); const id = L.stamp(newMarker);
-        const safeName = String(name).replace(/['"\n\r\\]/g, " ").trim();
         newMarker.feature = { type: 'Feature', properties: {} }; newMarker.feature.properties.layerName = name; newMarker.feature.properties.faction = window.projectName; newMarker.feature.properties.grupo = ""; newMarker.isHidden = false; newMarker.feature.properties.color = color; newMarker.feature.properties.iconType = 'punto'; newMarker.feature.properties.bufferRadius = 0; newMarker.feature.properties.showLabel = false; newMarker.feature.properties.coneEnabled = false; newMarker.feature.properties.coneAngle = 0; newMarker.feature.properties.coneSpread = 60; newMarker.feature.properties.coneDist = 100; newMarker.feature.properties.coneColor = color;
         
         const type = document.getElementById('gridType').value; let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}`;
-        if (type === 'dms') coordText = `Lat: ${window.formatDMS(lat, true)}<br>Lon: ${window.formatDMS(lon, false)}`; else if (type === 'utm') { const u = window.latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = window.getGridStep(window.map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${window.getAlphaFromNumber(lngIndex)}${latIndex}`; }
+        if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`; else if (type === 'utm') { const u = latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(window.map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
         
-        let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lon}, '${safeName}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
+        let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
         let baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
-        newMarker.bindPopup(baseText + actionBtns).openPopup(); newMarker.feature.properties.baseText = baseText; drawnItems.addLayer(newMarker); window.updateLayerTree();
+        newMarker.bindPopup(baseText + actionBtns).openPopup(); newMarker.feature.properties.baseText = baseText; drawnItems.addLayer(newMarker); updateLayerTree();
         try {
             const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lon.toFixed(5)}`); const data = await res.json();
             if (data && data.elevation && data.elevation.length > 0) { baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Alt: <b>${data.elevation[0]} m</b></div>`; newMarker.feature.properties.baseText = baseText; newMarker.setPopupContent(baseText + actionBtns); }
@@ -1639,6 +1405,66 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         const arrow = document.getElementById('nav-arrow');
         if (arrow) arrow.style.transform = `rotate(${relativeRotation}deg)`;
     };
+
+    window.guardarProyecto = function() { const data = window.drawnItems.toGeoJSON(); data.view = { center: window.map.getCenter(), zoom: window.map.getZoom() }; const blob = new Blob([JSON.stringify(data)], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".json"; a.click(); URL.revokeObjectURL(url); };
+    window.cargarProyecto = function(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const data = JSON.parse(evt.target.result); window.procesarDatosCargados(data, file.name.replace('.json', '')); } catch(err) { window.customAlert("Error", "Archivo inválido."); } }; reader.readAsText(file); e.target.value = ''; };
+    
+    window.exportKML = function() { const data = window.drawnItems.toGeoJSON(); let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + window.projectName + '</name>\n'; data.features.forEach(f => { const p = f.properties || {}; const n = p.layerName || 'Elemento'; const d = p.notes || ''; const c = f.geometry.coordinates; const t = f.geometry.type; kml += `<Placemark><name>${n}</name><description>${d}</description>`; if (t === 'Point') { kml += `<Point><coordinates>${c[0]},${c[1]},0</coordinates></Point>`; } else if (t === 'LineString') { kml += `<LineString><coordinates>${c.map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LineString>`; } else if (t === 'Polygon') { kml += `<Polygon><outerBoundaryIs><LinearRing><coordinates>${c[0].map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon>`; } kml += `</Placemark>\n`; }); kml += '</Document></kml>'; const blob = new Blob([kml], {type: "application/vnd.google-earth.kml+xml"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".kml"; a.click(); URL.revokeObjectURL(url); };
+    
+    window.exportGPX = function() { const data = window.drawnItems.toGeoJSON(); let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps" xmlns="http://www.topografix.com/GPX/1/1">\n'; data.features.forEach(f => { const p = f.properties || {}; const n = p.layerName || 'Elemento'; const d = p.notes || ''; const c = f.geometry.coordinates; const t = f.geometry.type; if (t === 'Point') { gpx += `<wpt lat="${c[1]}" lon="${c[0]}"><name>${n}</name><desc>${d}</desc></wpt>\n`; } else if (t === 'LineString') { gpx += `<trk><name>${n}</name><desc>${d}</desc><trkseg>`; c.forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); gpx += `</trkseg></trk>\n`; } else if (t === 'Polygon') { gpx += `<trk><name>${n} (Area)</name><desc>${d}</desc><trkseg>`; c[0].forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); gpx += `</trkseg></trk>\n`; } }); gpx += '</gpx>'; const blob = new Blob([gpx], {type: "application/gpx+xml"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".gpx"; a.click(); URL.revokeObjectURL(url); };
+    
+    window.importKMLGPX = function(e) {
+        const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); const extension = file.name.split('.').pop().toLowerCase();
+        reader.onload = function(evt) {
+            try {
+                const parser = new DOMParser(); const xml = parser.parseFromString(evt.target.result, "text/xml");
+                if (xml.getElementsByTagName("parsererror").length > 0) throw new Error("Error de parseo XML");
+                let geojson;
+                if (extension === 'kml') geojson = toGeoJSON.kml(xml);
+                else if (extension === 'gpx') geojson = toGeoJSON.gpx(xml);
+                else return window.customAlert("Error", "Formato no compatible. Usa .kml o .gpx");
+
+                if (geojson && geojson.features && geojson.features.length > 0) {
+                    geojson.features.forEach(f => { f.properties = f.properties || {}; f.properties.layerName = f.properties.name || f.properties.title || 'Importado'; f.properties.faction = window.projectName; });
+                    window.procesarDatosCargados(geojson, file.name.split('.')[0]);
+                    window.customAlert("Éxito", `Se han importado ${geojson.features.length} elementos correctamente.`);
+                } else { window.customAlert("Aviso", "El archivo no contiene elementos geográficos válidos."); }
+            } catch (err) { window.customAlert("Error", "No se pudo procesar el archivo. Asegúrate de que es un KML o GPX válido."); }
+        };
+        reader.readAsText(file); e.target.value = '';
+    };
+
+    window.captureMap = async function() {
+        try {
+            const captureName = await askName("Nombre para captura:", "Mapa_AirsoftMaps"); const safeName = captureName.endsWith('.jpg') ? captureName : captureName + '.jpg';
+            window.toggleMenu(); document.body.classList.add('hide-controls'); const captureId = Date.now(); window.captures = window.captures || {}; const legendEl = document.getElementById('map-legend'); const compassEl = document.getElementById('compass-rose'); const numScaleEl = document.getElementById('numeric-scale-widget'); const geoScaleEl = document.querySelector('.leaflet-control-scale');
+            window.captures[captureId] = { legend: (isLegendVisible && legendEl) ? legendEl.outerHTML : '', compass: (compassEl && compassEl.style.display !== 'none') ? compassEl.outerHTML : '', numScale: numScaleEl ? numScaleEl.outerHTML : '', geoScale: geoScaleEl ? geoScaleEl.outerHTML : '' };
+            setTimeout(async () => {
+                try {
+                    const canvas = await html2canvas(document.getElementById('map-container'), { useCORS: true, allowTaint: false, scale: 1, logging: false, ignoreElements: (el) => { if (!el.classList) return false; if (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution') || el.id === 'map-legend' || el.id === 'compass-rose' || el.id === 'numeric-scale-widget' || el.classList.contains('leaflet-control-scale')) return true; return false; } });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.80); const item = document.createElement('div'); item.className = 'gallery-item'; 
+                    item.innerHTML = `<img src="${imgData}" style="cursor:zoom-in;" onclick="window.openImageModal(this.src)"><div style="font-size:13px;font-weight:bold;color:var(--ign-blue);text-align:center;margin:5px 0;">${captureName}</div><div style="display:flex;justify-content:space-between;align-items:center;padding:5px;flex-wrap:wrap;gap:5px;"><button onclick="window.openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none;background:none;color:var(--success);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">👁️ Ver</button><button onclick="window.printImage(this.closest('.gallery-item').querySelector('img').src, this.parentElement.previousElementSibling.innerText)" style="border:none;background:none;color:var(--ign-gold);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🖨️ Imprimir</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue);font-weight:bold;text-decoration:none;font-size:12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none;background:none;color:var(--danger);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🗑️ Borrar</button></div>`;
+                    document.getElementById('gallery').prepend(item); window.customAlert("Éxito", "Captura realizada correctamente."); setTimeout(() => window.toggleGroup('gallery-container'), 300);
+                } catch (error) { window.customAlert("Error", "No se pudo generar la captura. Intenta alejar el zoom un poco."); } finally { document.body.classList.remove('hide-controls'); window.toggleMenu(); }
+            }, 600); 
+        } catch (e) {}
+    };
+
+    window.printImage = function(src, title) {
+        const printWin = window.open('', '_blank'); 
+        if(!printWin) return window.customAlert("Aviso", "Habilita las ventanas emergentes (popups) para poder imprimir.");
+        printWin.document.write(`<html><head><title>${title || 'Impresión'}</title><style>body{margin:0;background:#333;display:flex;justify-content:center;align-items:center;height:100vh;}img{max-width:100%;max-height:100%;box-shadow:0 0 10px rgba(0,0,0,0.5);}@media print { body{background:#fff;} img{box-shadow:none;} }</style></head><body><img src="${src}" onload="setTimeout(() => { window.print(); window.close(); }, 500);"></body></html>`);
+        printWin.document.close();
+    };
+
+    window.map.on('dragstart', () => { 
+        if (window.locWatchId !== null) { 
+            window.isFollowingUser = false; 
+            const btn = document.querySelector('button[title="Mi Ubicación"]'); 
+            if (btn) { btn.innerHTML = '🚶‍♂️ Centrar GPS'; btn.style.color = 'var(--ign-gold)'; btn.style.borderColor = 'var(--ign-gold)'; btn.style.opacity = "1"; } 
+        } 
+    });
+
 </script>
 
 <script type="module">
