@@ -729,6 +729,190 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     if (L.Draw && L.Draw.Polyline) L.Draw.Polyline.prototype._onTouch = function () {};
     L.TileLayer.prototype.createTile = function (coords, done) { const tile = document.createElement('img'); L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile)); L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile)); if (this.options.crossOrigin || this.options.crossOrigin === '') tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin; tile.alt = ''; tile.setAttribute('role', 'presentation'); const url = this.getTileUrl(coords); if ('caches' in window) { caches.open('airsoftmaps-offline').then(cache => { cache.match(url).then(response => { if (response) { response.blob().then(blob => { tile.src = URL.createObjectURL(blob); }); } else { tile.src = url; fetch(url).then(netRes => { if (netRes.ok) cache.put(url, netRes.clone()); }).catch(() => {}); } }); }); } else { tile.src = url; } return tile; };
 
+    // --- RESTAURANDO FUNCIONES DE IMPORTACIÓN/EXPORTACIÓN Y CAPTURA ---
+    window.captureMap = function() {
+        if (typeof html2canvas === 'undefined') return window.customAlert("Error", "Herramienta de captura no cargada.");
+        const mapContainer = document.getElementById('map-container');
+        const btn = document.querySelector('button[onclick="window.captureMap()"]');
+        const oldText = btn ? btn.innerText : '📸 Tomar Captura';
+        if (btn) btn.innerText = "⏳ Capturando...";
+        
+        html2canvas(mapContainer, { useCORS: true, allowTaint: true }).then(canvas => {
+            const imgData = canvas.toDataURL("image/jpeg", 0.8);
+            
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            
+            const imgEl = document.createElement('img');
+            imgEl.src = imgData;
+            imgEl.style.cursor = 'pointer';
+            imgEl.onclick = () => {
+                document.getElementById('image-modal-content').src = imgData;
+                document.getElementById('image-modal').style.display = 'flex';
+            };
+            
+            const actionsDiv = document.createElement('div');
+            actionsDiv.style.display = 'flex';
+            actionsDiv.style.gap = '5px';
+            actionsDiv.style.marginTop = '5px';
+            
+            const btnDescargar = document.createElement('button');
+            btnDescargar.innerText = '💾 Descargar';
+            btnDescargar.style.flex = '1';
+            btnDescargar.style.background = 'var(--ign-blue)';
+            btnDescargar.style.color = 'white';
+            btnDescargar.style.border = 'none';
+            btnDescargar.style.padding = '5px';
+            btnDescargar.style.borderRadius = '4px';
+            btnDescargar.style.cursor = 'pointer';
+            btnDescargar.onclick = (e) => {
+                e.stopPropagation();
+                const a = document.createElement('a'); 
+                a.href = imgData; 
+                a.download = window.projectName + "_captura.jpg"; 
+                a.click();
+            };
+            
+            const btnBorrar = document.createElement('button');
+            btnBorrar.innerText = '🗑️';
+            btnBorrar.style.background = 'var(--danger)';
+            btnBorrar.style.color = 'white';
+            btnBorrar.style.border = 'none';
+            btnBorrar.style.padding = '5px';
+            btnBorrar.style.borderRadius = '4px';
+            btnBorrar.style.cursor = 'pointer';
+            btnBorrar.onclick = (e) => {
+                e.stopPropagation();
+                div.remove();
+            };
+            
+            actionsDiv.appendChild(btnDescargar);
+            actionsDiv.appendChild(btnBorrar);
+            
+            div.appendChild(imgEl);
+            div.appendChild(actionsDiv);
+            
+            document.getElementById('gallery').prepend(div);
+            if (btn) btn.innerText = oldText;
+            window.customAlert("Éxito", "Captura guardada en la Galería.");
+        }).catch(err => { 
+            if (btn) btn.innerText = oldText;
+            window.customAlert("Error", "No se pudo tomar la captura."); 
+        });
+    };
+
+    window.closeImageModal = function() {
+        document.getElementById('image-modal').style.display = 'none';
+    };
+
+    window.guardarProyecto = function() { 
+        const data = window.drawnItems.toGeoJSON(); 
+        data.view = { center: window.map.getCenter(), zoom: window.map.getZoom() }; 
+        const blob = new Blob([JSON.stringify(data)], {type: "application/json"}); 
+        const url = URL.createObjectURL(blob); 
+        const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".json"; a.click(); URL.revokeObjectURL(url); 
+    };
+    
+    window.cargarProyecto = function(e) { 
+        const file = e.target.files[0]; 
+        if (!file) return; 
+        const reader = new FileReader(); 
+        reader.onload = function(evt) { 
+            try { 
+                const data = JSON.parse(evt.target.result); 
+                window.procesarDatosCargados(data, file.name.replace('.json', '')); 
+            } catch(err) { 
+                window.customAlert("Error", "Archivo inválido."); 
+            } 
+        }; 
+        reader.readAsText(file); 
+        e.target.value = ''; 
+    };
+
+    window.exportKML = function() { 
+        const data = window.drawnItems.toGeoJSON(); 
+        let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + window.projectName + '</name>\n'; 
+        data.features.forEach(f => { 
+            const p = f.properties || {}; 
+            const n = p.layerName || p.name || 'Elemento'; 
+            const d = p.notes || ''; 
+            const c = f.geometry.coordinates; 
+            const t = f.geometry.type; 
+            kml += `<Placemark><name>${n}</name><description>${d}</description>`; 
+            if (t === 'Point') { 
+                kml += `<Point><coordinates>${c[0]},${c[1]},0</coordinates></Point>`; 
+            } else if (t === 'LineString') { 
+                kml += `<LineString><coordinates>${c.map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LineString>`; 
+            } else if (t === 'Polygon') { 
+                kml += `<Polygon><outerBoundaryIs><LinearRing><coordinates>${c[0].map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon>`; 
+            } 
+            kml += `</Placemark>\n`; 
+        }); 
+        kml += '</Document></kml>'; 
+        const blob = new Blob([kml], {type: "application/vnd.google-earth.kml+xml"}); 
+        const url = URL.createObjectURL(blob); 
+        const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".kml"; a.click(); URL.revokeObjectURL(url); 
+    };
+
+    window.exportGPX = function() { 
+        const data = window.drawnItems.toGeoJSON(); 
+        let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps" xmlns="http://www.topografix.com/GPX/1/1">\n'; 
+        data.features.forEach(f => { 
+            const p = f.properties || {}; 
+            const n = p.layerName || p.name || 'Elemento'; 
+            const d = p.notes || ''; 
+            const c = f.geometry.coordinates; 
+            const t = f.geometry.type; 
+            if (t === 'Point') { 
+                gpx += `<wpt lat="${c[1]}" lon="${c[0]}"><name>${n}</name><desc>${d}</desc></wpt>\n`; 
+            } else if (t === 'LineString') { 
+                gpx += `<trk><name>${n}</name><desc>${d}</desc><trkseg>`; 
+                c.forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); 
+                gpx += `</trkseg></trk>\n`; 
+            } else if (t === 'Polygon') { 
+                gpx += `<trk><name>${n} (Area)</name><desc>${d}</desc><trkseg>`; 
+                c[0].forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); 
+                gpx += `</trkseg></trk>\n`; 
+            } 
+        }); 
+        gpx += '</gpx>'; 
+        const blob = new Blob([gpx], {type: "application/gpx+xml"}); 
+        const url = URL.createObjectURL(blob); 
+        const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".gpx"; a.click(); URL.revokeObjectURL(url); 
+    };
+
+    window.importKMLGPX = function(e) {
+        const file = e.target.files[0]; 
+        if (!file) return; 
+        const reader = new FileReader(); 
+        const extension = file.name.split('.').pop().toLowerCase();
+        reader.onload = function(evt) {
+            try {
+                const parser = new DOMParser(); 
+                const xml = parser.parseFromString(evt.target.result, "text/xml");
+                if (xml.getElementsByTagName("parsererror").length > 0) throw new Error("Error de parseo XML");
+                
+                let geojson;
+                if (extension === 'kml' && typeof toGeoJSON !== 'undefined') geojson = toGeoJSON.kml(xml);
+                else if (extension === 'gpx' && typeof toGeoJSON !== 'undefined') geojson = toGeoJSON.gpx(xml);
+                else return window.customAlert("Error", "Formato no compatible. Usa .kml o .gpx");
+
+                if (geojson && geojson.features && geojson.features.length > 0) {
+                    geojson.features.forEach(f => { 
+                        f.properties = f.properties || {}; 
+                        f.properties.layerName = f.properties.name || f.properties.title || 'Importado'; 
+                        f.properties.faction = window.projectName; 
+                    });
+                    window.procesarDatosCargados(geojson, file.name.split('.')[0]);
+                    window.customAlert("Éxito", `Se han importado ${geojson.features.length} elementos correctamente.`);
+                } else { window.customAlert("Aviso", "El archivo no contiene elementos geográficos válidos."); }
+            } catch (err) { window.customAlert("Error", "No se pudo procesar el archivo. Asegúrate de que es un KML o GPX válido."); }
+        };
+        reader.readAsText(file); 
+        e.target.value = '';
+    };
+    // --- FIN BLOQUE EXPORTAR E IMPORTAR ---
+
     // --- CORRECCIÓN CRÍTICA DE ARCHIVOS IMPORTADOS ---
     window.procesarDatosCargados = function(geojsonData, nombreProyecto, isSala = false) {
         if (!isSala) { window.drawnItems.clearLayers(); window.projectName = nombreProyecto; document.getElementById('app-title').innerText = "AirsoftMaps - " + nombreProyecto; }
