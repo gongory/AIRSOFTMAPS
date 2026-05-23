@@ -427,8 +427,6 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <p><b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón "🎯 Ir". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).</p>
             <p><b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol, color de bando y si están activos o han sido marcados como baja.</p>
             <p><b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.</p>
-            <p><b>👻 Fantasmas (Última Posición Conocida):</b> Si un compañero pierde cobertura, se queda sin batería o apaga la pantalla, el mapa dejará de recibir su señal. Si pasa <b>1 minuto</b> sin conexión, su marcador se volverá gris y semitransparente, y en la lista aparecerá como "(Offline)". Esto te permite saber hacia dónde iba antes de perderse. Si pasan <b>10 minutos</b> sin recuperar la señal, el marcador se borrará definitivamente para mantener el mapa limpio.</p>
-</div>
         </div>
         <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;" onclick="window.closeManual()">Entendido</button></div>
     </div>
@@ -736,135 +734,60 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     }
 
     function startLiveTracking(roomId, alias) {
-        window.allyMarkers = window.allyMarkers || {};
-        const factionColor = document.getElementById('live-faction').value;
-        if (!window.userLocMarker) window.customAlert("Aviso GPS", "Enciende el GPS (🎯) para que tus compañeros te vean.");
+        const factionColor = document.getElementById('live-faction').value; if (!window.userLocMarker) window.customAlert("Aviso GPS", "Enciende el GPS (🎯) para que tus compañeros te vean.");
         const roleIcons = { 'asalto': '🔫', 'sniper': '🔭', 'medico': '🏥', 'apoyo': '🛡️', 'lider': '⭐', 'navegante': '🧭', 'radio': '📻' };
-        
-        transmitInterval = setInterval(async () => { 
-            if (window.userLocMarker && auth.currentUser) { 
-                const ll = window.userLocMarker.getLatLng(); 
-                const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto'; 
-                try { 
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId, auth.currentUser.uid), { 
-                        alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: window.currentRadioMsg, msgTime: window.currentRadioMsgTime 
-                    }); 
-                } catch(e) {} 
-            } 
-        }, 3000);
-
+        transmitInterval = setInterval(async () => { if (window.userLocMarker && auth.currentUser) { const ll = window.userLocMarker.getLatLng(); const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto'; try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId, auth.currentUser.uid), { alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }); } catch(e) {} } }, 3000);
         const unsubLive = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId), (snapshot) => {
             const now = Date.now();
             let membersHtml = '';
             let activeCount = 0;
-            
             snapshot.forEach(docSnap => {
-                const data = docSnap.data(); 
-                const id = docSnap.id; 
+                const data = docSnap.data(); const id = docSnap.id; 
+                if (now - data.timestamp > 120000) { if (id !== (auth.currentUser ? auth.currentUser.uid : null) && allyMarkers[id]) { window.alliesLayer.removeLayer(allyMarkers[id]); delete allyMarkers[id]; } return; }
                 
-                // MODO FANTASMA: Lógica de tiempos
-                const timeDiff = now - data.timestamp;
-                if (timeDiff > 600000) { 
-                    // Si pasan más de 10 minutos (600,000 ms), lo borramos definitivamente
-                    if (id !== (auth.currentUser ? auth.currentUser.uid : null) && window.allyMarkers[id]) { 
-                        window.alliesLayer.removeLayer(window.allyMarkers[id]); 
-                        delete window.allyMarkers[id]; 
-                    } 
-                    return; 
-                }
-                
-                const isGhost = timeDiff > 60000; // Más de 1 minuto sin señal = Fantasma
+                activeCount++;
                 const isMe = auth.currentUser && id === auth.currentUser.uid;
-                
-                if (!isGhost) activeCount++;
-                
                 const isEliminatedList = data.msg === '✋ ¡BAJA!';
                 const rIconList = isEliminatedList ? '💀' : (roleIcons[data.role] || '🔫');
-                
-                // Mostrar en la lista lateral (podemos atenuar a los fantasmas)
-                const ghostStyleList = isGhost ? 'opacity: 0.5; font-style: italic;' : '';
-                membersHtml += `<div style="display:flex; align-items:center; gap:5px; padding:3px; font-size:11px; background:${isMe ? '#f1f5f9' : 'transparent'}; border-radius:4px; ${ghostStyleList}">
-                    <span style="color:${data.color}; font-size:14px; line-height:1;">${isGhost ? '○' : '●'}</span> 
-                    <span style="font-size:12px;">${rIconList}</span> 
-                    <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${isEliminatedList ? 'text-decoration:line-through;color:#94a3b8;' : 'color:#475569;'}">${isMe ? `<b>${data.alias} (Tú)</b>` : data.alias} ${isGhost ? '(Offline)' : ''}</span>
-                </div>`;
+                membersHtml += `<div style="display:flex; align-items:center; gap:5px; padding:3px; font-size:11px; background:${isMe ? '#f1f5f9' : 'transparent'}; border-radius:4px;"><span style="color:${data.color}; font-size:14px; line-height:1;">●</span> <span style="font-size:12px;">${rIconList}</span> <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${isEliminatedList ? 'text-decoration:line-through;color:#94a3b8;' : 'color:#475569;'}">${isMe ? `<b>${data.alias} (Tú)</b>` : data.alias}</span></div>`;
 
                 if (!auth.currentUser || id === auth.currentUser.uid) return;
 
-                let distText = "--"; 
-                if (window.userLocMarker) { 
-                    const dist = window.userLocMarker.getLatLng().distanceTo(L.latLng(data.lat, data.lng)); 
-                    distText = dist > 1000 ? (dist/1000).toFixed(2) + " km" : Math.round(dist) + " m"; 
-                }
+                let distText = "--"; if (window.userLocMarker) { const dist = window.userLocMarker.getLatLng().distanceTo(L.latLng(data.lat, data.lng)); distText = dist > 1000 ? (dist/1000).toFixed(2) + " km" : Math.round(dist) + " m"; }
                 
                 const isEliminated = data.msg === '✋ ¡BAJA!';
                 let displayAlias = data.alias; let extraClass = ""; 
-                if (data.msg && data.msg !== "") { 
-                    displayAlias = `<b>${data.msg}</b><br><span style="font-size:9px">${data.alias}</span>`; 
-                    if(!isEliminated && !isGhost) extraClass = "radio-pulse"; 
-                }
+                if (data.msg && data.msg !== "") { displayAlias = `<b>${data.msg}</b><br><span style="font-size:9px">${data.alias}</span>`; if(!isEliminated) extraClass = "radio-pulse"; }
                 
                 const roleIcon = isEliminated ? '💀' : (roleIcons[data.role] || '🔫');
+                const filterStyle = isEliminated ? 'filter: grayscale(100%) opacity(0.6);' : '';
                 
-                // Aplicar el filtro de fantasma (gris y semitransparente) o eliminado
-                let filterStyle = '';
-                if (isGhost) filterStyle = 'filter: grayscale(100%) opacity(0.4);';
-                else if (isEliminated) filterStyle = 'filter: grayscale(100%) opacity(0.6);';
-                
-                const ghostText = isGhost ? `<br><span style="color:gray; font-size:10px;">Última pos. conocida</span>` : '';
-                const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b>${ghostText}</div>`;
-                
-                if (window.allyMarkers[id]) {
-                    window.allyMarkers[id].setLatLng([data.lat, data.lng]); 
-                    const container = window.allyMarkers[id].getElement().querySelector('.ally-container'); 
-                    if(container) container.style.cssText = `position:relative;width:24px;height:24px;${filterStyle}`;
-                    
-                    const arrow = window.allyMarkers[id].getElement().querySelector('.ally-arrow'); 
-                    if (arrow) arrow.style.transform = `rotate(${data.heading}deg)`; 
-                    
-                    const circle = window.allyMarkers[id].getElement().querySelector('.ally-circle'); 
-                    const label = window.allyMarkers[id].getElement().querySelector('.ally-label');
-                    
+                const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b></div>`;
+                if (allyMarkers[id]) {
+                    allyMarkers[id].setLatLng([data.lat, data.lng]); 
+                    const container = allyMarkers[id].getElement().querySelector('.ally-container'); if(container) container.style.cssText = `position:relative;width:24px;height:24px;${filterStyle}`;
+                    const arrow = allyMarkers[id].getElement().querySelector('.ally-arrow'); if (arrow) arrow.style.transform = `rotate(${data.heading}deg)`; 
+                    const circle = allyMarkers[id].getElement().querySelector('.ally-circle'); const label = allyMarkers[id].getElement().querySelector('.ally-label');
                     if (circle) { 
                         circle.style.backgroundColor = data.color; circle.style.borderColor = data.color; 
-                        if (data.color === '#8b4513' && !isEliminated) { 
-                            circle.style.backgroundImage = 'url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png")'; 
-                            circle.style.backgroundSize = 'cover'; circle.style.backgroundPosition = 'center'; circle.style.color = 'white'; circle.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)'; 
-                        } else { 
-                            circle.style.backgroundImage = 'none'; circle.style.color = ''; circle.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)'; 
-                        }
+                        if (data.color === '#8b4513' && !isEliminated) { circle.style.backgroundImage = 'url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png")'; circle.style.backgroundSize = 'cover'; circle.style.backgroundPosition = 'center'; circle.style.color = 'white'; circle.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)'; } 
+                        else { circle.style.backgroundImage = 'none'; circle.style.color = ''; circle.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)'; }
                         circle.innerHTML = roleIcon; 
                     } 
-                    if (label) { 
-                        label.style.borderColor = data.color; 
-                        label.innerHTML = displayAlias; 
-                        label.className = `ally-label grid-label ${extraClass}`; 
-                    } 
-                    if (window.allyMarkers[id].getPopup()) window.allyMarkers[id].setPopupContent(popupHtml);
+                    if (label) { label.style.borderColor = data.color; label.innerHTML = displayAlias; label.className = `ally-label grid-label ${extraClass}`; } 
+                    if (allyMarkers[id].getPopup()) allyMarkers[id].setPopupContent(popupHtml);
                 } else {
                     let bgStyle = `background-color:${data.color};`; let txtStyle = `color:#333;text-shadow:0 1px 2px rgba(0,0,0,0.5);`;
-                    if (data.color === '#8b4513' && !isEliminated) { 
-                        bgStyle += 'background-image:url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png");background-size:cover;background-position:center;'; 
-                        txtStyle = `color:white;text-shadow:0 1px 2px rgba(0,0,0,0.8);`; 
-                    }
+                    if (data.color === '#8b4513' && !isEliminated) { bgStyle += 'background-image:url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png");background-size:cover;background-position:center;'; txtStyle = `color:white;text-shadow:0 1px 2px rgba(0,0,0,0.8);`; }
                     const icon = L.divIcon({ className: 'custom-ally', html: `<div class="ally-container" style="position:relative;width:24px;height:24px;${filterStyle}"><div class="ally-circle" style="position:absolute;width:100%;height:100%;${bgStyle}border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;display:flex;align-items:center;justify-content:center;font-size:12px;${txtStyle}">${roleIcon}</div><div class="ally-arrow" style="position:absolute;top:50%;left:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid rgba(255,255,255,0.8);transform-origin:50% 100%;margin-left:-5px;margin-top:-14px;transform:rotate(${data.heading}deg);z-index:1;"></div><div class="ally-label grid-label ${extraClass}" style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);border-color:${data.color};color:#333;z-index:3;text-align:center;">${displayAlias}</div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
-                    window.allyMarkers[id] = L.marker([data.lat, data.lng], { icon: icon, zIndexOffset: 900 }).bindPopup(popupHtml).addTo(window.alliesLayer);
+                    allyMarkers[id] = L.marker([data.lat, data.lng], { icon: icon, zIndexOffset: 900 }).bindPopup(popupHtml).addTo(window.alliesLayer);
                 }
             });
-            
             const memContainer = document.getElementById('members-container');
             const memCount = document.getElementById('members-count');
             if (memContainer) memContainer.innerHTML = membersHtml;
             if (memCount) memCount.innerText = activeCount;
-
-            // Limpieza de seguridad por si hay algún colgado
-            for (let uid in window.allyMarkers) {
-                let found = false;
-                snap.forEach(d => { if (d.id === uid && (now - d.data().timestamp <= 600000)) found = true; });
-                if (!found) { window.alliesLayer.removeLayer(window.allyMarkers[uid]); delete window.allyMarkers[uid]; }
-            }
-        });
-        window.roomUnsubs.push(unsubLive);
+        }); roomUnsubs.push(unsubLive);
     }
     
     window.sendRadioMessage = function(msg, btn) { 
