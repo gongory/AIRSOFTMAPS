@@ -1702,24 +1702,71 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 
     function handleDeviceOrientation(event) {
         let heading = null;
-        if (event.webkitCompassHeading !== undefined) { heading = event.webkitCompassHeading; } else if (event.absolute === true && event.alpha !== null) { heading = 360 - event.alpha; } else if (event.alpha !== null) { heading = 360 - event.alpha; }
+        
+        // 1. Detectar si la pantalla está en vertical (0) u horizontal (90 o -90)
+        let orientationAngle = 0;
+        if (screen.orientation && screen.orientation.angle !== undefined) {
+            orientationAngle = screen.orientation.angle;
+        } else if (window.orientation !== undefined) {
+            orientationAngle = window.orientation;
+        }
+
+        // 2. Leer sensor y compensar rotación de pantalla
+        if (event.webkitCompassHeading !== undefined) {
+            // iOS (iPhone/iPad)
+            heading = event.webkitCompassHeading + orientationAngle;
+        } else if (event.alpha !== null) {
+            // Android
+            heading = 360 - event.alpha;
+            heading = heading + orientationAngle;
+        }
+
         if (heading !== null) { 
+            // Normalizar para que siempre sea un valor entre 0 y 360
+            heading = (heading + 360) % 360;
             window.currentDeviceHeading = heading; 
+            
+            // Flecha del jugador
             const arrow = document.getElementById('user-dir-arrow'); 
             if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; } 
+            
+            // Panel táctico de navegación
             if (typeof window.updateNavigationUI === 'function') window.updateNavigationUI(); 
             
+            // 3. BRÚJULA DINÁMICA Y ROTACIÓN DEL MAPA
             const cb = document.getElementById('compass-auto-rotate');
+            const mapEl = document.getElementById('map');
+            
             if (cb && cb.checked) {
+                // Rotar icono de brújula superior
                 const svg = document.getElementById('compass-rose').querySelector('svg');
-                if (svg) {
-                    svg.style.transition = 'transform 0.1s ease-out';
-                    svg.style.transform = `rotate(${-heading}deg)`;
+                if (svg) { 
+                    svg.style.transition = 'transform 0.1s ease-out'; 
+                    svg.style.transform = `rotate(${-heading}deg)`; 
+                }
+                
+                // Rotar el mapa SOLO si el GPS está bloqueado siguiéndote
+                if (window.isFollowingUser && mapEl) {
+                    mapEl.style.transition = 'transform 0.1s ease-out';
+                    mapEl.style.transformOrigin = 'center center';
+                    // Ampliamos x1.5 para ocultar los bordes que quedan vacíos al rotar un cuadrado
+                    mapEl.style.transform = `scale(1.5) rotate(${-heading}deg)`; 
+                } else if (mapEl) {
+                    // Si arrastras el dedo, desactivamos el giro para que puedas moverte normal
+                    mapEl.style.transition = 'transform 0.2s ease-out';
+                    mapEl.style.transform = `scale(1) rotate(0deg)`;
+                }
+            } else {
+                // Brújula desactivada: restaurar todo a su sitio
+                const svg = document.getElementById('compass-rose').querySelector('svg');
+                if (svg) svg.style.transform = `rotate(0deg)`;
+                if (mapEl) {
+                    mapEl.style.transition = 'transform 0.2s ease-out';
+                    mapEl.style.transform = `scale(1) rotate(0deg)`;
                 }
             }
         }
     }
-
     // --- MOTOR DEL BOTÓN "🎯 IR" (NAVEGACIÓN TÁCTICA) ---
     window.navTarget = null;
 
