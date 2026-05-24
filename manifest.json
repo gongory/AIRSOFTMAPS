@@ -1,33 +1,37 @@
-"icons": [
-  {
-    "src": "/icons/icon-192.png",
-    "sizes": "192x192",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/icons/icon-512.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "any maskable"
-  }
-],
-"screenshots": [
-  {
-    "src": "/screenshots/home-wide.png",
-    "sizes": "1280x720",
-    "type": "image/png",
-    "form_factor": "wide"
-  },
-  {
-    "src": "/screenshots/home-mobile.png",
-    "sizes": "720x1280",
-    "type": "image/png"
-  }
-],
-
+{
+  "name": "Airsoft Maps",
+  "short_name": "AirsoftMaps",
   "id": "com.airsoftmaps.app",
   "description": "App de topografia y navegación para preparacion de eventos airsoft",
   "lang": "es",
-  "orientation": "any"
+  "orientation": "any",
+
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+
+  "screenshots": [
+    {
+      "src": "/screenshots/home-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/home-mobile.png",
+      "sizes": "720x1280",
+      "type": "image/png"
+    }
+  ]
 }
