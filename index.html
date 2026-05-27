@@ -901,7 +901,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     };
 
     if (L.Draw && L.Draw.Polyline) L.Draw.Polyline.prototype._onTouch = function () {};
-    L.TileLayer.prototype.createTile = function (coords, done) { const tile = document.createElement('img'); L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile)); L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile)); if (this.options.crossOrigin || this.options.crossOrigin === '') tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin; tile.alt = ''; tile.setAttribute('role', 'presentation'); const url = this.getTileUrl(coords); if ('caches' in window) { caches.open('airsoftmaps-offline').then(cache => { cache.match(url).then(response => { if (response) { response.blob().then(blob => { tile.src = URL.createObjectURL(blob); }); } else { tile.src = url; fetch(url).then(netRes => { if (netRes.ok) cache.put(url, netRes.clone()); }).catch(() => {}); } }); }); } else { tile.src = url; } return tile; };
+    L.TileLayer.prototype.createTile = function (coords, done) { const tile = document.createElement('img'); L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile)); L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile)); if (this.options.crossOrigin || this.options.crossOrigin === '') tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin; tile.alt = ''; tile.setAttribute('role', 'presentation'); const url = this.getTileUrl(coords); if ('caches' in window) { caches.open('airsoftmaps-offline').then(cache => { cache.match(url).then(response => { if (response) { response.blob().then(blob => { const objUrl = URL.createObjectURL(blob); tile.addEventListener('load', () => URL.revokeObjectURL(objUrl), {once: true}); tile.addEventListener('error', () => URL.revokeObjectURL(objUrl), {once: true}); tile.src = objUrl; }); } else { tile.src = url; } }); }); } else { tile.src = url; } return tile; };
 
     window.procesarDatosCargados = function(geojsonData, nombreProyecto, isSala = false) {
         if (!isSala) { window.drawnItems.clearLayers(); window.projectName = nombreProyecto; document.getElementById('app-title').innerText = "AirsoftMaps - " + nombreProyecto; }
@@ -1015,9 +1015,10 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         }
     };
 
-    const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 18 }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 19 }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 19 }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 24, maxNativeZoom: 19 }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 18 }) };
+    const transparentTile = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 17, errorTileUrl: transparentTile }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 16, errorTileUrl: transparentTile }) };
     let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
-    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 24, layers: [currentBase, currentOverlay], zoomControl: false });
+    const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 22, layers: [currentBase, currentOverlay], zoomControl: false });
     window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
     window.alliesLayer = L.featureGroup().addTo(map); const drawnItems = new L.FeatureGroup().addTo(map); window.drawnItems = drawnItems; window.updateLayerTree = updateLayerTree;
     const drawOptions = { polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } }, polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } }, marker: {} };
@@ -1886,7 +1887,6 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 const manifestJSON = { "name": "AirsoftMaps", "short_name": "AirsoftMaps", "start_url": window.location.href.split('?')[0] || ".", "display": "standalone", "background_color": "#003366", "theme_color": "#003366", "icons": [ { "src": icon192, "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }, { "src": icon512, "sizes": "512x512", "type": "image/png", "purpose": "any maskable" } ] };
                 const manifestStr = JSON.stringify(manifestJSON); const manifestData = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(manifestStr);
                 const link = document.createElement('link'); link.rel = 'manifest'; link.href = manifestData; document.head.appendChild(link);
-                if ('serviceWorker' in navigator && window.location.protocol === 'https:') { const swCode = "self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => {});"; const swBlob = new Blob([swCode], {type: 'application/javascript'}); const swURL = URL.createObjectURL(swBlob); navigator.serviceWorker.register(swURL).catch(()=>{}); }
             }
             const img = new Image(); img.crossOrigin = "anonymous";
             img.onload = function() {
@@ -1913,12 +1913,13 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         document.getElementById('iframe-3d-modal').style.display = 'flex';
         window.toggleMenu(); // Cierra el menú lateral para dejar la pantalla limpia
     };
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+    }
 </script>  
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js");
-  }
-</script>
 
 </body>
 </html>
