@@ -426,7 +426,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <p><b>📸 Capturas e Impresión:</b> Haz fotos limpias del mapa en la "Galería Capturas" y usa el botón <b>"🖨️ Imprimir"</b> para generar archivos PDF o sacar copias físicas a escala topográfica exacta (A4/A3) con brújula y leyenda táctica incluidas.</p>
             <p><b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú "Sistema", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).</p>
             <p><b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón "🎯 Ir". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).</p>
-            <p><b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol, color de bando y si están activos o han sido marcados como baja.</p>
+            <p><b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando el tiempo que lleva sin señal.</p>
             <p><b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.</p>
         </div>
         <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;" onclick="window.closeManual()">Entendido</button></div>
@@ -738,19 +738,33 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         const factionColor = document.getElementById('live-faction').value; if (!window.userLocMarker) window.customAlert("Aviso GPS", "Enciende el GPS (🎯) para que tus compañeros te vean.");
         const roleIcons = { 'asalto': '🔫', 'sniper': '🔭', 'medico': '🏥', 'apoyo': '🛡️', 'lider': '⭐', 'navegante': '🧭', 'radio': '📻' };
         transmitInterval = setInterval(async () => { if (window.userLocMarker && auth.currentUser) { const ll = window.userLocMarker.getLatLng(); const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto'; try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId, auth.currentUser.uid), { alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }); } catch(e) {} } }, 3000);
-        const unsubLive = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId), (snapshot) => {
+        
+        let liveMembersData = [];
+        const renderLiveMembers = () => {
             const now = Date.now();
             let membersHtml = '';
             let activeCount = 0;
-            snapshot.forEach(docSnap => {
-                const data = docSnap.data(); const id = docSnap.id; 
-                if (now - data.timestamp > 120000) { if (id !== (auth.currentUser ? auth.currentUser.uid : null) && allyMarkers[id]) { window.alliesLayer.removeLayer(allyMarkers[id]); delete allyMarkers[id]; } return; }
+            liveMembersData.forEach(data => {
+                const id = data.id; 
+                const diff = now - data.timestamp;
+                if (diff > 7200000) { if (id !== (auth.currentUser ? auth.currentUser.uid : null) && allyMarkers[id]) { window.alliesLayer.removeLayer(allyMarkers[id]); delete allyMarkers[id]; } return; }
                 
                 activeCount++;
                 const isMe = auth.currentUser && id === auth.currentUser.uid;
                 const isEliminatedList = data.msg === '✋ ¡BAJA!';
                 const rIconList = isEliminatedList ? '💀' : (roleIcons[data.role] || '🔫');
-                membersHtml += `<div style="display:flex; align-items:center; gap:5px; padding:3px; font-size:11px; background:${isMe ? '#f1f5f9' : 'transparent'}; border-radius:4px;"><span style="color:${data.color}; font-size:14px; line-height:1;">●</span> <span style="font-size:12px;">${rIconList}</span> <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${isEliminatedList ? 'text-decoration:line-through;color:#94a3b8;' : 'color:#475569;'}">${isMe ? `<b>${data.alias} (Tú)</b>` : data.alias}</span></div>`;
+                
+                let offlineText = '';
+                let isOffline = false;
+                if (diff > 15000 && !isMe) {
+                    isOffline = true;
+                    const diffSec = Math.floor(diff / 1000); const diffMin = Math.floor(diffSec / 60); const diffHour = Math.floor(diffMin / 60);
+                    if (diffHour > 0) offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffHour}h)</span>`;
+                    else if (diffMin > 0) offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffMin}m)</span>`;
+                    else offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffSec}s)</span>`;
+                }
+
+                membersHtml += `<div style="display:flex; align-items:center; gap:5px; padding:3px; font-size:11px; background:${isMe ? '#f1f5f9' : 'transparent'}; border-radius:4px;"><span style="color:${data.color}; font-size:14px; line-height:1; ${isOffline ? 'opacity:0.3;' : ''}">●</span> <span style="font-size:12px; ${isOffline ? 'opacity:0.3;' : ''}">${rIconList}</span> <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${isEliminatedList ? 'text-decoration:line-through;color:#94a3b8;' : 'color:#475569;'} ${isOffline ? 'opacity:0.5;' : ''}">${isMe ? `<b>${data.alias} (Tú)</b>` : data.alias}${offlineText}</span></div>`;
 
                 if (!auth.currentUser || id === auth.currentUser.uid) return;
 
@@ -760,10 +774,17 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 let displayAlias = data.alias; let extraClass = ""; 
                 if (data.msg && data.msg !== "") { displayAlias = `<b>${data.msg}</b><br><span style="font-size:9px">${data.alias}</span>`; if(!isEliminated) extraClass = "radio-pulse"; }
                 
+                let offlinePopupText = '';
+                if (isOffline) {
+                    const diffSec = Math.floor(diff / 1000); const diffMin = Math.floor(diffSec / 60); const timeStr = diffMin > 59 ? Math.floor(diffMin/60) + 'h' : (diffMin > 0 ? diffMin + 'm' : diffSec + 's');
+                    displayAlias += `<br><span style="font-size:9px;color:var(--danger);background:rgba(255,255,255,0.8);padding:1px 3px;border-radius:2px;display:inline-block;margin-top:2px;">⏳ Sin señal (${timeStr})</span>`;
+                    offlinePopupText = `<br><span style="color:var(--danger);font-size:10px;">⏳ Desconectado hace ${timeStr}</span>`;
+                }
+
                 const roleIcon = isEliminated ? '💀' : (roleIcons[data.role] || '🔫');
-                const filterStyle = isEliminated ? 'filter: grayscale(100%) opacity(0.6);' : '';
+                const filterStyle = isEliminated ? 'filter: grayscale(100%) opacity(0.6);' : (isOffline ? 'filter: grayscale(50%) opacity(0.7);' : '');
                 
-                const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b></div>`;
+                const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b>${offlinePopupText}</div>`;
                 if (allyMarkers[id]) {
                     allyMarkers[id].setLatLng([data.lat, data.lng]); 
                     const container = allyMarkers[id].getElement().querySelector('.ally-container'); if(container) container.style.cssText = `position:relative;width:24px;height:24px;${filterStyle}`;
@@ -788,7 +809,16 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             const memCount = document.getElementById('members-count');
             if (memContainer) memContainer.innerHTML = membersHtml;
             if (memCount) memCount.innerText = activeCount;
+        };
+
+        const unsubLive = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId), (snapshot) => {
+            liveMembersData = [];
+            snapshot.forEach(docSnap => { liveMembersData.push({ id: docSnap.id, ...docSnap.data() }); });
+            renderLiveMembers();
         }); roomUnsubs.push(unsubLive);
+        
+        const localRefreshInterval = setInterval(renderLiveMembers, 5000);
+        roomUnsubs.push(() => clearInterval(localRefreshInterval));
     }
     
     window.sendRadioMessage = function(msg, btn) { 
@@ -985,7 +1015,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         }
     };
 
-    const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 19 }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 19 }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 19 }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 24, maxNativeZoom: 19 }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 19 }) };
+    const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 18 }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 19 }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 19 }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 24, maxNativeZoom: 19 }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 24, maxNativeZoom: 18 }) };
     let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
     const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 24, layers: [currentBase, currentOverlay], zoomControl: false });
     window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
