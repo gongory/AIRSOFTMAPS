@@ -742,6 +742,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         let liveMembersData = [];
         const renderLiveMembers = () => {
             const now = Date.now();
+            const activeIds = liveMembersData.map(d => d.id);
+            
             let membersHtml = '';
             let activeCount = 0;
             liveMembersData.forEach(data => {
@@ -785,26 +787,27 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 const filterStyle = isEliminated ? 'filter: grayscale(100%) opacity(0.6);' : (isOffline ? 'filter: grayscale(50%) opacity(0.7);' : '');
                 
                 const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b>${offlinePopupText}</div>`;
+                let bgStyle = `background-color:${data.color};`; let txtStyle = `color:#333;text-shadow:0 1px 2px rgba(0,0,0,0.5);`;
+                if (data.color === '#8b4513' && !isEliminated) { bgStyle += 'background-image:url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png");background-size:cover;background-position:center;'; txtStyle = `color:white;text-shadow:0 1px 2px rgba(0,0,0,0.8);`; }
+                const newIcon = L.divIcon({ className: 'custom-ally', html: `<div class="ally-container" style="position:relative;width:24px;height:24px;${filterStyle}"><div class="ally-circle" style="position:absolute;width:100%;height:100%;${bgStyle}border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;display:flex;align-items:center;justify-content:center;font-size:12px;${txtStyle}">${roleIcon}</div><div class="ally-arrow" style="position:absolute;top:50%;left:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid rgba(255,255,255,0.8);transform-origin:50% 100%;margin-left:-5px;margin-top:-14px;transform:rotate(${data.heading}deg);z-index:1;"></div><div class="ally-label grid-label ${extraClass}" style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);border-color:${data.color};color:#333;z-index:3;text-align:center;">${displayAlias}</div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+                
                 if (allyMarkers[id]) {
                     allyMarkers[id].setLatLng([data.lat, data.lng]); 
-                    const container = allyMarkers[id].getElement().querySelector('.ally-container'); if(container) container.style.cssText = `position:relative;width:24px;height:24px;${filterStyle}`;
-                    const arrow = allyMarkers[id].getElement().querySelector('.ally-arrow'); if (arrow) arrow.style.transform = `rotate(${data.heading}deg)`; 
-                    const circle = allyMarkers[id].getElement().querySelector('.ally-circle'); const label = allyMarkers[id].getElement().querySelector('.ally-label');
-                    if (circle) { 
-                        circle.style.backgroundColor = data.color; circle.style.borderColor = data.color; 
-                        if (data.color === '#8b4513' && !isEliminated) { circle.style.backgroundImage = 'url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png")'; circle.style.backgroundSize = 'cover'; circle.style.backgroundPosition = 'center'; circle.style.color = 'white'; circle.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)'; } 
-                        else { circle.style.backgroundImage = 'none'; circle.style.color = ''; circle.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)'; }
-                        circle.innerHTML = roleIcon; 
-                    } 
-                    if (label) { label.style.borderColor = data.color; label.innerHTML = displayAlias; label.className = `ally-label grid-label ${extraClass}`; } 
+                    allyMarkers[id].setIcon(newIcon);
                     if (allyMarkers[id].getPopup()) allyMarkers[id].setPopupContent(popupHtml);
                 } else {
-                    let bgStyle = `background-color:${data.color};`; let txtStyle = `color:#333;text-shadow:0 1px 2px rgba(0,0,0,0.5);`;
-                    if (data.color === '#8b4513' && !isEliminated) { bgStyle += 'background-image:url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png");background-size:cover;background-position:center;'; txtStyle = `color:white;text-shadow:0 1px 2px rgba(0,0,0,0.8);`; }
-                    const icon = L.divIcon({ className: 'custom-ally', html: `<div class="ally-container" style="position:relative;width:24px;height:24px;${filterStyle}"><div class="ally-circle" style="position:absolute;width:100%;height:100%;${bgStyle}border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;display:flex;align-items:center;justify-content:center;font-size:12px;${txtStyle}">${roleIcon}</div><div class="ally-arrow" style="position:absolute;top:50%;left:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid rgba(255,255,255,0.8);transform-origin:50% 100%;margin-left:-5px;margin-top:-14px;transform:rotate(${data.heading}deg);z-index:1;"></div><div class="ally-label grid-label ${extraClass}" style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);border-color:${data.color};color:#333;z-index:3;text-align:center;">${displayAlias}</div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
-                    allyMarkers[id] = L.marker([data.lat, data.lng], { icon: icon, zIndexOffset: 900 }).bindPopup(popupHtml).addTo(window.alliesLayer);
+                    allyMarkers[id] = L.marker([data.lat, data.lng], { icon: newIcon, zIndexOffset: 900 }).bindPopup(popupHtml).addTo(window.alliesLayer);
                 }
             });
+            
+            // Limpiar marcadores huérfanos que ya no están en Firebase
+            Object.keys(allyMarkers).forEach(id => {
+                if (!activeIds.includes(id)) {
+                    window.alliesLayer.removeLayer(allyMarkers[id]);
+                    delete allyMarkers[id];
+                }
+            });
+
             const memContainer = document.getElementById('members-container');
             const memCount = document.getElementById('members-count');
             if (memContainer) memContainer.innerHTML = membersHtml;
@@ -812,8 +815,19 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         };
 
         const unsubLive = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId), (snapshot) => {
-            liveMembersData = [];
-            snapshot.forEach(docSnap => { liveMembersData.push({ id: docSnap.id, ...docSnap.data() }); });
+            let rawData = [];
+            snapshot.forEach(docSnap => { rawData.push({ id: docSnap.id, ...docSnap.data() }); });
+            
+            // Deduplicar por alias: Si entran dos personas con el mismo nombre, o si alguien reconecta con un UID nuevo, prevalece el más reciente
+            const aliasMap = {};
+            rawData.forEach(data => {
+                const aliasKey = data.alias ? data.alias.trim().toLowerCase() : data.id;
+                if (!aliasMap[aliasKey] || aliasMap[aliasKey].timestamp < data.timestamp) {
+                    aliasMap[aliasKey] = data;
+                }
+            });
+            liveMembersData = Object.values(aliasMap);
+            
             renderLiveMembers();
         }); roomUnsubs.push(unsubLive);
         
@@ -1553,17 +1567,35 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
  
     window.buscarLugar = async function() {
         const q = document.getElementById('searchInput').value.trim(); if (!q) return;
-        const type = document.getElementById('gridType').value; let foundLat = null, foundLon = null, popupText = "Búsqueda: " + q;
-        if (type === 'decimal') { const coordMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/); if (coordMatch) { const lat = parseFloat(coordMatch[1]), lon = parseFloat(coordMatch[2]); if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { foundLat = lat; foundLon = lon; } } } 
-        else if (type === 'dms') { const parts = q.match(/(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([NS])[,;\s]*(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([EWO])/i); if (parts) { let lat = parseFloat(parts[1]) + parseFloat(parts[2])/60 + parseFloat(parts[3])/3600; if (parts[4].toUpperCase() === 'S') lat = -lat; let lon = parseFloat(parts[5]) + parseFloat(parts[6])/60 + parseFloat(parts[7])/3600; if (parts[8].toUpperCase() === 'W' || parts[8].toUpperCase() === 'O') lon = -lon; foundLat = lat; foundLon = lon; } } 
-        else if (type === 'utm') { const parts = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i); if (parts) { const zone = parseInt(parts[1]); const band = parts[2] ? parts[2].toUpperCase() : 'N'; const x = parseFloat(parts[3]); const y = parseFloat(parts[4]); const isSouth = "CDEFGHJKLM".includes(band); const ll = utmToLatLon(zone, x, y, isSouth); if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; } } } 
-        else if (type === 'alpha') { const parts = q.toUpperCase().match(/^([A-Z]+)(\d+)$/); if (parts) { const letters = parts[1]; const latIndex = parseInt(parts[2]); let lngIndex = 0; for (let i = 0; i < letters.length; i++) { lngIndex = lngIndex * 26 + (letters.charCodeAt(i) - 64); } lngIndex -= 1; let step = getGridStep(map.getZoom()); foundLon = -180 + (lngIndex * step) + (step / 2); foundLat = -90 + (latIndex * step) + (step / 2); } }
+        const type = document.getElementById('gridType').value; 
+        let foundLat = null, foundLon = null, popupText = "Búsqueda: " + q;
+        
+        const decMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/);
+        const dmsMatch = q.match(/(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([NS])[,;\s]*(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([EWO])/i);
+        const utmMatch = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i);
+        const alphaMatch = q.toUpperCase().match(/^([A-Z]+)(\d+)$/);
+
+        if (decMatch) { const lat = parseFloat(decMatch[1]), lon = parseFloat(decMatch[2]); if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { foundLat = lat; foundLon = lon; } } 
+        else if (dmsMatch) { let lat = parseFloat(dmsMatch[1]) + parseFloat(dmsMatch[2])/60 + parseFloat(dmsMatch[3])/3600; if (dmsMatch[4].toUpperCase() === 'S') lat = -lat; let lon = parseFloat(dmsMatch[5]) + parseFloat(dmsMatch[6])/60 + parseFloat(dmsMatch[7])/3600; if (dmsMatch[8].toUpperCase() === 'W' || dmsMatch[8].toUpperCase() === 'O') lon = -lon; foundLat = lat; foundLon = lon; } 
+        else if (utmMatch) { const zone = parseInt(utmMatch[1]); const band = utmMatch[2] ? utmMatch[2].toUpperCase() : 'N'; const x = parseFloat(utmMatch[3]); const y = parseFloat(utmMatch[4]); const isSouth = "CDEFGHJKLM".includes(band); const ll = utmToLatLon(zone, x, y, isSouth); if(ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; } } 
+        else if (type === 'alpha' && alphaMatch) { const letters = alphaMatch[1]; const latIndex = parseInt(alphaMatch[2]); let lngIndex = 0; for (let i = 0; i < letters.length; i++) { lngIndex = lngIndex * 26 + (letters.charCodeAt(i) - 64); } lngIndex -= 1; let step = getGridStep(map.getZoom()); foundLon = -180 + (lngIndex * step) + (step / 2); foundLat = -90 + (latIndex * step) + (step / 2); }
 
         if (foundLat !== null && foundLon !== null) { addEditableMarkerFromSearch(foundLat, foundLon, popupText); return; }
+        
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`); const data = await res.json();
-            if (data[0]) { foundLat = parseFloat(data[0].lat); foundLon = parseFloat(data[0].lon); popupText = data[0].display_name.split(',')[0]; addEditableMarkerFromSearch(foundLat, foundLon, popupText); }
-        } catch (error) { console.error("Error en la búsqueda"); }
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`); 
+            const data = await res.json();
+            if (data && data.length > 0 && data[0]) { 
+                foundLat = parseFloat(data[0].lat); foundLon = parseFloat(data[0].lon); 
+                popupText = data[0].display_name.split(',')[0]; 
+                addEditableMarkerFromSearch(foundLat, foundLon, popupText); 
+            } else {
+                window.customAlert("Búsqueda", "No se encontró ningún lugar o coordenada con esa coincidencia.");
+            }
+        } catch (error) { 
+            console.error("Error en la búsqueda", error);
+            window.customAlert("Error", "Fallo al conectar con el servidor de búsqueda. Revisa tu conexión.");
+        }
     };
 
     async function addEditableMarkerFromSearch(lat, lon, name) {
