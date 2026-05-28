@@ -263,6 +263,23 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <div id="gallery"></div>
         </div>
 
+        <button class="btn-outline" onclick="window.toggleGroup('info-app-container')" style="margin-bottom:10px;justify-content:space-between;"><span>ℹ️ Acerca de la App</span><span>▼</span></button>
+        <div id="info-app-container" style="display:none;padding:15px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;font-size:12px;color:#475569;line-height:1.5;">
+            <div style="text-align:center;margin-bottom:10px;">
+                <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
+                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v2.5.0</span>
+            </div>
+            <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> Francisco QD</p>
+            <p style="margin:5px 0;"><b>📅 Fecha:</b> Mayo 2026</p>
+            <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;">
+                <b style="color:var(--ign-blue);">Últimos cambios:</b>
+                <ul style="margin:5px 0;padding-left:20px;">
+                    <li>Optimización del rendimiento de carga de teselas (Zoom offline sin cuadrados negros).</li>
+                    <li>Mejoras generales de estabilidad y renderizado.</li>
+                </ul>
+            </div>
+        </div>
+
         <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;" onclick="window.enableTool('delete')">🗑️ Borrar Individual</button>
     </div>
 </div>
@@ -915,7 +932,31 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     };
 
     if (L.Draw && L.Draw.Polyline) L.Draw.Polyline.prototype._onTouch = function () {};
-    L.TileLayer.prototype.createTile = function (coords, done) { const tile = document.createElement('img'); L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile)); L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile)); if (this.options.crossOrigin || this.options.crossOrigin === '') tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin; tile.alt = ''; tile.setAttribute('role', 'presentation'); const url = this.getTileUrl(coords); if ('caches' in window) { caches.match(url).then(response => { if (response && response.ok) { response.blob().then(blob => { if (blob.size > 0) { const reader = new FileReader(); reader.onloadend = () => { tile.src = reader.result; }; reader.onerror = () => { tile.src = url; }; reader.readAsDataURL(blob); } else { tile.src = url; } }).catch(() => { tile.src = url; }); } else { tile.src = url; } }).catch(() => { tile.src = url; }); } else { tile.src = url; } return tile; };
+    L.TileLayer.prototype.createTile = function (coords, done) {
+        const tile = document.createElement('img');
+        L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile));
+        L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile));
+        if (this.options.crossOrigin || this.options.crossOrigin === '') tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin;
+        tile.alt = '';
+        tile.setAttribute('role', 'presentation');
+        const url = this.getTileUrl(coords);
+        if ('caches' in window) {
+            caches.match(url).then(response => {
+                if (response && response.ok) {
+                    response.blob().then(blob => {
+                        if (blob.size > 0) {
+                            const objectUrl = URL.createObjectURL(blob);
+                            const cleanUp = () => URL.revokeObjectURL(objectUrl);
+                            tile.addEventListener('load', cleanUp, { once: true });
+                            tile.addEventListener('error', cleanUp, { once: true });
+                            tile.src = objectUrl;
+                        } else { tile.src = url; }
+                    }).catch(() => { tile.src = url; });
+                } else { tile.src = url; }
+            }).catch(() => { tile.src = url; });
+        } else { tile.src = url; }
+        return tile;
+    };
 
     window.procesarDatosCargados = function(geojsonData, nombreProyecto, isSala = false) {
         if (!isSala) { window.drawnItems.clearLayers(); window.projectName = nombreProyecto; document.getElementById('app-title').innerText = "AirsoftMaps - " + nombreProyecto; }
@@ -1945,6 +1986,42 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         document.getElementById('iframe-3d-modal').style.display = 'flex';
         window.toggleMenu(); // Cierra el menú lateral para dejar la pantalla limpia
     };
+
+    window.translations = {
+        es: {
+            manual_btn: "📖 Manual de Usuario", search_title: "🔍 Buscador", search_placeholder: "Ciudad o coordenadas...", search_go: "Ir",
+            proj_menu: "📁 Gestión de Proyecto", mtn_menu: "🗺️ Información MTN", mixer_menu: "🌍 Mezclador de Mapas", grid_menu: "📍 Sistema y Cuadrícula",
+            edit_menu: "✏️ Edición de Mapa", layer_menu: "🗂️ Gestor de Capas", gallery_menu: "📸 Galería Capturas", about_menu: "ℹ️ Acerca de la App",
+            delete_btn: "🗑️ Borrar Individual", login_btn: "Guardar cuenta", logout_btn: "Cerrar sesión", new_proj: "📄 Nuevo", rename_proj: "✏️ Renombrar",
+            cloud_save: "☁️ Guardar Nube", cloud_load: "☁️ Cargar Nube", local_save: "💾 Guardar Local", local_load: "📂 Cargar Local",
+            live_title: "Operaciones & GPS", live_gps: "🎯 Activar Seguimiento GPS", live_ar: "👁️ Visor AR", live_menu: "📡 Sala de Operaciones"
+        },
+        en: {
+            manual_btn: "📖 User Manual", search_title: "🔍 Search", search_placeholder: "City or coordinates...", search_go: "Go",
+            proj_menu: "📁 Project Management", mtn_menu: "🗺️ MTN Info", mixer_menu: "🌍 Map Mixer", grid_menu: "📍 System & Grid",
+            edit_menu: "✏️ Map Editing", layer_menu: "🗂️ Layer Manager", gallery_menu: "📸 Screenshots", about_menu: "ℹ️ About App",
+            delete_btn: "🗑️ Delete Single", login_btn: "Save account", logout_btn: "Log out", new_proj: "📄 New", rename_proj: "✏️ Rename",
+            cloud_save: "☁️ Save Cloud", cloud_load: "☁️ Load Cloud", local_save: "💾 Save Local", local_load: "📂 Load Local",
+            live_title: "Operations & GPS", live_gps: "🎯 Enable GPS Tracking", live_ar: "👁️ AR Viewer", live_menu: "📡 Operations Room"
+        },
+        ca: {
+            manual_btn: "📖 Manual d'Usuari", search_title: "🔍 Cercador", search_placeholder: "Ciutat o coordenades...", search_go: "Anar",
+            proj_menu: "📁 Gestió de Projecte", mtn_menu: "🗺️ Informació MTN", mixer_menu: "🌍 Mesclador de Mapes", grid_menu: "📍 Sistema i Quadrícula",
+            edit_menu: "✏️ Edició de Mapa", layer_menu: "🗂️ Gestor de Capes", gallery_menu: "📸 Galeria de Captures", about_menu: "ℹ️ Sobre l'App",
+            delete_btn: "🗑️ Esborrar Individual", login_btn: "Desar compte", logout_btn: "Tancar sessió", new_proj: "📄 Nou", rename_proj: "✏️ Reanomenar",
+            cloud_save: "☁️ Desar Núvol", cloud_load: "☁️ Carregar Núvol", local_save: "💾 Desar Local", local_load: "📂 Carregar Local",
+            live_title: "Operacions i GPS", live_gps: "🎯 Activar Seguiment GPS", live_ar: "👁️ Visor AR", live_menu: "📡 Sala d'Operacions"
+        }
+    };
+
+    window.changeLanguage = function(lang) {
+        if (!window.translations[lang]) return;
+        localStorage.setItem('am_language', lang);
+        document.querySelectorAll('[data-i18n]').forEach(el => { if (window.translations[lang][el.getAttribute('data-i18n')]) el.innerHTML = window.translations[lang][el.getAttribute('data-i18n')]; });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (window.translations[lang][el.getAttribute('data-i18n-placeholder')]) el.setAttribute('placeholder', window.translations[lang][el.getAttribute('data-i18n-placeholder')]); });
+        if (document.getElementById('langSelect')) document.getElementById('langSelect').value = lang;
+    };
+    window.changeLanguage(localStorage.getItem('am_language') || 'es');
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
