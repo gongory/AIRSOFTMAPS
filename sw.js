@@ -1,4 +1,4 @@
-const CACHE_NAME = "airsoftmaps-cache-v1";
+const CACHE_NAME = "airsoftmaps-cache-v2";
 const ASSETS = [
   "/",
   "/index.html",
@@ -16,7 +16,6 @@ self.addEventListener("install", event => {
       return cache.addAll(ASSETS);
     })
   );
-  self.skipWaiting();
 });
 
 // Activar y limpiar caches viejos
@@ -25,7 +24,7 @@ self.addEventListener("activate", event => {
     caches.keys().then(keys => {
       return Promise.all(
         keys
-          .filter(key => key !== CACHE_NAME)
+          .filter(key => key !== CACHE_NAME && key !== "airsoftmaps-offline")
           .map(key => caches.delete(key))
       );
     })
@@ -43,4 +42,11 @@ self.addEventListener("fetch", event => {
       );
     })
   );
+});
+
+// Escuchar el mensaje del botón "Actualizar" de la app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });
