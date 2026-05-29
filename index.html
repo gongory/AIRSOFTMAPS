@@ -455,6 +455,11 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     </div>
 </div>
 
+<div id="update-modal" style="display:none;position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--ign-blue);color:white;padding:12px 20px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:9999;align-items:center;gap:15px;border:2px solid var(--ign-gold);">
+    <div style="font-size:13px;font-weight:bold;">🚀 Nueva versión disponible</div>
+    <button onclick="window.applyAppUpdate()" style="background:var(--success);color:white;border:none;padding:8px 15px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px;">Actualizar</button>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -2137,9 +2142,33 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     };
     window.changeLanguage(localStorage.getItem('am_language') || 'es');
 
+    // --- SISTEMA DE ACTUALIZACIONES PWA (Para APK de PWABuilder / GitHub Pages) ---
+    let newWorker;
+    window.applyAppUpdate = function() {
+        if (newWorker) {
+            newWorker.postMessage({ action: 'skipWaiting' }); // Fuerza al SW a activarse
+        }
+        document.getElementById('update-modal').style.display = 'none';
+    };
+
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(() => {});
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                reg.addEventListener('updatefound', () => {
+                    newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        // Si hay un nuevo worker instalado y ya teníamos uno controlando la app, es una actualización
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            document.getElementById('update-modal').style.display = 'flex';
+                        }
+                    });
+                });
+            }).catch(err => console.log('SW Registration Error:', err));
+            
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) { refreshing = true; window.location.reload(); }
+            });
         });
     }
 </script>  
