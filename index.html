@@ -456,6 +456,10 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     </div>
 </div>
 
+<div id="offline-banner" style="display:none;position:fixed;top:15px;left:50%;transform:translateX(-50%);background:var(--danger);color:white;padding:8px 16px;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,0.6);z-index:9999;font-size:12px;font-weight:bold;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px);">
+    ⚠️ Estás en modo sin conexión
+</div>
+
 <div id="update-modal" style="display:none;position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--ign-blue);color:white;padding:12px 20px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:9999;align-items:center;gap:15px;border:2px solid var(--ign-gold);">
     <div style="font-size:13px;font-weight:bold;">🚀 Nueva versión disponible</div>
     <button onclick="window.applyAppUpdate()" style="background:var(--success);color:white;border:none;padding:8px 15px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px;">Actualizar</button>
@@ -2155,6 +2159,14 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js').then(reg => {
+                
+                // Forzar comprobación de actualización al volver a primer plano (Ayuda especialmente a iOS)
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        reg.update();
+                    }
+                });
+
                 reg.addEventListener('updatefound', () => {
                     newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -2172,6 +2184,19 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             });
         });
     }
+
+    // --- DETECCIÓN DE CONEXIÓN A INTERNET ---
+    function updateOnlineStatus() {
+        const offlineBanner = document.getElementById('offline-banner');
+        if (navigator.onLine) {
+            offlineBanner.style.display = 'none';
+        } else {
+            offlineBanner.style.display = 'flex';
+        }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus(); // Comprobación inicial al cargar la página
 </script>  
 
 </body>
