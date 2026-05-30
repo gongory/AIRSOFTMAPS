@@ -200,7 +200,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <button class="btn-outline" onclick="window.toggleGroup('mtn-group-container')" style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span data-i18n="mtn_menu">🗺️ Información MTN</span><span>▼</span></button>
         <div id="mtn-group-container" style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
             <div id="mtnInfo" class="mtn-card" style="margin-bottom:10px;margin-top:0;"><div class="mtn-title" data-i18n="identifying_leaf">Identificando hoja...</div></div>
-            <button id="mtnGridBtn" class="btn-outline" style="margin-bottom:0;" onclick="window.toggleMtnGrid()" data-i18n="mtn_grid_btn">Ver Cuadrículas MTN</button>
+            <button id="mtnGridBtn" class="btn-outline" style="margin-bottom:10px;" onclick="window.toggleMtnGrid()" data-i18n="mtn_grid_btn">Ver Cuadrículas MTN</button>
+            <button class="btn-outline" style="margin-bottom:0;border-color:#3498db;color:#3498db;" onclick="window.getWeatherReport()" data-i18n="weather_btn">🌬️ Reporte Meteorológico</button>
         </div>
  
         <button class="btn-outline" onclick="window.toggleGroup('map-mixer-container')" style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span data-i18n="mixer_menu">🌍 Mezclador de Mapas</span><span>▼</span></button>
@@ -272,7 +273,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <div id="info-app-container" style="display:none;padding:15px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;font-size:12px;color:#475569;line-height:1.5;">
             <div style="text-align:center;margin-bottom:10px;">
                 <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
-                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.33
+                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.34
                 </span>
             </div>
             <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> Francisco QD</p>
@@ -280,7 +281,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;">
                 <b style="color:var(--ign-blue);" data-i18n="latest_changes">Últimos cambios:</b>
                 <ul style="margin:5px 0;padding-left:20px;">
-                    <li>Optimización del rendimiento de carga de teselas (Zoom offline sin cuadrados negros).</li>
+                    <li>Optimización del rendimiento de carga de teselas.</li>
                     <li>Mejoras generales de estabilidad y renderizado.</li>
                 </ul>
             </div>
@@ -387,6 +388,16 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Bando</label><select id="edit-faction-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;"><option value="General">🏳️ General</option><option value="Rojo">🔴 Bando Rojo</option><option value="Azul">🔵 Bando Azul</option><option value="Organizacion">⚙️ Organización</option><option value="Neutral">⚪ Neutral / Civil</option><option value="Marine Raider bcn">💀 Marine Raider bcn</option></select>
         <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Grupo</label><input type="text" id="edit-group-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;" placeholder="Ej: Escuadra Alfa">
         <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">📝 Notas / Comentarios</label><textarea id="edit-notes-input" rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;font-family:inherit;font-size:12px;resize:vertical;" placeholder="Instrucciones, detalles, información táctica..."></textarea>
+        <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;" data-i18n="edit_recon_photo">📸 Foto Reconocimiento</label>
+        <div style="display:flex;gap:5px;margin-bottom:5px;">
+            <input type="text" id="edit-image-input" class="form-input" style="margin-bottom:0;flex:1;" placeholder="URL o subir..." data-i18n-placeholder="edit_recon_ph" oninput="if(typeof window.previewReconImage==='function') window.previewReconImage()">
+            <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 10px;" onclick="document.getElementById('edit-image-camera').click()" title="Cámara">📸</button>
+            <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 10px;" onclick="document.getElementById('edit-image-file').click()" data-i18n="edit_recon_upload">📷 Cargar</button>
+            <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 10px;color:var(--danger);border-color:var(--danger);" onclick="if(typeof window.clearReconImage==='function') window.clearReconImage()" title="Borrar foto">🗑️</button>
+            <input type="file" id="edit-image-camera" accept="image/*" capture="environment" style="display:none;" onchange="if(typeof window.processReconImage==='function') window.processReconImage(event)">
+            <input type="file" id="edit-image-file" accept="image/*" style="display:none;" onchange="if(typeof window.processReconImage==='function') window.processReconImage(event)">
+        </div>
+        <img id="edit-image-preview" style="display:none;width:100%;max-height:150px;object-fit:cover;border-radius:6px;margin-bottom:10px;border:1px solid #cbd5e0;cursor:zoom-in;" onclick="window.openImageModal(this.src)">
         <div id="edit-style-options" style="display:none;">
             <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Color</label><select id="edit-color-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;"><option value="#2ecc71">Verde</option><option value="#e74c3c">Rojo</option><option value="#3498db">Azul</option><option value="#f1c40f">Amarillo</option><option value="#9b59b6">Morado</option><option value="#34495e">Oscuro</option></select>
             <div id="edit-marker-specifics" style="display:none;">
@@ -414,7 +425,12 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     <div style="background:white;padding:20px;border-radius:12px;width:300px;"><h3 style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:16px;">✏️ Renombrar Carpeta</h3><select id="rename-folder-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;" onchange="document.getElementById('rename-folder-input').value=this.value"></select><input type="text" id="rename-folder-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;"><div style="display:flex;justify-content:flex-end;gap:10px;"><button style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;" onclick="window.closeRenameFolderModal()">Cancelar</button><button style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;" onclick="window.confirmRenameFolderModal()">Renombrar</button></div></div>
 </div>
 
-<div id="image-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:4000;align-items:center;justify-content:center;"><div style="position:relative;max-width:95%;max-height:95%;display:flex;flex-direction:column;align-items:center;"><button onclick="window.closeImageModal()" style="position:absolute;top:-40px;right:0;background:none;border:none;color:white;font-size:32px;cursor:pointer;" title="Cerrar">✕</button><img id="image-modal-content" src="" style="max-width:100%;max-height:90vh;border-radius:8px;"></div></div>
+<div id="image-modal" onclick="window.closeImageModal()" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(5px);cursor:zoom-out;">
+    <div style="position:relative;max-width:95vw;max-height:90vh;display:flex;justify-content:center;align-items:center;">
+        <button onclick="window.closeImageModal()" style="position:absolute;top:-40px;right:0;background:none;border:none;color:white;font-size:32px;cursor:pointer;text-shadow:0 2px 5px rgba(0,0,0,0.8);" title="Cerrar">✕</button>
+        <img id="image-modal-content" src="" style="max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.8);">
+    </div>
+</div>
 
 <div id="offgrid-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
     <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:350px;position:relative;">
@@ -440,30 +456,35 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 <div id="manual-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
     <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:650px;max-height:85vh;overflow-y:auto;position:relative;">
         <button onclick="window.closeManual()" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;">✕</button>
-        <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;">📖 Manual de Usuario</h2>
+        <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;" data-i18n="manual_title">📖 Manual de Usuario</h2>
         <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
-            <p><b>📍 Marcadores, Áreas y Notas:</b> Usa las herramientas de edición para añadir puntos, rutas o zonas. Si tocas un elemento ya creado en el mapa, pulsa <b>"✏️ Editar"</b> para cambiar su color, bando, añadir un radio de acción, un cono de visión direccional, o escribir <b>Notas y Comentarios</b> tácticos que todos podrán leer.</p>
-            <p><b>📐 Regla Rápida:</b> Herramienta para medir distancias al vuelo. Haz clics en el mapa para trazar una línea temporal y ver la distancia exacta paso a paso sin ensuciar tu proyecto.</p>
-            <p><b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el tiempo estimado a pie o en vehículo.</p>
-            <p><b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
-            <p><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.</p>
-            <p><b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña "Mezclador", pulsa <b>"🔲 Marcar Zona"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.</p>
-            <p><b>📡 Sync Off-Grid:</b> Si no tienes internet pero quieres pasarle tu mapa al compañero, ve a Gestión de Proyecto y usa <b>"Compartir Off-Grid"</b>. Podrás enviar el proyecto completo por Bluetooth, o generar un "código de texto táctico" súper ligero para copiar y pegar por SMS o redes de radio como Meshtastic.</p>
-            <p><b>📸 Capturas e Impresión:</b> Haz fotos limpias del mapa en la "Galería Capturas" y usa el botón <b>"🖨️ Imprimir"</b> para generar archivos PDF o sacar copias físicas a escala topográfica exacta (A4/A3) con brújula y leyenda táctica incluidas.</p>
-            <p><b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú "Sistema", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).</p>
-            <p><b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón "🎯 Ir". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).</p>
-            <p><b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando el tiempo que lleva sin señal.</p>
-            <p><b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.</p>
+            <p data-i18n="manual_p1"><b>📍 Marcadores, Áreas y Notas:</b> Usa las herramientas de edición para añadir puntos, rutas o zonas. Si tocas un elemento ya creado en el mapa, pulsa <b>"✏️ Editar"</b> para cambiar su color, bando, añadir un radio de acción, un cono de visión direccional, o escribir <b>Notas y Comentarios</b> tácticos que todos podrán leer.</p>
+            <p data-i18n="manual_p2"><b>📐 Regla Rápida:</b> Herramienta para medir distancias al vuelo. Haz clics en el mapa para trazar una línea temporal y ver la distancia exacta paso a paso sin ensuciar tu proyecto.</p>
+            <p data-i18n="manual_p3"><b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el tiempo estimado a pie o en vehículo.</p>
+            <p data-i18n="manual_p4"><b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
+            <p data-i18n="manual_p5"><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.</p>
+            <p data-i18n="manual_p6"><b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña "Mezclador", pulsa <b>"🔲 Marcar Zona"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.</p>
+            <p data-i18n="manual_p7"><b>📡 Sync Off-Grid:</b> Si no tienes internet pero quieres pasarle tu mapa al compañero, ve a Gestión de Proyecto y usa <b>"Compartir Off-Grid"</b>. Podrás enviar el proyecto completo por Bluetooth, o generar un "código de texto táctico" súper ligero para copiar y pegar por SMS o redes de radio como Meshtastic.</p>
+            <p data-i18n="manual_p8"><b>📸 Capturas e Impresión:</b> Haz fotos limpias del mapa en la "Galería Capturas" y usa el botón <b>"🖨️ Imprimir"</b> para generar archivos PDF o sacar copias físicas a escala topográfica exacta (A4/A3) con brújula y leyenda táctica incluidas.</p>
+            <p data-i18n="manual_p9"><b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú "Sistema", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).</p>
+            <p data-i18n="manual_p10"><b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón "🎯 Ir". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).</p>
+            <p data-i18n="manual_p11"><b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando el tiempo que lleva sin señal.</p>
+            <p data-i18n="manual_p12"><b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.</p>
+            <p data-i18n="manual_p13"><b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>"✏️ Editar"</b> de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el objetivo.</p>
+            <p data-i18n="manual_p14"><b>🌬️ Clima Táctico:</b> En el menú de "Información MTN", pulsa en "Reporte Meteorológico" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.</p>
         </div>
-        <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;" onclick="window.closeManual()">Entendido</button></div>
+        <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;" onclick="window.closeManual()" data-i18n="manual_understood">Entendido</button></div>
     </div>
 </div>
 
+<div id="offline-banner" style="display:none;position:fixed;top:15px;left:50%;transform:translateX(-50%);background:var(--danger);color:white;padding:8px 16px;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,0.6);z-index:9999;font-size:12px;font-weight:bold;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px);" data-i18n="offline_banner">
 <div id="offline-banner" style="display:none;position:fixed;top:15px;left:50%;transform:translateX(-50%);background:var(--danger);color:white;padding:8px 16px;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,0.6);z-index:9999;font-size:12px;font-weight:bold;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px);">
     ⚠️ Estás en modo sin conexión
 </div>
 
 <div id="update-modal" style="display:none;position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--ign-blue);color:white;padding:12px 20px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:9999;align-items:center;gap:15px;border:2px solid var(--ign-gold);">
+    <div style="font-size:13px;font-weight:bold;" data-i18n="update_title">🚀 Nueva versión disponible</div>
+    <button onclick="window.applyAppUpdate()" style="background:var(--success);color:white;border:none;padding:8px 15px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px;" data-i18n="update_btn">Actualizar</button>
     <div style="font-size:13px;font-weight:bold;">🚀 Nueva versión disponible</div>
     <button onclick="window.applyAppUpdate()" style="background:var(--success);color:white;border:none;padding:8px 15px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px;">Actualizar</button>
 </div>
@@ -996,7 +1017,10 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 layer.feature = feature; layer.isHidden = false;
                 const id = L.stamp(layer);
                 const name = feature.properties.layerName || feature.properties.name || 'Elemento';
-                let actionBtns = '';
+                let notesHtml = feature.properties.notes ? `<div style="margin-top:5px;padding:5px;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:4px;font-size:11px;color:#475569;max-height:80px;overflow-y:auto;word-wrap:break-word;"><i>${feature.properties.notes.replace(/\n/g, '<br>')}</i></div>` : '';
+                let imageHtml = feature.properties.imageUrl ? `<img src="${feature.properties.imageUrl}" style="width:100%;max-height:140px;object-fit:cover;border-radius:4px;margin-top:5px;border:1px solid #cbd5e0;cursor:zoom-in;" onclick="window.openImageModal(this.src)">` : '';
+                let extrasHtml = imageHtml + notesHtml;
+                let actionBtns = extrasHtml;
                 if (layer instanceof L.Marker) {
                     const latlng = layer.getLatLng();
                     actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
@@ -1369,8 +1393,10 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         } else if (layer.options) { layer.feature.properties.color = layer.options.color; layer.feature.properties.weight = layer.options.weight; layer.feature.properties.fillOpacity = layer.options.fillOpacity; }
         
         layer.feature.properties.notes = "";
-        let baseText = 'Elemento'; let notesHtml = ''; 
-        let actionBtns = notesHtml;
+        layer.feature.properties.imageUrl = "";
+        let baseText = 'Elemento'; let notesHtml = '';
+        let imageHtml = ''; let extrasHtml = imageHtml + notesHtml;
+        let actionBtns = extrasHtml;
         if (e.layerType === 'marker') {
             const latlng = layer.getLatLng();
             actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${layerName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
@@ -1428,6 +1454,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         const layer = drawnItems.getLayer(id); if (!layer) return; const modal = document.getElementById('edit-modal');
         document.getElementById('edit-name-input').value = layer.feature.properties.layerName || ''; document.getElementById('edit-group-input').value = layer.feature.properties.grupo || '';
         document.getElementById('edit-notes-input').value = layer.feature.properties.notes || '';
+        document.getElementById('edit-image-input').value = layer.feature.properties.imageUrl || '';
+        if (typeof window.previewReconImage === 'function') window.previewReconImage();
         const factionSelect = document.getElementById('edit-faction-input'); const currentFaction = layer.feature.properties.faction || window.projectName;
         let factionExists = Array.from(factionSelect.options).some(opt => opt.value === currentFaction);
         if (!factionExists) { const newOpt = document.createElement('option'); newOpt.value = currentFaction; newOpt.text = '📁 ' + currentFaction; factionSelect.appendChild(newOpt); }
@@ -1450,9 +1478,12 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             modal.style.display = 'none'; let routeModeChanged = false;
             const newName = document.getElementById('edit-name-input').value.trim() || layer.feature.properties.layerName; layer.feature.properties.faction = document.getElementById('edit-faction-input').value; layer.feature.properties.grupo = document.getElementById('edit-group-input').value.trim();
             layer.feature.properties.notes = document.getElementById('edit-notes-input').value.trim();
+            layer.feature.properties.imageUrl = document.getElementById('edit-image-input').value.trim();
             if (newName !== layer.feature.properties.layerName) { const oldName = layer.feature.properties.layerName; layer.feature.properties.layerName = newName; if (layer.feature.properties.baseText) { layer.feature.properties.baseText = layer.feature.properties.baseText.replace(oldName, newName); } }
             let notesHtml = layer.feature.properties.notes ? `<div style="margin-top:5px;padding:5px;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:4px;font-size:11px;color:#475569;max-height:80px;overflow-y:auto;word-wrap:break-word;"><i>${layer.feature.properties.notes.replace(/\n/g, '<br>')}</i></div>` : '';
-            let actionBtns = notesHtml;
+            let imageHtml = layer.feature.properties.imageUrl ? `<img src="${layer.feature.properties.imageUrl}" style="width:100%;max-height:140px;object-fit:cover;border-radius:4px;margin-top:5px;border:1px solid #cbd5e0;cursor:zoom-in;" onclick="window.openImageModal(this.src)">` : '';
+            let extrasHtml = imageHtml + notesHtml;
+            let actionBtns = extrasHtml;
             if (isMarker) {
                 const latlng = layer.getLatLng();
                 actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${newName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
@@ -1507,6 +1538,47 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         window.closeEditModal = () => modal.style.display = 'none';
     };
 
+    window.previewReconImage = function() {
+        const input = document.getElementById('edit-image-input');
+        const preview = document.getElementById('edit-image-preview');
+        if (input && input.value) { preview.src = input.value; preview.style.display = 'block'; }
+        else if (preview) { preview.style.display = 'none'; preview.src = ''; }
+    };
+
+    window.clearReconImage = function() {
+        const input = document.getElementById('edit-image-input');
+        const fileInput = document.getElementById('edit-image-file');
+        const cameraInput = document.getElementById('edit-image-camera');
+        if (input) input.value = '';
+        if (fileInput) fileInput.value = '';
+        if (cameraInput) cameraInput.value = '';
+        window.previewReconImage();
+    };
+
+    window.processReconImage = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 300; const MAX_HEIGHT = 300;
+                let width = img.width; let height = img.height;
+                if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                document.getElementById('edit-image-input').value = canvas.toDataURL('image/jpeg', 0.4);
+                window.previewReconImage();
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
     window.removeLayerById = function(id) { const layer = drawnItems.getLayer(id); if (layer) { if (layer.bufferCircle) map.removeLayer(layer.bufferCircle); if (layer.conePolygon) map.removeLayer(layer.conePolygon); if (layer.endMarker) map.removeLayer(layer.endMarker); drawnItems.removeLayer(layer); updateLayerTree(); } };
     window.zoomToLayer = function(id) { const layer = drawnItems.getLayer(id); if (!layer) return; if (layer instanceof L.Marker) { map.setView(layer.getLatLng(), 18); if (!layer.isHidden) layer.openPopup(); } else if (layer.getBounds) { map.fitBounds(layer.getBounds()); if (!layer.isHidden) layer.openPopup(); } };
     window.openImageModal = function(src) { document.getElementById('image-modal-content').src = src; document.getElementById('image-modal').style.display = 'flex'; };
@@ -1557,6 +1629,47 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 
     function getMTNLeaf(lat, lon) { const refLat = 44.0, refLon = -9.5; const row = Math.floor((refLat - lat) / (10/60)) + 1; const col = Math.floor((lon - refLon) / (20/60)) + 1; return (row * 30 + col).toString().padStart(4, '0'); }
     function updateMtnInfo() { const center = map.getCenter(); const hoja = getMTNLeaf(center.lat, center.lng); const infoDiv = document.getElementById('mtnInfo'); if (infoDiv) { infoDiv.innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div><a href="https://centrodedescargas.cnig.es/CentroDescargas/buscar.do?serie=MTN50&numHoja=${hoja}" target="_blank" style="font-size:10px; color:var(--info); text-decoration:none;">Descargar Hoja Oficial</a>`; } }
+
+    window.getWeatherReport = async function() {
+        const center = window.map.getCenter();
+        const lat = center.lat.toFixed(5);
+        const lng = center.lng.toFixed(5);
+        const btn = document.querySelector('[data-i18n="weather_btn"]');
+        const originalText = btn ? btn.innerHTML : "🌬️ Reporte Meteorológico";
+        if (btn) { btn.innerHTML = "⏳..."; btn.disabled = true; }
+
+        try {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&daily=sunrise,sunset,precipitation_probability_max,precipitation_sum,temperature_2m_max,temperature_2m_min&timezone=auto`);
+            const data = await res.json();
+            if (data && data.current_weather) {
+                const temp = data.current_weather.temperature;
+                const windSpeed = data.current_weather.windspeed;
+                const windDir = data.current_weather.winddirection;
+                let sunrise = "N/A", sunset = "N/A", precipProb = "0", precipSum = "0";
+                if (data.daily) {
+                    if (data.daily.sunrise && data.daily.sunrise.length > 0) sunrise = new Date(data.daily.sunrise[0]).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    if (data.daily.sunset && data.daily.sunset.length > 0) sunset = new Date(data.daily.sunset[0]).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    if (data.daily.precipitation_probability_max && data.daily.precipitation_probability_max.length > 0) precipProb = data.daily.precipitation_probability_max[0];
+                    if (data.daily.precipitation_sum && data.daily.precipitation_sum.length > 0) precipSum = data.daily.precipitation_sum[0];
+                }
+                let report = `🌡️ Temp. Actual: ${temp}°C\n💨 Viento: ${windSpeed} km/h (Dir: ${windDir}°)\n☔ Lluvia Hoy: ${precipProb}% prob. (${precipSum} mm)\n🌅 Amanecer: ${sunrise} | 🌇 Ocaso: ${sunset}\n\n📅 Previsión próximos días:\n`;
+                if (data.daily && data.daily.time) {
+                    for (let i = 1; i <= 3; i++) {
+                        if (data.daily.time[i]) {
+                            let dDate = new Date(data.daily.time[i] + 'T12:00:00').toLocaleDateString([], {weekday: 'short', day: '2-digit', month: '2-digit'});
+                            let dMax = data.daily.temperature_2m_max[i];
+                            let dMin = data.daily.temperature_2m_min[i];
+                            let dProb = data.daily.precipitation_probability_max[i];
+                            let dSum = data.daily.precipitation_sum[i];
+                            report += `🔹 ${dDate}: ${dMin}°C a ${dMax}°C | ☔ ${dProb}% (${dSum} mm)\n`;
+                        }
+                    }
+                }
+                window.customAlert("🌬️ Clima Táctico", report);
+            } else { window.customAlert("Error", "No se pudo obtener el clima."); }
+        } catch (error) { window.customAlert("Error", "Fallo al conectar con el servidor meteorológico."); }
+        finally { if (btn) { btn.innerHTML = originalText; btn.disabled = false; } }
+    };
 
     window.toggleMtnGrid = function() {
         isMtnGridVisible = !isMtnGridVisible; const btn = document.getElementById('mtnGridBtn');
@@ -2015,7 +2128,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             live_title: "Operaciones & GPS", live_gps: "🎯 Activar Seguimiento GPS", live_ar: "👁️ Visor AR", live_menu: "📡 Sala de Operaciones",
             import_export_lbl: "Importar / Exportar (KML/GPX)", export_kml_btn: "⬇️ Exportar KML", export_gpx_btn: "⬇️ Exportar GPX", import_file_btn: "⬆️ Importar Archivo",
             sync_offgrid_lbl: "📡 Sincronización Sin Internet", share_offgrid_btn: "Compartir Off-Grid",
-            mtn_grid_btn: "Ver Cuadrículas MTN", identifying_leaf: "Identificando hoja...",
+            mtn_grid_btn: "Ver Cuadrículas MTN", identifying_leaf: "Identificando hoja...", weather_btn: "🌬️ Reporte Meteorológico",
             base_layer_lbl: "Capa Principal (Fondo)", overlay_layer_lbl: "Capa Secundaria", overlay_opacity_lbl: "Opacidad Secundaria",
             offline_mode_lbl: "Modo Offline", offline_current_btn: "⬇️ Visión Actual", offline_zone_btn: "🔲 Marcar Zona",
             tools_3d_lbl: "Herramientas 3D In-App", drone_3d_btn: "🛰️ Dron de Reconocimiento 3D",
@@ -2036,6 +2149,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             enter_room_btn: "🚪 Entrar / Crear Sala", share_map_btn: "🔄 Compartir Mapa", delete_room_btn: "🗑️ Eliminar Sala", chat_ph: "Mensaje...", exit_room_btn: "🚪 Salir de la Sala",
             msg_enemy: "⚠️ Enemigo", msg_medic: "🏥 Médico", msg_defend: "🛡️ Defensa", msg_move: "🏃 Avanzando", msg_down: "💀 ESTOY ELIMINADO",
             modal_name_title: "Nombrar elemento", modal_cancel: "Cancelar", modal_accept: "Aceptar", modal_alert_title: "Notificación", modal_cloud_title: "☁️ Mis Proyectos", modal_close: "Cerrar", modal_drone_title: "🛰️ SEÑAL DE DRON TÁCTICO 3D", modal_drone_close: "✕ Desconectar", modal_ar_close: "✕ Cerrar AR", modal_confirm_title: "⚠️ Confirmación", modal_confirm: "Confirmar", edit_title: "✏️ Editar Elemento", edit_name: "Nombre", edit_faction: "Bando", edit_group: "Grupo", edit_notes: "📝 Notas / Comentarios", edit_color: "Color", edit_icon: "Icono Militar", edit_show_name: "Mostrar nombre", edit_radius: "⭕ Radio de Acción (m)", edit_show_cone: "🔦 Mostrar Cono", edit_cone_color: "Color", edit_orientation: "Orientación", edit_spread: "Apertura", edit_range: "Alcance (m)", edit_thickness: "Grosor", edit_route_mode: "Modo de Ruta", modal_save: "Guardar", modal_rename_title: "✏️ Renombrar Carpeta", modal_rename_btn: "Renombrar", offgrid_title: "📡 Sync Off-Grid", offgrid_desc: "Comparte el mapa o envía coordenadas a tus compañeros cuando <b>no hay cobertura de internet</b>.", offgrid_btn_share: "📲 Enviar Mapa por Bluetooth", offgrid_lbl_export: "Exportar a Radio / SMS (Solo Marcadores):", offgrid_btn_copy: "Copiar", offgrid_lbl_import: "Recibir código Táctico:", offgrid_ph_import: "Pega el código AM:...", offgrid_btn_load: "Cargar", manual_title: "📖 Manual de Usuario", manual_understood: "Entendido", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Bando Rojo", edit_fact_blue: "🔵 Bando Azul", edit_fact_org: "⚙️ Organización", edit_fact_neu: "⚪ Neutral / Civil", edit_group_ph: "Ej: Escuadra Alfa", edit_notes_ph: "Instrucciones, detalles, información táctica...", opt_purple: "Morado", opt_dark: "Oscuro", opt_white: "Blanco", icon_dot: "🔴 Punto normal", icon_base: "⛺ Base / Campamento", icon_target: "🎯 Objetivo", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combate", icon_defend: "🛡️ Defensa", icon_heli: "🚁 Extracción", icon_medic: "🏥 Médico", icon_radio: "📡 Comunicaciones", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️ A pie", route_drive: "🚗 En coche", route_bike: "🚲 En bici", btn_undo: "↩️ Deshacer", btn_finish: "✅ Finalizar", btn_cancel_action: "✕ Cancelar", nav_target: "Destino", btn_stop_nav: "✕ Detener",
+            edit_recon_photo: "📸 Foto Reconocimiento", edit_recon_ph: "URL o subir...", edit_recon_upload: "📷 Cargar",
+            update_title: "🚀 Nueva versión disponible", update_btn: "Actualizar", offline_banner: "⚠️ Estás en modo sin conexión", edit_recon_photo: "📸 Foto Reconocimiento", edit_recon_ph: "URL o subir...", edit_recon_upload: "📷 Cargar",
             manual_p1: "<b>📍 Marcadores, Áreas y Notas:</b> Usa las herramientas de edición para añadir puntos, rutas o zonas. Si tocas un elemento ya creado en el mapa, pulsa <b>\"✏️ Editar\"</b> para cambiar su color, bando, añadir un radio de acción, un cono de visión direccional, o escribir <b>Notas y Comentarios</b> tácticos que todos podrán leer.",
             manual_p2: "<b>📐 Regla Rápida:</b> Herramienta para medir distancias al vuelo. Haz clics en el mapa para trazar una línea temporal y ver la distancia exacta paso a paso sin ensuciar tu proyecto.",
             manual_p3: "<b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el tiempo estimado a pie o en vehículo.",
@@ -2047,7 +2162,9 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p9: "<b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú \"Sistema\", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).",
             manual_p10: "<b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón \"🎯 Ir\". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).",
             manual_p11: "<b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando el tiempo que lleva sin señal.",
-            manual_p12: "<b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia."
+            manual_p12: "<b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.",
+            manual_p13: "<b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>\"✏️ Editar\"</b> de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el objetivo.",
+            manual_p14: "<b>🌬️ Clima Táctico:</b> En el menú de \"Información MTN\", pulsa en \"Reporte Meteorológico\" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando."
         },
         en: {
             manual_btn: "📖 User Manual", search_title: "🔍 Search", search_placeholder: "City or coordinates...", search_go: "Go",
@@ -2058,7 +2175,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             live_title: "Operations & GPS", live_gps: "🎯 Enable GPS Tracking", live_ar: "👁️ AR Viewer", live_menu: "📡 Operations Room",
             import_export_lbl: "Import / Export (KML/GPX)", export_kml_btn: "⬇️ Export KML", export_gpx_btn: "⬇️ Export GPX", import_file_btn: "⬆️ Import File",
             sync_offgrid_lbl: "📡 Off-Grid Sync", share_offgrid_btn: "Share Off-Grid",
-            mtn_grid_btn: "Show MTN Grids", identifying_leaf: "Identifying leaf...",
+            mtn_grid_btn: "Show MTN Grids", identifying_leaf: "Identifying leaf...", weather_btn: "🌬️ Weather Report",
             base_layer_lbl: "Base Layer (Background)", overlay_layer_lbl: "Overlay Layer", overlay_opacity_lbl: "Overlay Opacity",
             offline_mode_lbl: "Offline Mode", offline_current_btn: "⬇️ Current View", offline_zone_btn: "🔲 Mark Zone",
             tools_3d_lbl: "In-App 3D Tools", drone_3d_btn: "🛰️ 3D Recon Drone",
@@ -2079,6 +2196,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             enter_room_btn: "🚪 Enter / Create Room", share_map_btn: "🔄 Share Map", delete_room_btn: "🗑️ Delete Room", chat_ph: "Message...", exit_room_btn: "🚪 Leave Room",
             msg_enemy: "⚠️ Enemy", msg_medic: "🏥 Medic", msg_defend: "🛡️ Defending", msg_move: "🏃 Moving", msg_down: "💀 I'M DOWN",
             modal_name_title: "Name item", modal_cancel: "Cancel", modal_accept: "Accept", modal_alert_title: "Notification", modal_cloud_title: "☁️ My Projects", modal_close: "Close", modal_drone_title: "🛰️ 3D TACTICAL DRONE SIGNAL", modal_drone_close: "✕ Disconnect", modal_ar_close: "✕ Close AR", modal_confirm_title: "⚠️ Confirmation", modal_confirm: "Confirm", edit_title: "✏️ Edit Item", edit_name: "Name", edit_faction: "Faction", edit_group: "Group", edit_notes: "📝 Notes / Comments", edit_color: "Color", edit_icon: "Military Icon", edit_show_name: "Show name", edit_radius: "⭕ Action Radius (m)", edit_show_cone: "🔦 Show Cone", edit_cone_color: "Color", edit_orientation: "Orientation", edit_spread: "Spread", edit_range: "Range (m)", edit_thickness: "Thickness", edit_route_mode: "Route Mode", modal_save: "Save", modal_rename_title: "✏️ Rename Folder", modal_rename_btn: "Rename", offgrid_title: "📡 Off-Grid Sync", offgrid_desc: "Share the map or send coordinates to your teammates when <b>there is no internet coverage</b>.", offgrid_btn_share: "📲 Send Map via Bluetooth", offgrid_lbl_export: "Export to Radio / SMS (Markers Only):", offgrid_btn_copy: "Copy", offgrid_lbl_import: "Receive Tactical code:", offgrid_ph_import: "Paste AM: code...", offgrid_btn_load: "Load", manual_title: "📖 User Manual", manual_understood: "Understood", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Red Faction", edit_fact_blue: "🔵 Blue Faction", edit_fact_org: "⚙️ Organization", edit_fact_neu: "⚪ Neutral / Civilian", edit_group_ph: "Ex: Alpha Squad", edit_notes_ph: "Instructions, details, tactical info...", opt_purple: "Purple", opt_dark: "Dark", opt_white: "White", icon_dot: "🔴 Normal dot", icon_base: "⛺ Base / Camp", icon_target: "🎯 Target", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defense", icon_heli: "🚁 Extraction", icon_medic: "🏥 Medic", icon_radio: "📡 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️ On foot", route_drive: "🚗 By car", route_bike: "🚲 By bike", btn_undo: "↩️ Undo", btn_finish: "✅ Finish", btn_cancel_action: "✕ Cancel", nav_target: "Destination", btn_stop_nav: "✕ Stop",
+            edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+            update_title: "🚀 New version available", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
             manual_p1: "<b>📍 Markers, Areas and Notes:</b> Use editing tools to add points, routes, or zones. If you tap an existing element, press <b>\"✏️ Edit\"</b> to change its color, faction, add an action radius, a directional vision cone, or write tactical <b>Notes and Comments</b> that everyone can read.",
             manual_p2: "<b>📐 Quick Ruler:</b> Tool to measure distances on the fly. Click on the map to draw a temporary line and see the exact distance step by step without cluttering your project.",
             manual_p3: "<b>🗺️ Smart Route:</b> By selecting this tool, the map will automatically calculate the path through streets or forest trails. It will generate an elevation graph and the estimated time on foot or in a vehicle.",
@@ -2090,7 +2209,9 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p9: "<b>🔍 Coordinates and Grid:</b> The search engine accepts place names or exact coordinates. In the \"System\" menu, you can activate the grid in Decimal, DMS, UTM, or Alphanumeric Tactical format (Ex: Quadrant A1).",
             manual_p10: "<b>🎯 Tactical Navigation (Go to):</b> By tapping any marker, press the \"🎯 Go\" button. A top panel will show the remaining distance and an arrow that will rotate with your phone to guide you in a straight line to the target (requires active GPS).",
             manual_p11: "<b>👥 Squad List:</b> Inside the Operations Room, you will see a real-time list of your connected teammates, indicating their role and if they are active or marked as down. If a teammate loses connection, their icon will dim and a counter (⏳) will appear showing the time without signal.",
-            manual_p12: "<b>👁️ AR Viewer (Augmented Reality):</b> (Requires active GPS) Activate the camera from the Operations menu to see map markers and overlaid teammates in the real environment floating according to your orientation and distance."
+            manual_p12: "<b>👁️ AR Viewer (Augmented Reality):</b> (Requires active GPS) Activate the camera from the Operations menu to see map markers and overlaid teammates in the real environment floating according to your orientation and distance.",
+            manual_p13: "<b>📸 Intelligence & Reconnaissance:</b> In the <b>\"✏️ Edit\"</b> window of any marker, you can add an image URL or take/upload a photo directly. The image will be compressed and displayed when tapping the marker so the team can visualize the target.",
+            manual_p14: "<b>🌬️ Tactical Weather:</b> In the \"MTN Info\" menu, tap \"Weather Report\" to get real-time temperature, wind speed/direction, and sunrise/sunset times for the area you are viewing."
         },
         ca: {
             manual_btn: "📖 Manual d'Usuari", search_title: "🔍 Cercador", search_placeholder: "Ciutat o coordenades...", search_go: "Anar",
@@ -2101,7 +2222,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             live_title: "Operacions i GPS", live_gps: "🎯 Activar Seguiment GPS", live_ar: "👁️ Visor AR", live_menu: "📡 Sala d'Operacions",
             import_export_lbl: "Importar / Exportar (KML/GPX)", export_kml_btn: "⬇️ Exportar KML", export_gpx_btn: "⬇️ Exportar GPX", import_file_btn: "⬆️ Importar Fitxer",
             sync_offgrid_lbl: "📡 Sincronització Sense Internet", share_offgrid_btn: "Compartir Off-Grid",
-            mtn_grid_btn: "Veure Quadrícules MTN", identifying_leaf: "Identificant fulla...",
+            mtn_grid_btn: "Veure Quadrícules MTN", identifying_leaf: "Identificant fulla...", weather_btn: "🌬️ Report Meteorològic",
             base_layer_lbl: "Capa Principal (Fons)", overlay_layer_lbl: "Capa Secundària", overlay_opacity_lbl: "Opacitat Secundària",
             offline_mode_lbl: "Mode Offline", offline_current_btn: "⬇️ Visió Actual", offline_zone_btn: "🔲 Marcar Zona",
             tools_3d_lbl: "Eines 3D In-App", drone_3d_btn: "🛰️ Dron de Reconeixement 3D",
@@ -2122,6 +2243,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             enter_room_btn: "🚪 Entrar / Crear Sala", share_map_btn: "🔄 Compartir Mapa", delete_room_btn: "🗑️ Eliminar Sala", chat_ph: "Missatge...", exit_room_btn: "🚪 Sortir de la Sala",
             msg_enemy: "⚠️ Enemic", msg_medic: "🏥 Metge", msg_defend: "🛡️ Defensa", msg_move: "🏃 Avançant", msg_down: "💀 ESTIC ELIMINAT",
             modal_name_title: "Anomenar element", modal_cancel: "Cancel·lar", modal_accept: "Acceptar", modal_alert_title: "Notificació", modal_cloud_title: "☁️ Els meus projectes", modal_close: "Tancar", modal_drone_title: "🛰️ SENYAL DE DRON TÀCTIC 3D", modal_drone_close: "✕ Desconnectar", modal_ar_close: "✕ Tancar AR", modal_confirm_title: "⚠️ Confirmació", modal_confirm: "Confirmar", edit_title: "✏️ Editar Element", edit_name: "Nom", edit_faction: "Bàndol", edit_group: "Grup", edit_notes: "📝 Notes / Comentaris", edit_color: "Color", edit_icon: "Icona Militar", edit_show_name: "Mostrar nom", edit_radius: "⭕ Radi d'Acció (m)", edit_show_cone: "🔦 Mostrar Con", edit_cone_color: "Color", edit_orientation: "Orientació", edit_spread: "Obertura", edit_range: "Abast (m)", edit_thickness: "Gruix", edit_route_mode: "Mode de Ruta", modal_save: "Desar", modal_rename_title: "✏️ Reanomenar Carpeta", modal_rename_btn: "Reanomenar", offgrid_title: "📡 Sync Off-Grid", offgrid_desc: "Comparteix el mapa o envia coordenades als teus companys quan <b>no hi ha cobertura d'internet</b>.", offgrid_btn_share: "📲 Enviar Mapa per Bluetooth", offgrid_lbl_export: "Exportar a Ràdio / SMS (Només Marcadors):", offgrid_btn_copy: "Copiar", offgrid_lbl_import: "Rebre codi Tàctic:", offgrid_ph_import: "Enganxa el codi AM:...", offgrid_btn_load: "Carregar", manual_title: "📖 Manual d'Usuari", manual_understood: "Entès", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Bàndol Vermell", edit_fact_blue: "🔵 Bàndol Blau", edit_fact_org: "⚙️ Organització", edit_fact_neu: "⚪ Neutral / Civil", edit_group_ph: "Ex: Esquadra Alfa", edit_notes_ph: "Instruccions, detalls, informació tàctica...", opt_purple: "Morat", opt_dark: "Fosc", opt_white: "Blanc", icon_dot: "🔴 Punt normal", icon_base: "⛺ Base / Campament", icon_target: "🎯 Objectiu", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defensa", icon_heli: "🚁 Extracció", icon_medic: "🏥 Metge", icon_radio: "📡 Comunicacions", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️ A peu", route_drive: "🚗 En cotxe", route_bike: "🚲 En bici", btn_undo: "↩️ Desfer", btn_finish: "✅ Finalitzar", btn_cancel_action: "✕ Cancel·lar", nav_target: "Destí", btn_stop_nav: "✕ Detenir",
+            edit_recon_photo: "📸 Foto Reconeixement", edit_recon_ph: "URL o pujar...", edit_recon_upload: "📷 Carregar",
+            update_title: "🚀 Nova versió disponible", update_btn: "Actualitzar", offline_banner: "⚠️ Estàs en mode sense connexió", edit_recon_photo: "📸 Foto Reconeixement", edit_recon_ph: "URL o pujar...", edit_recon_upload: "📷 Carregar",
             manual_p1: "<b>📍 Marcadors, Àrees i Notes:</b> Utilitza les eines d'edició per afegir punts, rutes o zones. Si toques un element ja creat al mapa, prem <b>\"✏️ Editar\"</b> per canviar el seu color, bàndol, afegir un radi d'acció, un con de visió direccional, o escriure <b>Notes i Comentaris</b> tàctics que tots podran llegir.",
             manual_p2: "<b>📐 Regle Ràpid:</b> Eina per mesurar distàncies al vol. Fes clics al mapa per traçar una línia temporal i veure la distància exacta pas a pas sense embrutar el teu projecte.",
             manual_p3: "<b>🗺️ Ruta Intel·ligent:</b> En seleccionar aquesta eina, el mapa calcularà automàticament el camí per carrers o pistes forestals. Generarà una gràfica de desnivell i el temps estimat a peu o en vehicle.",
@@ -2133,7 +2256,9 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p9: "<b>🔍 Coordenades i Quadrícula:</b> El cercador admet noms de llocs o coordenades exactes. Al menú \"Sistema\", pots activar la quadrícula en format Decimal, DMS, UTM o Tàctica Alfanumèrica (Ex: Quadrant A1).",
             manual_p10: "<b>🎯 Navegació Tàctica (Anar a):</b> En tocar qualsevol marcador, prem el botó \"🎯 Anar\". Es mostrarà un panell superior amb la distància restant i una fletxa que girarà amb el teu mòbil per guiar-te en línia recta a l'objectiu (requereix GPS actiu).",
             manual_p11: "<b>👥 Llista d'Esquadra:</b> Dins de la Sala d'Operacions, veuràs una llista en temps real dels teus companys connectats, indicant el seu rol i si estan actius o marcats com a baixa. Si un company perd la connexió, la seva icona s'atenuarà i apareixerà un comptador (⏳) mostrant el temps que porta sense senyal.",
-            manual_p12: "<b>👁️ Visor AR (Realitat Augmentada):</b> (Requereix GPS actiu) Activa la càmera des del menú d'Operacions per veure marcadors del mapa i companys superposats en l'entorn real surant segons la teva orientació i distància."
+            manual_p12: "<b>👁️ Visor AR (Realitat Augmentada):</b> (Requereix GPS actiu) Activa la càmera des del menú d'Operacions per veure marcadors del mapa i companys superposats en l'entorn real surant segons la teva orientació i distància.",
+            manual_p13: "<b>📸 Intel·ligència i Reconeixement:</b> A la finestra de <b>\"✏️ Editar\"</b> de qualsevol marcador, pots afegir la URL d'una imatge o fer/pujar una foto directament. La imatge es comprimirà i es mostrarà en tocar el marcador perquè l'equip pugui visualitzar l'objectiu.",
+            manual_p14: "<b>🌬️ Clima Tàctic:</b> Al menú d'\"Informació MTN\", prem \"Report Meteorològic\" per obtenir en temps real la temperatura, velocitat/direcció del vent i hores d'alba/ocàs de la zona que estàs visualitzant."
         }
     };
 
