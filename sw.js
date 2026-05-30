@@ -29,6 +29,7 @@ self.addEventListener("activate", event => {
       );
     })
   );
+  // Asegura que el SW tome el control inmediatamente sin tener que recargar la página
   self.clients.claim();
 });
 
@@ -38,7 +39,14 @@ self.addEventListener("fetch", event => {
     caches.match(event.request).then(cached => {
       return (
         cached ||
-        fetch(event.request).catch(() => caches.match("/index.html"))
+        fetch(event.request).catch((err) => {
+          // SOLO devolver el index.html si lo que falló fue una petición de navegación (página principal)
+          if (event.request.mode === 'navigate') {
+            return caches.match("/index.html");
+          }
+          // Para otras cosas (imágenes, APIs externas, teselas de mapa), propagamos el error normal
+          throw err;
+        })
       );
     })
   );
