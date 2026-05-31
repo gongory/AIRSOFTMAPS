@@ -254,6 +254,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;" onclick="window.enableTool('measure')" data-i18n="ruler_tool">📐 Regla Rápida</button>
                 <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;border-color:var(--info);color:var(--info);" onclick="window.enableTool('auto-route')" data-i18n="smart_route_tool">🗺️ Ruta Inteligente</button>
                 <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polygon')" data-i18n="area_tool">🔲 Área</button><button class="btn-outline" style="margin-bottom:0;" id="btn-compass" onclick="window.toggleCompass()" data-i18n="compass_tool">🧭 Brújula</button>
+                <label class="btn-outline" style="margin-bottom:0;grid-column:span 2;border-color:var(--ign-gold);color:var(--ign-gold);cursor:pointer;" for="field-map-loader" data-i18n="field_map_tool">🗺️ Solapar Mapa Campo</label>
+                <input type="file" id="field-map-loader" accept="image/*" style="display:none;" onchange="window.processFieldMap(event)">
                 <button class="btn-outline" id="toggleLegendBtn" style="margin-bottom:0;border-style:dashed;grid-column:span 2;" onclick="window.toggleMapLegend()" data-i18n="legend_tool">📋 Leyenda</button>
             </div>
         </div>
@@ -273,7 +275,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <div id="info-app-container" style="display:none;padding:15px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;font-size:12px;color:#475569;line-height:1.5;">
             <div style="text-align:center;margin-bottom:10px;">
                 <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
-                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.34
+                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.35
                 </span>
             </div>
             <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> Francisco QD</p>
@@ -281,7 +283,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;">
                 <b style="color:var(--ign-blue);" data-i18n="latest_changes">Últimos cambios:</b>
                 <ul style="margin:5px 0;padding-left:20px;">
-                    <li>Optimización del rendimiento de carga de teselas.</li>
+                    <li>se ha añadido informacion del tiempo añadir fotos a marcadores y mapa superpuesto).</li>
                     <li>Mejoras generales de estabilidad y renderizado.</li>
                 </ul>
             </div>
@@ -416,6 +418,12 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             </div>
             <div id="edit-shape-specifics" style="display:none;"><label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Grosor</label><select id="edit-weight-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;box-sizing:border-box;"><option value="2">Fina</option><option value="4">Normal</option><option value="6">Gruesa</option></select></div>
             <div id="edit-autoroute-options" style="display:none;"><label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Modo de Ruta</label><select id="edit-route-mode" style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;box-sizing:border-box;"><option value="foot">🚶‍♂️ A pie</option><option value="driving">🚗 En coche</option><option value="bike">🚲 En bici</option></select></div>
+            <div id="edit-fieldmap-specifics" style="display:none;">
+                <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Opacidad del Mapa</label>
+                <input type="range" id="edit-opacity-input" min="0" max="1" step="0.1" value="0.6" style="width:100%;margin-bottom:10px;">
+                <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Rotación (Grados)</label>
+                <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;"><input type="range" id="edit-rotation-input" min="-180" max="180" step="1" value="0" style="flex:1;" oninput="document.getElementById('edit-rotation-val').innerText=this.value+'°'"><span id="edit-rotation-val" style="font-size:12px;font-weight:bold;color:var(--ign-blue);width:40px;">0°</span></div>
+            </div>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:15px;"><button style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;" onclick="window.closeEditModal()">Cancelar</button><button style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;" onclick="window.confirmEditModal()">Guardar</button></div>
     </div>
@@ -472,12 +480,12 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <p data-i18n="manual_p12"><b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.</p>
             <p data-i18n="manual_p13"><b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>"✏️ Editar"</b> de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el objetivo.</p>
             <p data-i18n="manual_p14"><b>🌬️ Clima Táctico:</b> En el menú de "Información MTN", pulsa en "Reporte Meteorológico" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.</p>
+            <p data-i18n="manual_p15"><b>🗺️ Solapar Mapa de Campo:</b> En la pestaña "Edición de Mapa", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde "✏️ Editar" puedes modificar su transparencia para cuadrarlo con el satélite.</p>
         </div>
         <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;" onclick="window.closeManual()" data-i18n="manual_understood">Entendido</button></div>
     </div>
 </div>
 
-<div id="offline-banner" style="display:none;position:fixed;top:15px;left:50%;transform:translateX(-50%);background:var(--danger);color:white;padding:8px 16px;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,0.6);z-index:9999;font-size:12px;font-weight:bold;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px);" data-i18n="offline_banner">
 <div id="offline-banner" style="display:none;position:fixed;top:15px;left:50%;transform:translateX(-50%);background:var(--danger);color:white;padding:8px 16px;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,0.6);z-index:9999;font-size:12px;font-weight:bold;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px);">
     ⚠️ Estás en modo sin conexión
 </div>
@@ -485,8 +493,6 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 <div id="update-modal" style="display:none;position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--ign-blue);color:white;padding:12px 20px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:9999;align-items:center;gap:15px;border:2px solid var(--ign-gold);">
     <div style="font-size:13px;font-weight:bold;" data-i18n="update_title">🚀 Nueva versión disponible</div>
     <button onclick="window.applyAppUpdate()" style="background:var(--success);color:white;border:none;padding:8px 15px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px;" data-i18n="update_btn">Actualizar</button>
-    <div style="font-size:13px;font-weight:bold;">🚀 Nueva versión disponible</div>
-    <button onclick="window.applyAppUpdate()" style="background:var(--success);color:white;border:none;padding:8px 15px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px;">Actualizar</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1029,6 +1035,14 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 }
                 if (feature.properties.baseText) layer.bindPopup(feature.properties.baseText + actionBtns);
                 window.drawnItems.addLayer(layer);
+                if (feature.properties.isFieldMap && feature.properties.imageUrlData) {
+                    const overlay = L.imageOverlay(feature.properties.imageUrlData, layer.getBounds(), { opacity: feature.properties.opacity || 0.6, interactive: false }).addTo(window.map);
+                    window.fieldMapOverlays[id] = overlay;
+                    const rot = feature.properties.rotation || 0;
+                    overlay.on('load', () => { if (overlay.getElement()) overlay.getElement().style.transform = `rotate(${rot}deg)`; });
+                    if (overlay.getElement()) overlay.getElement().style.transform = `rotate(${rot}deg)`;
+                    window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, layer.getBounds());
+                }
                 if (layer instanceof L.Marker) {
                     if(typeof updateMarkerBuffer === 'function') updateMarkerBuffer(layer);
                     if(typeof updateMarkerLabel === 'function') updateMarkerLabel(layer);
@@ -1117,6 +1131,21 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
     const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 22, layers: [currentBase, currentOverlay], zoomControl: false });
     window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
+    window.fieldMapOverlays = {}; window.fieldMapAdjusters = {}; window.fieldMapCenterPins = {};
+    window.createFieldMapCenter = function(id, bounds) {
+        const centerMarker = L.marker(bounds.getNorthWest(), {
+            icon: L.divIcon({
+                className: 'field-map-pin',
+                html: '<div style="background:var(--ign-blue);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ign-gold);font-size:16px;box-shadow:var(--shadow);cursor:pointer;" title="Opciones de Mapa">⚙️</div>',
+                iconSize: [32,32],
+                iconAnchor: [42,42]
+            }),
+            interactive: true,
+            zIndexOffset: 2000
+        }).addTo(window.map);
+        centerMarker.on('click', () => { const layer = window.drawnItems.getLayer(id); if (layer) layer.openPopup(); });
+        return centerMarker;
+    };
     window.alliesLayer = L.featureGroup().addTo(map); const drawnItems = new L.FeatureGroup().addTo(map); window.drawnItems = drawnItems; window.updateLayerTree = updateLayerTree;
     const drawOptions = { polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } }, polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } }, marker: {} };
 
@@ -1170,14 +1199,17 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     window.toggleLayerVisibility = function(id) {
         const layer = drawnItems.getLayer(id); if (!layer) return; layer.isHidden = !layer.isHidden;
         if (layer.isHidden) { if (layer instanceof L.Marker) { layer.setOpacity(0); if (layer.getTooltip()) layer.getTooltip().setOpacity(0); } else layer.setStyle({ opacity: 0, fillOpacity: 0 }); layer.closePopup(); } else { if (layer instanceof L.Marker) { layer.setOpacity(1); if (layer.getTooltip()) layer.getTooltip().setOpacity(1); } else layer.setStyle({ opacity: 1, fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) }); }
-        if (layer.conePolygon) { layer.conePolygon.isHidden = layer.isHidden; layer.conePolygon.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.2 }); } if (layer.bufferCircle) { layer.bufferCircle.isHidden = layer.isHidden; layer.bufferCircle.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.15 }); } if (layer.endMarker) { layer.endMarker.isHidden = layer.isHidden; layer.endMarker.setOpacity(layer.isHidden?0:1); } updateLayerTree();
+        if (layer.conePolygon) { layer.conePolygon.isHidden = layer.isHidden; layer.conePolygon.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.2 }); } if (layer.bufferCircle) { layer.bufferCircle.isHidden = layer.isHidden; layer.bufferCircle.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.15 }); } if (layer.endMarker) { layer.endMarker.isHidden = layer.isHidden; layer.endMarker.setOpacity(layer.isHidden?0:1); }
+        if (window.fieldMapCenterPins && window.fieldMapCenterPins[id]) { window.fieldMapCenterPins[id].setOpacity(layer.isHidden ? 0 : 1); } updateLayerTree();
     };
 
     window.toggleMarkerLabel = function(id) { const layer = drawnItems.getLayer(id); if (!layer || !(layer instanceof L.Marker)) return; layer.feature.properties.showLabel = !layer.feature.properties.showLabel; updateMarkerLabel(layer); updateLayerTree(); };
 
     window.toggleFactionVisibility = function(factionName) {
         const layers = drawnItems.getLayers().filter(l => (l.feature?.properties?.faction || window.projectName) === factionName); if (layers.length === 0) return; const hideAll = !layers.every(l => l.isHidden);
-        layers.forEach(layer => { layer.isHidden = hideAll; if (layer.isHidden) { if (layer instanceof L.Marker) { layer.setOpacity(0); if (layer.getTooltip()) layer.getTooltip().setOpacity(0); } else layer.setStyle({ opacity: 0, fillOpacity: 0 }); layer.closePopup(); } else { if (layer instanceof L.Marker) { layer.setOpacity(1); if (layer.getTooltip()) layer.getTooltip().setOpacity(1); } else layer.setStyle({ opacity: 1, fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) }); } if (layer.conePolygon) { layer.conePolygon.isHidden = layer.isHidden; layer.conePolygon.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.2 }); } if (layer.bufferCircle) { layer.bufferCircle.isHidden = layer.isHidden; layer.bufferCircle.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.15 }); } if (layer.endMarker) { layer.endMarker.isHidden = layer.isHidden; layer.endMarker.setOpacity(layer.isHidden?0:1); } }); updateLayerTree();
+        layers.forEach(layer => { layer.isHidden = hideAll; if (layer.isHidden) { if (layer instanceof L.Marker) { layer.setOpacity(0); if (layer.getTooltip()) layer.getTooltip().setOpacity(0); } else layer.setStyle({ opacity: 0, fillOpacity: 0 }); layer.closePopup(); } else { if (layer instanceof L.Marker) { layer.setOpacity(1); if (layer.getTooltip()) layer.getTooltip().setOpacity(1); } else layer.setStyle({ opacity: 1, fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) }); } if (layer.conePolygon) { layer.conePolygon.isHidden = layer.isHidden; layer.conePolygon.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.2 }); } if (layer.bufferCircle) { layer.bufferCircle.isHidden = layer.isHidden; layer.bufferCircle.setStyle({ opacity: layer.isHidden?0:1, fillOpacity: layer.isHidden?0:0.15 }); } if (layer.endMarker) { layer.endMarker.isHidden = layer.isHidden; layer.endMarker.setOpacity(layer.isHidden?0:1); } 
+            const id = L.stamp(layer); if (window.fieldMapCenterPins && window.fieldMapCenterPins[id]) { window.fieldMapCenterPins[id].setOpacity(layer.isHidden ? 0 : 1); }
+        }); updateLayerTree();
     };
 
     window.toggleBufferVisibility = function(id) { const layer = drawnItems.getLayer(id); if (!layer || !layer.bufferCircle) return; layer.bufferCircle.isHidden = !layer.bufferCircle.isHidden; layer.bufferCircle.setStyle({ opacity: layer.bufferCircle.isHidden?0:1, fillOpacity: layer.bufferCircle.isHidden?0:0.15 }); updateLayerTree(); };
@@ -1269,6 +1301,102 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         if (type === 'polyline') { drawOptions.polyline.shapeOptions.weight = parseInt(document.getElementById('drawWeight').value) || 4; drawOptions.polyline.shapeOptions.color = document.getElementById('drawColor').value || '#2ecc71'; activeHandler = new L.Draw.Polyline(map, drawOptions.polyline); }
         if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, drawOptions.polygon);
         if (activeHandler) activeHandler.enable();
+    };
+
+    window.processFieldMap = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1200; const MAX_HEIGHT = 1200;
+                let width = img.width; let height = img.height;
+                if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const compressedData = canvas.toDataURL('image/jpeg', 0.6);
+
+                const center = window.map.getCenter();
+                const bounds = window.map.getBounds();
+                const latDiff = (bounds.getNorth() - bounds.getSouth()) * 0.3;
+                const lngDiff = (bounds.getEast() - bounds.getWest()) * 0.3;
+                
+                const nw = [center.lat + latDiff, center.lng - lngDiff];
+                const se = [center.lat - latDiff, center.lng + lngDiff];
+                const imageBounds = [nw, se];
+                
+                const layer = L.rectangle(imageBounds, { color: '#fbbf24', weight: 0, fillOpacity: 0, interactive: false });
+                layer.feature = { type: 'Feature', properties: { layerName: file.name, faction: window.projectName, isFieldMap: true, opacity: 0.6, rotation: 0 } };
+                
+                window.drawnItems.addLayer(layer);
+                const id = L.stamp(layer);
+                
+                const overlay = L.imageOverlay(compressedData, imageBounds, { opacity: 0.6, interactive: false }).addTo(window.map);
+                window.fieldMapOverlays[id] = overlay;
+                window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, L.latLngBounds(imageBounds));
+                
+                let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.toggleFieldMapAdjust(${id})" style="color:var(--ign-gold);border:1px solid var(--ign-gold);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🔄 Ajustar</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
+                let baseText = `<div><b>🗺️ ${file.name}</b><br>Mapa de campo solapado.</div>`;
+                layer.bindPopup(baseText + actionBtns);
+                layer.feature.properties.baseText = baseText;
+                layer.feature.properties.imageUrlData = compressedData; 
+                
+                window.updateLayerTree();
+                window.toggleFieldMapAdjust(id); 
+                setTimeout(() => window.zoomToLayer(id), 100);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    window.toggleFieldMapAdjust = function(id) {
+        const layer = window.drawnItems.getLayer(id);
+        const overlay = window.fieldMapOverlays[id];
+        if (!layer || !overlay) return;
+        
+        if (window.fieldMapAdjusters[id]) {
+            window.map.removeLayer(window.fieldMapAdjusters[id].nw);
+            window.map.removeLayer(window.fieldMapAdjusters[id].se);
+            delete window.fieldMapAdjusters[id];
+            layer.setStyle({weight: 0, fillOpacity: 0});
+            window.customAlert("Modo Ajuste", "Ajuste finalizado.");
+                setTimeout(() => layer.openPopup(), 100);
+        } else {
+            layer.setStyle({weight: 3, dashArray: '10,10', fillOpacity: 0.1, color: '#fbbf24'});
+            const bounds = overlay.getBounds();
+            
+            const createHandle = (latlng, cursor) => {
+                return L.marker(latlng, {
+                    draggable: true,
+                    icon: L.divIcon({className: 'resize-handle', html: `<div style="width:24px;height:24px;background:var(--ign-gold);border:2px solid black;border-radius:50%;cursor:${cursor};transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(0,0,0,0.8);"></div>`, iconSize: [0,0]})
+                }).addTo(window.map);
+            };
+            
+            const nwMarker = createHandle(bounds.getNorthWest(), 'nw-resize');
+            const seMarker = createHandle(bounds.getSouthEast(), 'se-resize');
+            
+            const updateOverlay = function() {
+                const newBounds = L.latLngBounds(nwMarker.getLatLng(), seMarker.getLatLng());
+                overlay.setBounds(newBounds);
+                layer.setBounds(newBounds);
+                if (window.fieldMapCenterPins[id]) {
+                    window.fieldMapCenterPins[id].setLatLng(newBounds.getNorthWest());
+                }
+            };
+            
+            nwMarker.on('drag', updateOverlay);
+            seMarker.on('drag', updateOverlay);
+            
+            window.fieldMapAdjusters[id] = { nw: nwMarker, se: seMarker };
+            window.map.closePopup();
+            window.customAlert("Modo Ajuste", "Arrastra los puntos dorados de las esquinas para redimensionar y mover el mapa de campo. Vuelve a pulsar 'Ajustar' cuando termines.");
+        }
     };
 
     window.isSelectingOfflineZone = false;
@@ -1461,12 +1589,20 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         if (!factionExists) { const newOpt = document.createElement('option'); newOpt.value = currentFaction; newOpt.text = '📁 ' + currentFaction; factionSelect.appendChild(newOpt); }
         factionSelect.value = currentFaction;
 
-        const isShape = (layer instanceof L.Polyline); const isMarker = (layer instanceof L.Marker);
+        const isShape = (layer instanceof L.Polyline); const isMarker = (layer instanceof L.Marker); const isFieldMap = layer.feature.properties.isFieldMap || false;
         document.getElementById('edit-style-options').style.display = (isShape || isMarker) ? 'block' : 'none'; document.getElementById('edit-autoroute-options').style.display = (isShape && layer.feature.properties.isAutoRoute) ? 'block' : 'none';
+        const fieldMapDiv = document.getElementById('edit-fieldmap-specifics'); if(fieldMapDiv) fieldMapDiv.style.display = isFieldMap ? 'block' : 'none';
+        
+        const colorInput = document.getElementById('edit-color-input');
+        if (colorInput) { colorInput.style.display = isFieldMap ? 'none' : 'block'; if (colorInput.previousElementSibling) colorInput.previousElementSibling.style.display = isFieldMap ? 'none' : 'block'; }
         
         if (isShape || isMarker) {
             document.getElementById('edit-color-input').value = layer.feature.properties.color || layer.options.color || '#2ecc71';
-            document.getElementById('edit-marker-specifics').style.display = isMarker ? 'block' : 'none'; document.getElementById('edit-shape-specifics').style.display = isShape ? 'block' : 'none';
+            const opInput = document.getElementById('edit-opacity-input');
+            if(opInput) opInput.value = layer.feature.properties.opacity !== undefined ? layer.feature.properties.opacity : 0.6;
+            const rotInput = document.getElementById('edit-rotation-input');
+            if(rotInput) { rotInput.value = layer.feature.properties.rotation || 0; const rotVal = document.getElementById('edit-rotation-val'); if(rotVal) rotVal.innerText = rotInput.value + '°'; }
+            document.getElementById('edit-marker-specifics').style.display = isMarker ? 'block' : 'none'; document.getElementById('edit-shape-specifics').style.display = (isShape && !isFieldMap) ? 'block' : 'none';
             if (isMarker) {
                 document.getElementById('edit-icon-input').value = layer.feature.properties.iconType || 'punto'; document.getElementById('edit-buffer-input').value = layer.feature.properties.bufferRadius || ''; document.getElementById('edit-show-label-input').checked = layer.feature.properties.showLabel || false; document.getElementById('edit-cone-enable').checked = layer.feature.properties.coneEnabled || false; document.getElementById('edit-cone-color-input').value = layer.feature.properties.coneColor || layer.feature.properties.color || '#f1c40f'; document.getElementById('edit-cone-angle-range').value = layer.feature.properties.coneAngle || 0; document.getElementById('edit-cone-angle-val').innerText = (layer.feature.properties.coneAngle || 0) + '°'; document.getElementById('edit-cone-spread-range').value = layer.feature.properties.coneSpread || 60; document.getElementById('edit-cone-spread-val').innerText = (layer.feature.properties.coneSpread || 60) + '°'; document.getElementById('edit-cone-dist').value = layer.feature.properties.coneDist || 100; document.getElementById('edit-cone-options').style.display = layer.feature.properties.coneEnabled ? 'block' : 'none';
             } else { document.getElementById('edit-weight-input').value = layer.options.weight || 4; }
@@ -1493,7 +1629,16 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 
             if (isShape) {
                 const newColor = document.getElementById('edit-color-input').value; const newWeight = parseInt(document.getElementById('edit-weight-input').value);
-                layer.setStyle({ color: newColor, weight: newWeight }); layer.options.color = newColor; layer.options.weight = newWeight; layer.feature.properties.color = newColor; layer.feature.properties.weight = newWeight;
+                const opInput = document.getElementById('edit-opacity-input'); const newOpacity = opInput ? parseFloat(opInput.value) : 0.6; layer.feature.properties.opacity = newOpacity;
+                layer.setStyle({ color: newColor, weight: newWeight, fillOpacity: layer.feature.properties.isFieldMap ? 0 : newOpacity }); layer.options.color = newColor; layer.options.weight = newWeight; layer.options.fillOpacity = layer.feature.properties.isFieldMap ? 0 : newOpacity; layer.feature.properties.color = newColor; layer.feature.properties.weight = newWeight;
+                if (layer.feature.properties.isFieldMap && window.fieldMapOverlays[id]) { 
+                    const rotInput = document.getElementById('edit-rotation-input');
+                    const newRot = rotInput ? (parseInt(rotInput.value) || 0) : (layer.feature.properties.rotation || 0);
+                    layer.feature.properties.rotation = newRot;
+                    window.fieldMapOverlays[id].setOpacity(newOpacity);
+                    if (window.fieldMapOverlays[id].getElement()) window.fieldMapOverlays[id].getElement().style.transform = `rotate(${newRot}deg)`;
+                    if (newWeight === 0 && window.fieldMapAdjusters[id]) { window.toggleFieldMapAdjust(id); } 
+                }
                 if (layer.endMarker) { layer.endMarker.setIcon(getMarkerIconObj(newColor, 'bandera')); }
                 if (layer.feature.properties.isAutoRoute) {
                     const newMode = document.getElementById('edit-route-mode').value; const oldMode = layer.feature.properties.routeMode || 'foot'; layer.feature.properties.routeMode = newMode;
@@ -1579,7 +1724,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         e.target.value = '';
     };
 
-    window.removeLayerById = function(id) { const layer = drawnItems.getLayer(id); if (layer) { if (layer.bufferCircle) map.removeLayer(layer.bufferCircle); if (layer.conePolygon) map.removeLayer(layer.conePolygon); if (layer.endMarker) map.removeLayer(layer.endMarker); drawnItems.removeLayer(layer); updateLayerTree(); } };
+    window.removeLayerById = function(id) { const layer = drawnItems.getLayer(id); if (layer) { if (layer.bufferCircle) map.removeLayer(layer.bufferCircle); if (layer.conePolygon) map.removeLayer(layer.conePolygon); if (layer.endMarker) map.removeLayer(layer.endMarker); if (window.fieldMapOverlays && window.fieldMapOverlays[id]) { map.removeLayer(window.fieldMapOverlays[id]); delete window.fieldMapOverlays[id]; } if (window.fieldMapAdjusters && window.fieldMapAdjusters[id]) { map.removeLayer(window.fieldMapAdjusters[id].nw); map.removeLayer(window.fieldMapAdjusters[id].se); delete window.fieldMapAdjusters[id]; } if (window.fieldMapCenterPins && window.fieldMapCenterPins[id]) { map.removeLayer(window.fieldMapCenterPins[id]); delete window.fieldMapCenterPins[id]; } drawnItems.removeLayer(layer); updateLayerTree(); } };
     window.zoomToLayer = function(id) { const layer = drawnItems.getLayer(id); if (!layer) return; if (layer instanceof L.Marker) { map.setView(layer.getLatLng(), 18); if (!layer.isHidden) layer.openPopup(); } else if (layer.getBounds) { map.fitBounds(layer.getBounds()); if (!layer.isHidden) layer.openPopup(); } };
     window.openImageModal = function(src) { document.getElementById('image-modal-content').src = src; document.getElementById('image-modal').style.display = 'flex'; };
     window.closeImageModal = function() { document.getElementById('image-modal').style.display = 'none'; document.getElementById('image-modal-content').src = ''; };
@@ -2134,13 +2279,13 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             tools_3d_lbl: "Herramientas 3D In-App", drone_3d_btn: "🛰️ Dron de Reconocimiento 3D",
             thickness_lbl: "Grosor", color_lbl: "Color", lock_zoom_btn: "🔓 Bloquear Zoom", grid_toggle_btn: "Activar Cuadrícula", scale_toggle_btn: "Mostrar Escala", numscale_toggle_btn: "Ocultar Numérica",
             line_thickness_lbl: "Grosor Línea", line_color_lbl: "Color Línea", marker_color_lbl: "Color Marcador", compass_style_lbl: "Estilo Brújula", dynamic_lbl: "🔄 Dinámica",
-            marker_tool: "📍 Marcador", path_tool: "📏 Ruta Manual", ruler_tool: "📐 Regla Rápida", smart_route_tool: "🗺️ Ruta Inteligente", area_tool: "🔲 Área", compass_tool: "🧭 Brújula", legend_tool: "📋 Leyenda",
+            marker_tool: "📍 Marcador", path_tool: "📏 Ruta Manual", ruler_tool: "📐 Regla Rápida", smart_route_tool: "🗺️ Ruta Inteligente", field_map_tool: "🗺️ Solapar Mapa Campo", area_tool: "🔲 Área", compass_tool: "🧭 Brújula", legend_tool: "📋 Leyenda",
             take_screenshot_btn: "📸 Tomar Captura", latest_changes: "Últimos cambios:", room_members: "👥 Miembros en sala:",
             opt_dd: "Grados Decimales (DD)", opt_dms: "G. M. S. (DMS)", opt_utm: "UTM (Métricas)", opt_alpha: "Táctica Alfanumérica (A1)",
             opt_low: "Baja", opt_med: "Media", opt_high: "Gruesa",
             opt_red: "Rojo", opt_blue: "Azul", opt_green: "Verde", opt_black: "Negro", opt_yellow: "Amarillo",
             opt_free_scale: "Escala Libre",
-            opt_mtn: "Mapa Topográfico (MTN)", opt_pnoa: "Satélite (PNOA)", opt_base: "Callejero IGN", opt_osm: "OpenStreetMap", opt_relieve: "Sombreado 3D (Relieve)", opt_none: "Ninguna",
+            opt_mtn: "Mapa Topográfico (MTN)", opt_pnoa: "Satélite (PNOA)", opt_base: "Callejero IGN", opt_osm: "OpenStreetMap", opt_relieve: "Sombreado 3D (Relieve)", opt_none: "Ninguna (Sin capa)",
             opt_thin: "Fina", opt_normal: "Normal", opt_thick: "Gruesa",
             opt_modern: "Moderna", opt_classic: "Clásica", opt_military: "Militar", opt_minimal: "Minimalista",
             opt_blue_side: "🔵 Bando Azul", opt_red_side: "🔴 Bando Rojo", opt_green_side: "🟢 Bando Verde", opt_yellow_side: "🟡 Bando Amarillo", opt_pmc: "⚫ PMC / Mercenarios", opt_marine: "💀 Marine Raider bcn",
@@ -2164,7 +2309,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p11: "<b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando el tiempo que lleva sin señal.",
             manual_p12: "<b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.",
             manual_p13: "<b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>\"✏️ Editar\"</b> de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el objetivo.",
-            manual_p14: "<b>🌬️ Clima Táctico:</b> En el menú de \"Información MTN\", pulsa en \"Reporte Meteorológico\" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando."
+            manual_p14: "<b>🌬️ Clima Táctico:</b> En el menú de \"Información MTN\", pulsa en \"Reporte Meteorológico\" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.",
+            manual_p15: "<b>🗺️ Solapar Mapa de Campo:</b> En la pestaña \"Edición de Mapa\", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde \"✏️ Editar\" puedes modificar su transparencia para cuadrarlo con el satélite."
         },
         en: {
             manual_btn: "📖 User Manual", search_title: "🔍 Search", search_placeholder: "City or coordinates...", search_go: "Go",
@@ -2181,7 +2327,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             tools_3d_lbl: "In-App 3D Tools", drone_3d_btn: "🛰️ 3D Recon Drone",
             thickness_lbl: "Thickness", color_lbl: "Color", lock_zoom_btn: "🔓 Lock Zoom", grid_toggle_btn: "Enable Grid", scale_toggle_btn: "Show Scale", numscale_toggle_btn: "Hide Numeric",
             line_thickness_lbl: "Line Thickness", line_color_lbl: "Line Color", marker_color_lbl: "Marker Color", compass_style_lbl: "Compass Style", dynamic_lbl: "🔄 Dynamic",
-            marker_tool: "📍 Marker", path_tool: "📏 Manual Route", ruler_tool: "📐 Quick Ruler", smart_route_tool: "🗺️ Smart Route", area_tool: "🔲 Area", compass_tool: "🧭 Compass", legend_tool: "📋 Legend",
+            marker_tool: "📍 Marker", path_tool: "📏 Manual Route", ruler_tool: "📐 Quick Ruler", smart_route_tool: "🗺️ Smart Route", field_map_tool: "🗺️ Overlay Field Map", area_tool: "🔲 Area", compass_tool: "🧭 Compass", legend_tool: "📋 Legend",
             take_screenshot_btn: "📸 Take Screenshot", latest_changes: "Latest changes:", room_members: "👥 Room members:",
             opt_dd: "Decimal Degrees (DD)", opt_dms: "D. M. S. (DMS)", opt_utm: "UTM (Metric)", opt_alpha: "Alphanumeric Tactical (A1)",
             opt_low: "Low", opt_med: "Medium", opt_high: "Thick",
@@ -2211,7 +2357,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p11: "<b>👥 Squad List:</b> Inside the Operations Room, you will see a real-time list of your connected teammates, indicating their role and if they are active or marked as down. If a teammate loses connection, their icon will dim and a counter (⏳) will appear showing the time without signal.",
             manual_p12: "<b>👁️ AR Viewer (Augmented Reality):</b> (Requires active GPS) Activate the camera from the Operations menu to see map markers and overlaid teammates in the real environment floating according to your orientation and distance.",
             manual_p13: "<b>📸 Intelligence & Reconnaissance:</b> In the <b>\"✏️ Edit\"</b> window of any marker, you can add an image URL or take/upload a photo directly. The image will be compressed and displayed when tapping the marker so the team can visualize the target.",
-            manual_p14: "<b>🌬️ Tactical Weather:</b> In the \"MTN Info\" menu, tap \"Weather Report\" to get real-time temperature, wind speed/direction, and sunrise/sunset times for the area you are viewing."
+            manual_p14: "<b>🌬️ Tactical Weather:</b> In the \"MTN Info\" menu, tap \"Weather Report\" to get real-time temperature, wind speed/direction, and sunrise/sunset times for the area you are viewing.",
+            manual_p15: "<b>🗺️ Overlay Field Map:</b> In the \"Map Editing\" tab, use this tool to upload an image of your airsoft field map. It will appear on the map with golden markers at the corners that you can drag to adjust its size and position. From \"✏️ Edit\" you can change its opacity to match the satellite view."
         },
         ca: {
             manual_btn: "📖 Manual d'Usuari", search_title: "🔍 Cercador", search_placeholder: "Ciutat o coordenades...", search_go: "Anar",
@@ -2228,13 +2375,13 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             tools_3d_lbl: "Eines 3D In-App", drone_3d_btn: "🛰️ Dron de Reconeixement 3D",
             thickness_lbl: "Gruix", color_lbl: "Color", lock_zoom_btn: "🔓 Bloquejar Zoom", grid_toggle_btn: "Activar Quadrícula", scale_toggle_btn: "Mostrar Escala", numscale_toggle_btn: "Ocultar Numèrica",
             line_thickness_lbl: "Gruix Línia", line_color_lbl: "Color Línia", marker_color_lbl: "Color Marcador", compass_style_lbl: "Estil Brúixola", dynamic_lbl: "🔄 Dinàmica",
-            marker_tool: "📍 Marcador", path_tool: "📏 Ruta Manual", ruler_tool: "📐 Regle Ràpid", smart_route_tool: "🗺️ Ruta Intel·ligent", area_tool: "🔲 Àrea", compass_tool: "🧭 Brúixola", legend_tool: "📋 Llegenda",
+            marker_tool: "📍 Marcador", path_tool: "📏 Ruta Manual", ruler_tool: "📐 Regle Ràpid", smart_route_tool: "🗺️ Ruta Intel·ligent", field_map_tool: "🗺️ Solapar Mapa Camp", area_tool: "🔲 Àrea", compass_tool: "🧭 Brúixola", legend_tool: "📋 Llegenda",
             take_screenshot_btn: "📸 Fer Captura", latest_changes: "Últims canvis:", room_members: "👥 Membres a la sala:",
             opt_dd: "Graus Decimals (DD)", opt_dms: "G. M. S. (DMS)", opt_utm: "UTM (Mètric)", opt_alpha: "Tàctica Alfanumèrica (A1)",
             opt_low: "Baixa", opt_med: "Mitjana", opt_high: "Gruixuda",
             opt_red: "Vermell", opt_blue: "Blau", opt_green: "Verd", opt_black: "Negre", opt_yellow: "Groc",
             opt_free_scale: "Escala Lliure",
-            opt_mtn: "Mapa Topogràfic (MTN)", opt_pnoa: "Satèl·lit (PNOA)", opt_base: "Llista de Carrers IGN", opt_osm: "OpenStreetMap", opt_relieve: "Ombrejat 3D (Relleu)", opt_none: "Cap",
+            opt_mtn: "Mapa Topogràfic (MTN)", opt_pnoa: "Satèl·lit (PNOA)", opt_base: "Llista de Carrers IGN", opt_osm: "OpenStreetMap", opt_relieve: "Ombrejat 3D (Relleu)", opt_none: "Cap (Sense capa)",
             opt_thin: "Fina", opt_normal: "Normal", opt_thick: "Gruixuda",
             opt_modern: "Moderna", opt_classic: "Clàssica", opt_military: "Militar", opt_minimal: "Minimalista",
             opt_blue_side: "🔵 Bàndol Blau", opt_red_side: "🔴 Bàndol Vermell", opt_green_side: "🟢 Bàndol Verd", opt_yellow_side: "🟡 Bàndol Groc", opt_pmc: "⚫ PMC / Mercenaris", opt_marine: "💀 Marine Raider bcn",
@@ -2258,7 +2405,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p11: "<b>👥 Llista d'Esquadra:</b> Dins de la Sala d'Operacions, veuràs una llista en temps real dels teus companys connectats, indicant el seu rol i si estan actius o marcats com a baixa. Si un company perd la connexió, la seva icona s'atenuarà i apareixerà un comptador (⏳) mostrant el temps que porta sense senyal.",
             manual_p12: "<b>👁️ Visor AR (Realitat Augmentada):</b> (Requereix GPS actiu) Activa la càmera des del menú d'Operacions per veure marcadors del mapa i companys superposats en l'entorn real surant segons la teva orientació i distància.",
             manual_p13: "<b>📸 Intel·ligència i Reconeixement:</b> A la finestra de <b>\"✏️ Editar\"</b> de qualsevol marcador, pots afegir la URL d'una imatge o fer/pujar una foto directament. La imatge es comprimirà i es mostrarà en tocar el marcador perquè l'equip pugui visualitzar l'objectiu.",
-            manual_p14: "<b>🌬️ Clima Tàctic:</b> Al menú d'\"Informació MTN\", prem \"Report Meteorològic\" per obtenir en temps real la temperatura, velocitat/direcció del vent i hores d'alba/ocàs de la zona que estàs visualitzant."
+            manual_p14: "<b>🌬️ Clima Tàctic:</b> Al menú d'\"Informació MTN\", prem \"Report Meteorològic\" per obtenir en temps real la temperatura, velocitat/direcció del vent i hores d'alba/ocàs de la zona que estàs visualitzant.",
+            manual_p15: "<b>🗺️ Solapar Mapa de Camp:</b> A la pestanya \"Edició de Mapa\", utilitza aquesta eina per pujar una imatge del plànol del teu camp d'airsoft. Apareixerà al mapa amb uns marcadors daurats a les cantonades que pots arrossegar per ajustar la seva mida i posició. Des de \"✏️ Editar\" pots modificar la seva transparència per quadrar-lo amb el satèl·lit."
         }
     };
 
@@ -2284,19 +2432,25 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         document.getElementById('update-modal').style.display = 'none';
     };
 
-    if ('serviceWorker' in navigator) {
-        window.manualUpdateCheck = function() {
+    window.manualUpdateCheck = function() {
+        if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistration().then(reg => {
                 if (reg) {
                     reg.update().then(() => {
                         window.customAlert("Buscando Actualización", "Se ha ordenado al dispositivo buscar una nueva versión.\n\nSi no aparece el cartel de actualizar, significa que ya tienes la última versión instalada o que tu dispositivo (iOS) tiene bloqueada la caché.\n\nEn iOS: Cierra la app por completo deslizando hacia arriba en el selector de aplicaciones y vuelve a abrirla.");
+                    }).catch(() => {
+                        window.customAlert("Aviso", "No se pudo comprobar la actualización. Revisa tu conexión a internet.");
                     });
                 } else {
-                    window.customAlert("Error", "No hay Service Worker registrado.");
+                    window.customAlert("Aviso", "La app está en modo local o no hay Service Worker registrado.");
                 }
-            });
-        };
+            }).catch(e => window.customAlert("Error", "Error al comprobar el Service Worker."));
+        } else {
+            window.customAlert("Aviso", "Tu navegador no soporta actualizaciones PWA o estás ejecutando el archivo localmente.");
+        }
+    };
 
+    if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js').then(reg => {
                 
