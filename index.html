@@ -276,15 +276,15 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <div id="info-app-container" style="display:none;padding:15px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;font-size:12px;color:#475569;line-height:1.5;">
             <div style="text-align:center;margin-bottom:10px;">
                 <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
-                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.38
+                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.39
                 </span>
             </div>
             <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> Francisco QD</p>
-            <p style="margin:5px 0;"><b>📅 Fecha:</b> Actualizado 2026</p>
+            <p style="margin:5px 0;"><b>📅 Fecha:</b> Actualizado 26 de Julio de 2026</p>
             <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;">
                 <b style="color:var(--ign-blue);" data-i18n="latest_changes">Últimos cambios:</b>
                 <ul style="margin:5px 0;padding-left:20px;">
-                    <li>se ha añadido informacion del tiempo añadir fotos a marcadores y mapa superpuesto).</li>
+                    <li>Nuevo motor 3D de alta precisión para el ajuste manual de mapas solapados.</li>
                     <li>Mejoras generales de estabilidad y renderizado.</li>
                 </ul>
             </div>
@@ -950,6 +950,50 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 
 <script>
     window.projectName = "Proyecto_AirsoftMaps";
+    L.ImageOverlay.Rotated = L.ImageOverlay.extend({
+        initialize: function (image, topleft, topright, bottomleft, options) {
+            if (typeof(image) === 'string') { this._url = image; } else { this._rawImage = image; }
+            this._topLeft = L.latLng(topleft); this._topRight = L.latLng(topright); this._bottomLeft = L.latLng(bottomleft);
+            L.setOptions(this, options);
+        },
+        onAdd: function (map) {
+            if (!this._image) { this._initImage(); if (this.options.opacity < 1) { this._updateOpacity(); } }
+            if (this.options.interactive) { L.DomUtil.addClass(this._rawImage, 'leaflet-interactive'); this.addInteractiveTarget(this._rawImage); }
+            map.on('zoomend resetview', this._reset, this); this.getPane().appendChild(this._image); this._reset();
+        },
+        onRemove: function(map) { map.off('zoomend resetview', this._reset, this); L.ImageOverlay.prototype.onRemove.call(this, map); },
+        _initImage: function () {
+            var img = this._rawImage;
+            if (this._url) { img = L.DomUtil.create('img'); img.style.display = 'none'; if (this.options.crossOrigin) { img.crossOrigin = ''; } img.src = this._url; this._rawImage = img; }
+            L.DomUtil.addClass(img, 'leaflet-image-layer');
+            var div = this._image = L.DomUtil.create('div', 'leaflet-image-layer ' + (this._zoomAnimated ? 'leaflet-zoom-animated' : ''));
+            this._updateZIndex(); div.appendChild(img); div.onselectstart = L.Util.falseFn; div.onmousemove = L.Util.falseFn;
+            img.onload = function(){ this._reset(); img.style.display = 'block'; this.fire('load'); }.bind(this);
+            img.alt = this.options.alt;
+        },
+        _reset: function () {
+            var div = this._image; if (!this._map) { return; }
+            var pxTopLeft = this._map.latLngToLayerPoint(this._topLeft);
+            var pxTopRight = this._map.latLngToLayerPoint(this._topRight);
+            var pxBottomLeft = this._map.latLngToLayerPoint(this._bottomLeft);
+            var pxBottomRight = pxTopRight.subtract(pxTopLeft).add(pxBottomLeft);
+            var pxBounds = L.bounds([pxTopLeft, pxTopRight, pxBottomLeft, pxBottomRight]);
+            var size = pxBounds.getSize(); var pxTopLeftInDiv = pxTopLeft.subtract(pxBounds.min);
+            var vectorX = pxTopRight.subtract(pxTopLeft); var vectorY = pxBottomLeft.subtract(pxTopLeft);
+            var skewX = Math.atan2( vectorX.y, vectorX.x ); var skewY = Math.atan2( vectorY.x, vectorY.y );
+            this._bounds = L.latLngBounds( this._map.layerPointToLatLng(pxBounds.min), this._map.layerPointToLatLng(pxBounds.max) );
+            L.DomUtil.setPosition(div, pxBounds.min); div.style.width = size.x + 'px'; div.style.height = size.y + 'px';
+            var imgW = this._rawImage.width; var imgH = this._rawImage.height; if (!imgW || !imgH) { return; }
+            var scaleX = pxTopLeft.distanceTo(pxTopRight) / imgW * Math.cos(skewX); var scaleY = pxTopLeft.distanceTo(pxBottomLeft) / imgH * Math.cos(skewY);
+            this._rawImage.style.transformOrigin = '0 0';
+            this._rawImage.style.transform = 'translate(' + pxTopLeftInDiv.x + 'px, ' + pxTopLeftInDiv.y + 'px)' + 'skew(' + skewY + 'rad, ' + skewX + 'rad) ' + 'scale(' + scaleX + ', ' + scaleY + ') ';
+        },
+        reposition: function(topleft, topright, bottomleft) {
+            this._topLeft = L.latLng(topleft); this._topRight = L.latLng(topright); this._bottomLeft = L.latLng(bottomleft); this._reset();
+        },
+        setUrl: function (url) { this._url = url; if (this._rawImage) { this._rawImage.src = url; } return this; }
+    });
+    L.imageOverlay.rotated = function(imgSrc, topleft, topright, bottomleft, options) { return new L.ImageOverlay.Rotated(imgSrc, topleft, topright, bottomleft, options); };
     window.customAlert = function(title, msg) { if (msg && String(msg).includes('updateAuthUI')) return; document.getElementById('alert-modal-title').innerText = title; document.getElementById('alert-modal-msg').innerText = msg; document.getElementById('alert-modal').style.display = 'flex'; };
     
     window.nuevoProyecto = function() {
@@ -1045,15 +1089,24 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 layer.bindPopup(feature.properties.baseText + actionBtns);
                 window.drawnItems.addLayer(layer);
                 if (feature.properties.isFieldMap && feature.properties.imageUrlData) {
-                    let uB = feature.properties.unrotatedBounds;
-                    let boundsToUse = uB ? L.latLngBounds(uB) : layer.getBounds();
-                    const overlay = L.imageOverlay(feature.properties.imageUrlData, boundsToUse, { opacity: feature.properties.opacity || 0.6, interactive: false }).addTo(window.map);
+                    let corners = feature.properties.corners;
+                    if (!corners) {
+                        let uB = feature.properties.unrotatedBounds;
+                        let boundsToUse = uB ? L.latLngBounds(uB) : layer.getBounds();
+                        const rot = feature.properties.rotation || 0;
+                        const c = window.getMercatorCenter(window.map, boundsToUse);
+                        corners = {
+                            tl: window.getRotatedLatLng(window.map, boundsToUse.getNorthWest(), c, rot),
+                            tr: window.getRotatedLatLng(window.map, boundsToUse.getNorthEast(), c, rot),
+                            bl: window.getRotatedLatLng(window.map, boundsToUse.getSouthWest(), c, rot),
+                            br: window.getRotatedLatLng(window.map, boundsToUse.getSouthEast(), c, rot)
+                        };
+                        feature.properties.corners = corners;
+                    }
+                    const overlay = L.imageOverlay.rotated(feature.properties.imageUrlData, corners.tl, corners.tr, corners.bl, { opacity: feature.properties.opacity || 0.6, interactive: false }).addTo(window.map);
                     window.fieldMapOverlays[id] = overlay;
-                    const rot = feature.properties.rotation || 0;
-                    window.updateLayerPolygon(layer, boundsToUse, rot);
-                    overlay.on('load', () => { if (overlay.getElement()) overlay.getElement().style.rotate = `${rot}deg`; });
-                    if (overlay.getElement()) overlay.getElement().style.rotate = `${rot}deg`;
-                    window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, layer.getBounds());
+                    window.updateLayerPolygon(layer, corners.tl, corners.tr, corners.bl);
+                    window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, L.latLngBounds([corners.tl, corners.br]));
                 }
                 if (layer instanceof L.Marker) {
                     if(typeof updateMarkerBuffer === 'function') updateMarkerBuffer(layer);
@@ -1341,19 +1394,20 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 const se = [center.lat - latDiff, center.lng + lngDiff];
                 const imageBounds = [nw, se];
                 
-                const p1 = [imageBounds[0][0], imageBounds[0][1]];
-                const p2 = [imageBounds[0][0], imageBounds[1][1]];
-                const p3 = [imageBounds[1][0], imageBounds[1][1]];
-                const p4 = [imageBounds[1][0], imageBounds[0][1]];
+                const p1 = L.latLng(center.lat + latDiff, center.lng - lngDiff); // NW (TopLeft)
+                const p2 = L.latLng(center.lat + latDiff, center.lng + lngDiff); // NE (TopRight)
+                const p3 = L.latLng(center.lat - latDiff, center.lng + lngDiff); // SE (BottomRight)
+                const p4 = L.latLng(center.lat - latDiff, center.lng - lngDiff); // SW (BottomLeft)
+                
                 const layer = L.polygon([p1, p2, p3, p4], { color: '#fbbf24', weight: 0, fillOpacity: 0, interactive: false });
-                layer.feature = { type: 'Feature', properties: { layerName: file.name, faction: window.projectName, isFieldMap: true, opacity: 0.6, rotation: 0, unrotatedBounds: [[imageBounds[0][0], imageBounds[0][1]], [imageBounds[1][0], imageBounds[1][1]]] } };
+                layer.feature = { type: 'Feature', properties: { layerName: file.name, faction: window.projectName, isFieldMap: true, opacity: 0.6, rotation: 0, corners: { tl: p1, tr: p2, bl: p4, br: p3 } } };
                 
                 window.drawnItems.addLayer(layer);
                 const id = L.stamp(layer);
                 
-                const overlay = L.imageOverlay(compressedData, imageBounds, { opacity: 0.6, interactive: false }).addTo(window.map);
+                const overlay = L.imageOverlay.rotated(compressedData, p1, p2, p4, { opacity: 0.6, interactive: false }).addTo(window.map);
                 window.fieldMapOverlays[id] = overlay;
-                window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, L.latLngBounds(imageBounds));
+                window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, L.latLngBounds([p1, p3]));
                 
                 let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.toggleFieldMapAdjust(${id})" style="color:var(--ign-gold);border:1px solid var(--ign-gold);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🔄 Ajustar</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
                 let baseText = `<div><b>🗺️ ${file.name}</b><br>Mapa de campo solapado.</div>`;
@@ -1388,18 +1442,16 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         return map.layerPointToLatLng(L.point(centerPt.x + rx, centerPt.y + ry));
     };
 
-    window.updateLayerPolygon = function(layer, bounds, rot) {
+    window.updateLayerPolygon = function(layer, tl, tr, bl) {
         if (!layer || !layer.setLatLngs) return;
-        if (!rot) {
-            layer.setLatLngs([bounds.getNorthWest(), bounds.getNorthEast(), bounds.getSouthEast(), bounds.getSouthWest()]);
-            return;
-        }
-        const c = window.getMercatorCenter(window.map, bounds);
-        const p1 = window.getRotatedLatLng(window.map, bounds.getNorthWest(), c, rot);
-        const p2 = window.getRotatedLatLng(window.map, bounds.getNorthEast(), c, rot);
-        const p3 = window.getRotatedLatLng(window.map, bounds.getSouthEast(), c, rot);
-        const p4 = window.getRotatedLatLng(window.map, bounds.getSouthWest(), c, rot);
-        layer.setLatLngs([p1, p2, p3, p4]);
+        var pTL = window.map.latLngToLayerPoint(tl);
+        var pTR = window.map.latLngToLayerPoint(tr);
+        var pBL = window.map.latLngToLayerPoint(bl);
+        var pBR = pTR.subtract(pTL).add(pBL);
+        var br = window.map.layerPointToLatLng(pBR);
+        layer.setLatLngs([tl, tr, br, bl]);
+        layer.feature.properties.corners = { tl: tl, tr: tr, bl: bl, br: br };
+        return br;
     };
 
     window.toggleFieldMapAdjust = function(id) {
@@ -1409,23 +1461,14 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         
         if (window.fieldMapAdjusters[id]) {
             const adj = window.fieldMapAdjusters[id];
-            
-            window.map.dragging.enable();
-            window.map.touchZoom.enable();
-            window.map.scrollWheelZoom.enable();
-            window.map.doubleClickZoom.enable();
-            
+            window.map.dragging.enable(); window.map.touchZoom.enable(); window.map.scrollWheelZoom.enable(); window.map.doubleClickZoom.enable();
             layer.options.interactive = true;
             if (layer.getElement()) layer.getElement().style.pointerEvents = "auto";
-            const el = overlay.getElement();
-            if (el) {
-                el.style.outline = "none";
-                el.style.pointerEvents = "none";
-                el.style.cursor = "";
-            }
-            if (adj.centerMarker) window.map.removeLayer(adj.centerMarker);
-            if (adj.scaleMarker) window.map.removeLayer(adj.scaleMarker);
-            if (adj.rotateMarker) window.map.removeLayer(adj.rotateMarker);
+            if (overlay.getElement()) { overlay.getElement().style.outline = "none"; overlay.getElement().style.pointerEvents = "none"; overlay.getElement().style.cursor = ""; }
+            
+            if (adj.tlMarker) window.map.removeLayer(adj.tlMarker);
+            if (adj.trMarker) window.map.removeLayer(adj.trMarker);
+            if (adj.blMarker) window.map.removeLayer(adj.blMarker);
             delete window.fieldMapAdjusters[id];
             document.getElementById('finish-adjust-btn').style.display = 'none';
             window.currentAdjustId = null;
@@ -1434,128 +1477,50 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         } else {
             layer.setStyle({weight: 0, fillOpacity: 0});
             layer.options.interactive = false;
-            const disablePath = () => {
-                if (layer.getElement()) layer.getElement().style.pointerEvents = "none";
-                else setTimeout(disablePath, 50);
-            };
-            disablePath();
+            const disablePath = () => { if (layer.getElement()) layer.getElement().style.pointerEvents = "none"; else setTimeout(disablePath, 50); }; disablePath();
+            
             const el = overlay.getElement();
-            if (!el) return;
+            if (el) { el.style.outline = "4px dashed #fbbf24"; el.style.outlineOffset = "-4px"; el.style.pointerEvents = "none"; }
             
-            el.draggable = false;
-            el.style.outline = "4px dashed #fbbf24";
-            el.style.outlineOffset = "-4px";
-            el.style.pointerEvents = "none"; 
-            
-            const bounds = overlay.getBounds();
-            const moveIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--info);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">✥</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
-            const scaleIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--success);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">⤡</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
-            const rotIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--ign-gold);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">↻</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
-            
-            const currentRot = layer.feature.properties.rotation || 0;
-            const center = window.getMercatorCenter(window.map, bounds);
-            
-            const centerMarker = L.marker(center, {draggable: true, icon: moveIcon}).addTo(window.map);
-            const scaleMarker = L.marker(window.getRotatedLatLng(window.map, bounds.getSouthEast(), center, currentRot), {draggable: true, icon: scaleIcon}).addTo(window.map);
-            const rotateMarker = L.marker(window.getRotatedLatLng(window.map, bounds.getNorthEast(), center, currentRot), {draggable: true, icon: rotIcon}).addTo(window.map);
-            
-            centerMarker.on('dragstart', function(e) {
+            let corners = layer.feature.properties.corners;
+            if (!corners) {
                 const b = overlay.getBounds();
-                const c = window.getMercatorCenter(window.map, b);
-                this._dLatNw = b.getNorth() - c.lat;
-                this._dLngNw = b.getWest() - c.lng;
-                this._dLatSe = b.getSouth() - c.lat;
-                this._dLngSe = b.getEast() - c.lng;
-            });
+                corners = { tl: b.getNorthWest(), tr: b.getNorthEast(), bl: b.getSouthWest(), br: b.getSouthEast() };
+                layer.feature.properties.corners = corners;
+            }
             
-            centerMarker.on('drag', function(e) {
-                const c = e.target.getLatLng();
-                const newBounds = L.latLngBounds(
-                    L.latLng(c.lat + this._dLatNw, c.lng + this._dLngNw),
-                    L.latLng(c.lat + this._dLatSe, c.lng + this._dLngSe)
-                );
-                overlay.setBounds(newBounds);
-                layer.feature.properties.unrotatedBounds = [[newBounds.getSouth(), newBounds.getWest()], [newBounds.getNorth(), newBounds.getEast()]];
-                const rot = layer.feature.properties.rotation || 0;
-                window.updateLayerPolygon(layer, newBounds, rot);
-                scaleMarker.setLatLng(window.getRotatedLatLng(window.map, newBounds.getSouthEast(), c, rot));
-                rotateMarker.setLatLng(window.getRotatedLatLng(window.map, newBounds.getNorthEast(), c, rot));
-            });
+            const moveIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--info);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">✥</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+            const rotIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--ign-gold);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">↻</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+            const scaleIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--success);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">⤡</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
             
-            scaleMarker.on('drag', function(e) {
-                const rot = layer.feature.properties.rotation || 0;
-                const bounds = overlay.getBounds();
-                const center = window.getMercatorCenter(window.map, bounds);
-                
-                const unrotatedMouse = window.getRotatedLatLng(window.map, e.target.getLatLng(), center, -rot);
-                
-                const projCenter = window.map.project(center, 0);
-                const projMouse = window.map.project(unrotatedMouse, 0);
-                
-                let dx = projMouse.x - projCenter.x;
-                let dy = projMouse.y - projCenter.y;
-                
-                if (dx < 0.0001) dx = 0.0001; 
-                if (dy < 0.0001) dy = 0.0001;
-                
-                const projNw = L.point(projCenter.x - dx, projCenter.y - dy);
-                const projSe = L.point(projCenter.x + dx, projCenter.y + dy);
-                
-                const nw = window.map.unproject(projNw, 0);
-                const se = window.map.unproject(projSe, 0);
-                
-                const newBounds = L.latLngBounds(nw, se);
-                
-                overlay.setBounds(newBounds);
-                layer.feature.properties.unrotatedBounds = [[newBounds.getSouth(), newBounds.getWest()], [newBounds.getNorth(), newBounds.getEast()]];
-                window.updateLayerPolygon(layer, newBounds, rot);
-                
-                rotateMarker.setLatLng(window.getRotatedLatLng(window.map, newBounds.getNorthEast(), center, rot));
-            });
+            const tlMarker = L.marker(corners.tl, {draggable: true, icon: moveIcon}).addTo(window.map);
+            const trMarker = L.marker(corners.tr, {draggable: true, icon: rotIcon}).addTo(window.map);
+            const blMarker = L.marker(corners.bl, {draggable: true, icon: scaleIcon}).addTo(window.map);
             
-            scaleMarker.on('dragend', function(e) {
-                const rot = layer.feature.properties.rotation || 0;
-                const center = window.getMercatorCenter(window.map, overlay.getBounds());
-                scaleMarker.setLatLng(window.getRotatedLatLng(window.map, overlay.getBounds().getSouthEast(), center, rot));
-            });
+            const updateOverlay = () => {
+                const tl = tlMarker.getLatLng(), tr = trMarker.getLatLng(), bl = blMarker.getLatLng();
+                if (overlay.reposition) overlay.reposition(tl, tr, bl);
+                window.updateLayerPolygon(layer, tl, tr, bl);
+            };
             
-            rotateMarker.on('dragstart', function(e) {
-                const bounds = overlay.getBounds();
-                const center = window.getMercatorCenter(window.map, bounds);
-                const centerPx = window.map.latLngToLayerPoint(center);
-                const eventPx = window.map.latLngToLayerPoint(e.target.getLatLng());
-                this._startAngle = Math.atan2(eventPx.y - centerPx.y, eventPx.x - centerPx.x) * 180 / Math.PI;
-                this._startRot = layer.feature.properties.rotation || 0;
+            tlMarker.on('drag', function(e) {
+                const latDiff = e.latlng.lat - corners.tl.lat;
+                const lngDiff = e.latlng.lng - corners.tl.lng;
+                trMarker.setLatLng([corners.tr.lat + latDiff, corners.tr.lng + lngDiff]);
+                blMarker.setLatLng([corners.bl.lat + latDiff, corners.bl.lng + lngDiff]);
+                updateOverlay();
             });
+            tlMarker.on('dragend', function(e) { corners = layer.feature.properties.corners; });
+            trMarker.on('drag', function(e) { updateOverlay(); });
+            trMarker.on('dragend', function(e) { corners = layer.feature.properties.corners; });
+            blMarker.on('drag', function(e) { updateOverlay(); });
+            blMarker.on('dragend', function(e) { corners = layer.feature.properties.corners; });
             
-            rotateMarker.on('drag', function(e) {
-                const bounds = overlay.getBounds();
-                const center = window.getMercatorCenter(window.map, bounds);
-                const centerPx = window.map.latLngToLayerPoint(center);
-                const eventPx = window.map.latLngToLayerPoint(e.target.getLatLng());
-                const currentAngle = Math.atan2(eventPx.y - centerPx.y, eventPx.x - centerPx.x) * 180 / Math.PI;
-                
-                const newRot = (this._startRot + currentAngle - this._startAngle) % 360;
-                
-                const imgEl = overlay.getElement();
-                if (imgEl) imgEl.style.rotate = `${newRot}deg`;
-                layer.feature.properties.rotation = newRot;
-                window.updateLayerPolygon(layer, bounds, newRot);
-                
-                scaleMarker.setLatLng(window.getRotatedLatLng(window.map, bounds.getSouthEast(), center, newRot));
-            });
-            
-            rotateMarker.on('dragend', function() {
-                const rot = layer.feature.properties.rotation || 0;
-                const center = window.getMercatorCenter(window.map, overlay.getBounds());
-                rotateMarker.setLatLng(window.getRotatedLatLng(window.map, overlay.getBounds().getNorthEast(), center, rot));
-            });
-            
-            window.fieldMapAdjusters[id] = { centerMarker, scaleMarker, rotateMarker, isDirect: false };
+            window.fieldMapAdjusters[id] = { tlMarker, trMarker, blMarker };
             window.currentAdjustId = id;
             document.getElementById('finish-adjust-btn').style.display = 'block';
             setTimeout(() => window.map.closePopup(), 50);
-            window.customAlert("Modo Ajuste", "Usa los tiradores (Word style):\n\n✥ <b>Centro:</b> Mover imagen\n⤡ <b>Esquina:</b> Escalar\n↻ <b>Esquina superior:</b> Girar\n\nEl mapa base es libremente navegable. Usa el botón verde superior para terminar.");
+            window.customAlert("Modo Ajuste (Motor 3D)", "Usa los tiradores en las esquinas:\n\n✥ <b>Arriba Izquierda:</b> Mover mapa libremente\n↻ <b>Arriba Derecha:</b> Rotar/Estirar ancho\n⤡ <b>Abajo Izquierda:</b> Rotar/Estirar alto\n\nEl mapa base es libremente navegable.");
         }
     };
 
