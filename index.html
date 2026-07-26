@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<link rel="manifest" href="/manifest.json?v=4">
+<link rel="manifest" href="./manifest.json?v=4">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>AirsoftMaps - Edición y Personalización</title>
@@ -137,6 +137,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <button id="cancel-crop-btn" onclick="window.stopDrawing()" style="background:var(--danger);color:white;border:none;padding:12px 28px;border-radius:50px;font-weight:600;cursor:pointer;" data-i18n="btn_cancel_action">✕ Cancelar</button>
     </div>
 </div>
+<button id="finish-adjust-btn" onclick="if(window.currentAdjustId) window.toggleFieldMapAdjust(window.currentAdjustId)" style="display:none; position:absolute; top:20px; left:50%; transform:translateX(-50%); z-index:3000; background:var(--success); color:white; padding:12px 28px; border-radius:50px; font-size:16px; font-weight:800; border:none; box-shadow:var(--shadow); cursor:pointer;">✅ Terminar Ajuste</button>
 
 <div id="nav-panel" style="display:none;position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:2500;background:var(--bg-sidebar);border:2px solid #9b59b6;border-radius:12px;padding:10px 20px;box-shadow:var(--shadow);text-align:center;pointer-events:auto;min-width:200px;">
     <div style="font-size:11px;font-weight:bold;color:#64748b;margin-bottom:5px;" id="nav-target-name" data-i18n="nav_target">Destino</div>
@@ -1029,18 +1030,29 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 let actionBtns = extrasHtml;
                 if (layer instanceof L.Marker) {
                     const latlng = layer.getLatLng();
-                    actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                    actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
                 } else {
-                    actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+                    actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
                 }
-                if (feature.properties.baseText) layer.bindPopup(feature.properties.baseText + actionBtns);
+                if (!feature.properties.baseText) {
+                    if (layer instanceof L.Marker) {
+                        const ll = layer.getLatLng();
+                        feature.properties.baseText = `<div><b>📍 ${name}</b><br>Lat: ${ll.lat.toFixed(5)}, Lng: ${ll.lng.toFixed(5)}</div>`;
+                    } else {
+                        feature.properties.baseText = `<div><b>📍 ${name}</b></div>`;
+                    }
+                }
+                layer.bindPopup(feature.properties.baseText + actionBtns);
                 window.drawnItems.addLayer(layer);
                 if (feature.properties.isFieldMap && feature.properties.imageUrlData) {
-                    const overlay = L.imageOverlay(feature.properties.imageUrlData, layer.getBounds(), { opacity: feature.properties.opacity || 0.6, interactive: false }).addTo(window.map);
+                    let uB = feature.properties.unrotatedBounds;
+                    let boundsToUse = uB ? L.latLngBounds(uB) : layer.getBounds();
+                    const overlay = L.imageOverlay(feature.properties.imageUrlData, boundsToUse, { opacity: feature.properties.opacity || 0.6, interactive: false }).addTo(window.map);
                     window.fieldMapOverlays[id] = overlay;
                     const rot = feature.properties.rotation || 0;
-                    overlay.on('load', () => { if (overlay.getElement()) overlay.getElement().style.transform = `rotate(${rot}deg)`; });
-                    if (overlay.getElement()) overlay.getElement().style.transform = `rotate(${rot}deg)`;
+                    window.updateLayerPolygon(layer, boundsToUse, rot);
+                    overlay.on('load', () => { if (overlay.getElement()) overlay.getElement().style.rotate = `${rot}deg`; });
+                    if (overlay.getElement()) overlay.getElement().style.rotate = `${rot}deg`;
                     window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, layer.getBounds());
                 }
                 if (layer instanceof L.Marker) {
@@ -1329,8 +1341,12 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 const se = [center.lat - latDiff, center.lng + lngDiff];
                 const imageBounds = [nw, se];
                 
-                const layer = L.rectangle(imageBounds, { color: '#fbbf24', weight: 0, fillOpacity: 0, interactive: false });
-                layer.feature = { type: 'Feature', properties: { layerName: file.name, faction: window.projectName, isFieldMap: true, opacity: 0.6, rotation: 0 } };
+                const p1 = [imageBounds[0][0], imageBounds[0][1]];
+                const p2 = [imageBounds[0][0], imageBounds[1][1]];
+                const p3 = [imageBounds[1][0], imageBounds[1][1]];
+                const p4 = [imageBounds[1][0], imageBounds[0][1]];
+                const layer = L.polygon([p1, p2, p3, p4], { color: '#fbbf24', weight: 0, fillOpacity: 0, interactive: false });
+                layer.feature = { type: 'Feature', properties: { layerName: file.name, faction: window.projectName, isFieldMap: true, opacity: 0.6, rotation: 0, unrotatedBounds: [[imageBounds[0][0], imageBounds[0][1]], [imageBounds[1][0], imageBounds[1][1]]] } };
                 
                 window.drawnItems.addLayer(layer);
                 const id = L.stamp(layer);
@@ -1355,47 +1371,191 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         e.target.value = '';
     };
 
+    window.getMercatorCenter = function(map, bounds) {
+        const projNw = map.project(bounds.getNorthWest(), 0);
+        const projSe = map.project(bounds.getSouthEast(), 0);
+        return map.unproject(projNw.add(projSe).divideBy(2), 0);
+    };
+
+    window.getRotatedLatLng = function(map, latlng, centerLatLng, angleDeg) {
+        const pt = map.latLngToLayerPoint(latlng);
+        const centerPt = map.latLngToLayerPoint(centerLatLng);
+        const angleRad = angleDeg * Math.PI / 180;
+        const dx = pt.x - centerPt.x;
+        const dy = pt.y - centerPt.y;
+        const rx = dx * Math.cos(angleRad) - dy * Math.sin(angleRad);
+        const ry = dx * Math.sin(angleRad) + dy * Math.cos(angleRad);
+        return map.layerPointToLatLng(L.point(centerPt.x + rx, centerPt.y + ry));
+    };
+
+    window.updateLayerPolygon = function(layer, bounds, rot) {
+        if (!layer || !layer.setLatLngs) return;
+        if (!rot) {
+            layer.setLatLngs([bounds.getNorthWest(), bounds.getNorthEast(), bounds.getSouthEast(), bounds.getSouthWest()]);
+            return;
+        }
+        const c = window.getMercatorCenter(window.map, bounds);
+        const p1 = window.getRotatedLatLng(window.map, bounds.getNorthWest(), c, rot);
+        const p2 = window.getRotatedLatLng(window.map, bounds.getNorthEast(), c, rot);
+        const p3 = window.getRotatedLatLng(window.map, bounds.getSouthEast(), c, rot);
+        const p4 = window.getRotatedLatLng(window.map, bounds.getSouthWest(), c, rot);
+        layer.setLatLngs([p1, p2, p3, p4]);
+    };
+
     window.toggleFieldMapAdjust = function(id) {
         const layer = window.drawnItems.getLayer(id);
         const overlay = window.fieldMapOverlays[id];
         if (!layer || !overlay) return;
         
         if (window.fieldMapAdjusters[id]) {
-            window.map.removeLayer(window.fieldMapAdjusters[id].nw);
-            window.map.removeLayer(window.fieldMapAdjusters[id].se);
+            const adj = window.fieldMapAdjusters[id];
+            
+            window.map.dragging.enable();
+            window.map.touchZoom.enable();
+            window.map.scrollWheelZoom.enable();
+            window.map.doubleClickZoom.enable();
+            
+            layer.options.interactive = true;
+            if (layer.getElement()) layer.getElement().style.pointerEvents = "auto";
+            const el = overlay.getElement();
+            if (el) {
+                el.style.outline = "none";
+                el.style.pointerEvents = "none";
+                el.style.cursor = "";
+            }
+            if (adj.centerMarker) window.map.removeLayer(adj.centerMarker);
+            if (adj.scaleMarker) window.map.removeLayer(adj.scaleMarker);
+            if (adj.rotateMarker) window.map.removeLayer(adj.rotateMarker);
             delete window.fieldMapAdjusters[id];
-            layer.setStyle({weight: 0, fillOpacity: 0});
+            document.getElementById('finish-adjust-btn').style.display = 'none';
+            window.currentAdjustId = null;
+            layer.setStyle({weight: 3, fillOpacity: 0.1});
             window.customAlert("Modo Ajuste", "Ajuste finalizado.");
-                setTimeout(() => layer.openPopup(), 100);
         } else {
-            layer.setStyle({weight: 3, dashArray: '10,10', fillOpacity: 0.1, color: '#fbbf24'});
+            layer.setStyle({weight: 0, fillOpacity: 0});
+            layer.options.interactive = false;
+            const disablePath = () => {
+                if (layer.getElement()) layer.getElement().style.pointerEvents = "none";
+                else setTimeout(disablePath, 50);
+            };
+            disablePath();
+            const el = overlay.getElement();
+            if (!el) return;
+            
+            el.draggable = false;
+            el.style.outline = "4px dashed #fbbf24";
+            el.style.outlineOffset = "-4px";
+            el.style.pointerEvents = "none"; 
+            
             const bounds = overlay.getBounds();
+            const moveIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--info);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">✥</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+            const scaleIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--success);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">⤡</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+            const rotIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--ign-gold);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">↻</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
             
-            const createHandle = (latlng, cursor) => {
-                return L.marker(latlng, {
-                    draggable: true,
-                    icon: L.divIcon({className: 'resize-handle', html: `<div style="width:24px;height:24px;background:var(--ign-gold);border:2px solid black;border-radius:50%;cursor:${cursor};transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(0,0,0,0.8);"></div>`, iconSize: [0,0]})
-                }).addTo(window.map);
-            };
+            const currentRot = layer.feature.properties.rotation || 0;
+            const center = window.getMercatorCenter(window.map, bounds);
             
-            const nwMarker = createHandle(bounds.getNorthWest(), 'nw-resize');
-            const seMarker = createHandle(bounds.getSouthEast(), 'se-resize');
+            const centerMarker = L.marker(center, {draggable: true, icon: moveIcon}).addTo(window.map);
+            const scaleMarker = L.marker(window.getRotatedLatLng(window.map, bounds.getSouthEast(), center, currentRot), {draggable: true, icon: scaleIcon}).addTo(window.map);
+            const rotateMarker = L.marker(window.getRotatedLatLng(window.map, bounds.getNorthEast(), center, currentRot), {draggable: true, icon: rotIcon}).addTo(window.map);
             
-            const updateOverlay = function() {
-                const newBounds = L.latLngBounds(nwMarker.getLatLng(), seMarker.getLatLng());
+            centerMarker.on('dragstart', function(e) {
+                const b = overlay.getBounds();
+                const c = window.getMercatorCenter(window.map, b);
+                this._dLatNw = b.getNorth() - c.lat;
+                this._dLngNw = b.getWest() - c.lng;
+                this._dLatSe = b.getSouth() - c.lat;
+                this._dLngSe = b.getEast() - c.lng;
+            });
+            
+            centerMarker.on('drag', function(e) {
+                const c = e.target.getLatLng();
+                const newBounds = L.latLngBounds(
+                    L.latLng(c.lat + this._dLatNw, c.lng + this._dLngNw),
+                    L.latLng(c.lat + this._dLatSe, c.lng + this._dLngSe)
+                );
                 overlay.setBounds(newBounds);
-                layer.setBounds(newBounds);
-                if (window.fieldMapCenterPins[id]) {
-                    window.fieldMapCenterPins[id].setLatLng(newBounds.getNorthWest());
-                }
-            };
+                layer.feature.properties.unrotatedBounds = [[newBounds.getSouth(), newBounds.getWest()], [newBounds.getNorth(), newBounds.getEast()]];
+                const rot = layer.feature.properties.rotation || 0;
+                window.updateLayerPolygon(layer, newBounds, rot);
+                scaleMarker.setLatLng(window.getRotatedLatLng(window.map, newBounds.getSouthEast(), c, rot));
+                rotateMarker.setLatLng(window.getRotatedLatLng(window.map, newBounds.getNorthEast(), c, rot));
+            });
             
-            nwMarker.on('drag', updateOverlay);
-            seMarker.on('drag', updateOverlay);
+            scaleMarker.on('drag', function(e) {
+                const rot = layer.feature.properties.rotation || 0;
+                const bounds = overlay.getBounds();
+                const center = window.getMercatorCenter(window.map, bounds);
+                
+                const unrotatedMouse = window.getRotatedLatLng(window.map, e.target.getLatLng(), center, -rot);
+                
+                const projCenter = window.map.project(center, 0);
+                const projMouse = window.map.project(unrotatedMouse, 0);
+                
+                let dx = projMouse.x - projCenter.x;
+                let dy = projMouse.y - projCenter.y;
+                
+                if (dx < 0.0001) dx = 0.0001; 
+                if (dy < 0.0001) dy = 0.0001;
+                
+                const projNw = L.point(projCenter.x - dx, projCenter.y - dy);
+                const projSe = L.point(projCenter.x + dx, projCenter.y + dy);
+                
+                const nw = window.map.unproject(projNw, 0);
+                const se = window.map.unproject(projSe, 0);
+                
+                const newBounds = L.latLngBounds(nw, se);
+                
+                overlay.setBounds(newBounds);
+                layer.feature.properties.unrotatedBounds = [[newBounds.getSouth(), newBounds.getWest()], [newBounds.getNorth(), newBounds.getEast()]];
+                window.updateLayerPolygon(layer, newBounds, rot);
+                
+                rotateMarker.setLatLng(window.getRotatedLatLng(window.map, newBounds.getNorthEast(), center, rot));
+            });
             
-            window.fieldMapAdjusters[id] = { nw: nwMarker, se: seMarker };
-            window.map.closePopup();
-            window.customAlert("Modo Ajuste", "Arrastra los puntos dorados de las esquinas para redimensionar y mover el mapa de campo. Vuelve a pulsar 'Ajustar' cuando termines.");
+            scaleMarker.on('dragend', function(e) {
+                const rot = layer.feature.properties.rotation || 0;
+                const center = window.getMercatorCenter(window.map, overlay.getBounds());
+                scaleMarker.setLatLng(window.getRotatedLatLng(window.map, overlay.getBounds().getSouthEast(), center, rot));
+            });
+            
+            rotateMarker.on('dragstart', function(e) {
+                const bounds = overlay.getBounds();
+                const center = window.getMercatorCenter(window.map, bounds);
+                const centerPx = window.map.latLngToLayerPoint(center);
+                const eventPx = window.map.latLngToLayerPoint(e.target.getLatLng());
+                this._startAngle = Math.atan2(eventPx.y - centerPx.y, eventPx.x - centerPx.x) * 180 / Math.PI;
+                this._startRot = layer.feature.properties.rotation || 0;
+            });
+            
+            rotateMarker.on('drag', function(e) {
+                const bounds = overlay.getBounds();
+                const center = window.getMercatorCenter(window.map, bounds);
+                const centerPx = window.map.latLngToLayerPoint(center);
+                const eventPx = window.map.latLngToLayerPoint(e.target.getLatLng());
+                const currentAngle = Math.atan2(eventPx.y - centerPx.y, eventPx.x - centerPx.x) * 180 / Math.PI;
+                
+                const newRot = (this._startRot + currentAngle - this._startAngle) % 360;
+                
+                const imgEl = overlay.getElement();
+                if (imgEl) imgEl.style.rotate = `${newRot}deg`;
+                layer.feature.properties.rotation = newRot;
+                window.updateLayerPolygon(layer, bounds, newRot);
+                
+                scaleMarker.setLatLng(window.getRotatedLatLng(window.map, bounds.getSouthEast(), center, newRot));
+            });
+            
+            rotateMarker.on('dragend', function() {
+                const rot = layer.feature.properties.rotation || 0;
+                const center = window.getMercatorCenter(window.map, overlay.getBounds());
+                rotateMarker.setLatLng(window.getRotatedLatLng(window.map, overlay.getBounds().getNorthEast(), center, rot));
+            });
+            
+            window.fieldMapAdjusters[id] = { centerMarker, scaleMarker, rotateMarker, isDirect: false };
+            window.currentAdjustId = id;
+            document.getElementById('finish-adjust-btn').style.display = 'block';
+            setTimeout(() => window.map.closePopup(), 50);
+            window.customAlert("Modo Ajuste", "Usa los tiradores (Word style):\n\n✥ <b>Centro:</b> Mover imagen\n⤡ <b>Esquina:</b> Escalar\n↻ <b>Esquina superior:</b> Girar\n\nEl mapa base es libremente navegable. Usa el botón verde superior para terminar.");
         }
     };
 
@@ -1636,7 +1796,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                     const newRot = rotInput ? (parseInt(rotInput.value) || 0) : (layer.feature.properties.rotation || 0);
                     layer.feature.properties.rotation = newRot;
                     window.fieldMapOverlays[id].setOpacity(newOpacity);
-                    if (window.fieldMapOverlays[id].getElement()) window.fieldMapOverlays[id].getElement().style.transform = `rotate(${newRot}deg)`;
+                    if (window.fieldMapOverlays[id].getElement()) window.fieldMapOverlays[id].getElement().style.rotate = `${newRot}deg`;
                     if (newWeight === 0 && window.fieldMapAdjusters[id]) { window.toggleFieldMapAdjust(id); } 
                 }
                 if (layer.endMarker) { layer.endMarker.setIcon(getMarkerIconObj(newColor, 'bandera')); }
@@ -1724,7 +1884,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         e.target.value = '';
     };
 
-    window.removeLayerById = function(id) { const layer = drawnItems.getLayer(id); if (layer) { if (layer.bufferCircle) map.removeLayer(layer.bufferCircle); if (layer.conePolygon) map.removeLayer(layer.conePolygon); if (layer.endMarker) map.removeLayer(layer.endMarker); if (window.fieldMapOverlays && window.fieldMapOverlays[id]) { map.removeLayer(window.fieldMapOverlays[id]); delete window.fieldMapOverlays[id]; } if (window.fieldMapAdjusters && window.fieldMapAdjusters[id]) { map.removeLayer(window.fieldMapAdjusters[id].nw); map.removeLayer(window.fieldMapAdjusters[id].se); delete window.fieldMapAdjusters[id]; } if (window.fieldMapCenterPins && window.fieldMapCenterPins[id]) { map.removeLayer(window.fieldMapCenterPins[id]); delete window.fieldMapCenterPins[id]; } drawnItems.removeLayer(layer); updateLayerTree(); } };
+    window.removeLayerById = function(id) { const layer = drawnItems.getLayer(id); if (layer) { if (layer.bufferCircle) map.removeLayer(layer.bufferCircle); if (layer.conePolygon) map.removeLayer(layer.conePolygon); if (layer.endMarker) map.removeLayer(layer.endMarker); if (window.fieldMapOverlays && window.fieldMapOverlays[id]) { map.removeLayer(window.fieldMapOverlays[id]); delete window.fieldMapOverlays[id]; } if (window.fieldMapAdjusters && window.fieldMapAdjusters[id]) { const adj = window.fieldMapAdjusters[id]; if(adj.nw) map.removeLayer(adj.nw); if(adj.se) map.removeLayer(adj.se); if(adj.center) map.removeLayer(adj.center); if(adj.scale) map.removeLayer(adj.scale); if(adj.rotate) map.removeLayer(adj.rotate); if (adj.isDirect) { window.map.dragging.enable(); window.map.touchZoom.enable(); window.map.scrollWheelZoom.enable(); window.map.doubleClickZoom.enable(); document.removeEventListener('mousemove', adj.onMove); document.removeEventListener('touchmove', adj.onMove); document.removeEventListener('mouseup', adj.onUp); document.removeEventListener('touchend', adj.onUp); } delete window.fieldMapAdjusters[id]; } if (window.fieldMapCenterPins && window.fieldMapCenterPins[id]) { map.removeLayer(window.fieldMapCenterPins[id]); delete window.fieldMapCenterPins[id]; } drawnItems.removeLayer(layer); updateLayerTree(); } };
     window.zoomToLayer = function(id) { const layer = drawnItems.getLayer(id); if (!layer) return; if (layer instanceof L.Marker) { map.setView(layer.getLatLng(), 18); if (!layer.isHidden) layer.openPopup(); } else if (layer.getBounds) { map.fitBounds(layer.getBounds()); if (!layer.isHidden) layer.openPopup(); } };
     window.openImageModal = function(src) { document.getElementById('image-modal-content').src = src; document.getElementById('image-modal').style.display = 'flex'; };
     window.closeImageModal = function() { document.getElementById('image-modal').style.display = 'none'; document.getElementById('image-modal-content').src = ''; };
@@ -2452,7 +2612,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').then(reg => {
+            navigator.serviceWorker.register('./sw.js').then(reg => {
                 
                 // Forzar comprobación de actualización al volver a primer plano (Ayuda especialmente a iOS)
                 document.addEventListener('visibilitychange', () => {
