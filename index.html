@@ -134,6 +134,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <select id="route-mode-select" onchange="window.recalculateAutoRoute()" style="display:none;padding:12px 20px;border-radius:50px;font-weight:600;border:2px solid var(--ign-blue);background:white;color:var(--ign-blue);cursor:pointer;"><option value="foot" data-i18n="route_foot">🚶‍♂️ A pie</option><option value="driving" data-i18n="route_drive">🚗 En coche</option><option value="bike" data-i18n="route_bike">🚲 En bici</option></select>
         <button id="undo-point-btn" onclick="window.undoLastPoint()" style="background:var(--ign-gold);color:var(--ign-blue);border:none;padding:12px 28px;border-radius:50px;font-weight:600;cursor:pointer;display:none;" data-i18n="btn_undo">↩️ Deshacer</button>
         <button id="finish-route-btn" onclick="window.finishAutoRoute()" style="background:var(--success);color:white;border:none;padding:12px 28px;border-radius:50px;font-weight:600;cursor:pointer;display:none;" data-i18n="btn_finish">✅ Finalizar</button>
+        <button id="undo-whiteboard-btn" onclick="window.undoWhiteboardStroke()" style="background:var(--ign-gold);color:var(--ign-blue);border:none;padding:12px 28px;border-radius:50px;font-weight:600;cursor:pointer;display:none;">↩️ Deshacer Trazo</button>
+        <button id="finish-whiteboard-btn" onclick="window.stopWhiteboard()" style="background:var(--success);color:white;border:none;padding:12px 28px;border-radius:50px;font-weight:600;cursor:pointer;display:none;">✅ Terminar Dibujo</button>
         <button id="cancel-crop-btn" onclick="window.stopDrawing()" style="background:var(--danger);color:white;border:none;padding:12px 28px;border-radius:50px;font-weight:600;cursor:pointer;" data-i18n="btn_cancel_action">✕ Cancelar</button>
     </div>
 </div>
@@ -251,7 +253,9 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 <div style="grid-column:span 2;"><label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;" data-i18n="compass_style_lbl">Estilo Brújula</label><div style="display:flex; gap:5px; align-items:center;"><select id="compassStyle" class="form-select" style="margin-bottom:0;font-size:12px;flex:1;" onchange="window.updateCompassStyle()"><option value="modern" selected data-i18n="opt_modern">Moderna</option><option value="classic" data-i18n="opt_classic">Clásica</option><option value="military" data-i18n="opt_military">Militar</option><option value="minimal" data-i18n="opt_minimal">Minimalista</option></select><label style="font-size:10px;font-weight:bold;color:#475569;display:flex;align-items:center;gap:4px;cursor:pointer;background:rgba(255,255,255,0.5);padding:8px;border-radius:6px;border:1px solid var(--border-color);"><input type="checkbox" id="compass-auto-rotate" onchange="window.toggleCompassRotation()" style="margin:0;"> <span data-i18n="dynamic_lbl">🔄 Dinámica</span></label></div></div>
             </div>
             <div class="edit-tools-grid" style="margin-bottom:0;">
-                <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('marker')" data-i18n="marker_tool">📍 Marcador</button><button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polyline')" data-i18n="path_tool">📏 Ruta Manual</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('marker')" data-i18n="marker_tool">📍 Marcador</button>
+                <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polyline')" data-i18n="path_tool">📏 Ruta Manual</button>
+                <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;border-color:#9b59b6;color:#9b59b6;" onclick="window.enableTool('whiteboard')">🖍️ Pizarra Táctica</button>
                 <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;" onclick="window.enableTool('measure')" data-i18n="ruler_tool">📐 Regla Rápida</button>
                 <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;border-color:var(--info);color:var(--info);" onclick="window.enableTool('auto-route')" data-i18n="smart_route_tool">🗺️ Ruta Inteligente</button>
                 <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polygon')" data-i18n="area_tool">🔲 Área</button><button class="btn-outline" style="margin-bottom:0;" id="btn-compass" onclick="window.toggleCompass()" data-i18n="compass_tool">🧭 Brújula</button>
@@ -276,7 +280,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <div id="info-app-container" style="display:none;padding:15px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;font-size:12px;color:#475569;line-height:1.5;">
             <div style="text-align:center;margin-bottom:10px;">
                 <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
-                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.39
+                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.40
                 </span>
             </div>
             <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> Francisco QD</p>
@@ -285,6 +289,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 <b style="color:var(--ign-blue);" data-i18n="latest_changes">Últimos cambios:</b>
                 <ul style="margin:5px 0;padding-left:20px;">
                     <li>Nuevo motor 3D de alta precisión para el ajuste manual de mapas solapados.</li>
+                    <li>NUEVO: Pizarra Táctica en Vivo (dibujo a mano alzada sincronizado en tiempo real).</li>
                     <li>Mejoras generales de estabilidad y renderizado.</li>
                 </ul>
             </div>
@@ -482,6 +487,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <p data-i18n="manual_p13"><b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>"✏️ Editar"</b> de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el objetivo.</p>
             <p data-i18n="manual_p14"><b>🌬️ Clima Táctico:</b> En el menú de "Información MTN", pulsa en "Reporte Meteorológico" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.</p>
             <p data-i18n="manual_p15"><b>🗺️ Solapar Mapa de Campo:</b> En la pestaña "Edición de Mapa", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde "✏️ Editar" puedes modificar su transparencia para cuadrarlo con el satélite.</p>
+            <p data-i18n="manual_p16"><b>🖍️ Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones.</p>
         </div>
         <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;" onclick="window.closeManual()" data-i18n="manual_understood">Entendido</button></div>
     </div>
@@ -1355,13 +1361,121 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         }
     };
 
+    window.isWhiteboardMode = false;
+    window.currentWhiteboardLine = null;
+    window.whiteboardLines = [];
+    window.whiteboardIsDrawing = false;
+    
+    window.startWhiteboard = function() {
+        window.isWhiteboardMode = true;
+        window.map.dragging.disable();
+        window.map.on('mousedown', handleWhiteboardDown);
+        window.map.on('mousemove', handleWhiteboardMove);
+        window.map.on('mouseup', handleWhiteboardUp);
+        document.getElementById('map-container').style.cursor = 'crosshair';
+        const infoDiv = document.getElementById('auto-route-info'); 
+        if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `🖍️ Pizarra Táctica: Dibuja arrastrando sobre el mapa`; }
+    };
+    
+    window.stopWhiteboard = function() {
+        if (!window.isWhiteboardMode) return;
+        window.isWhiteboardMode = false;
+        window.whiteboardIsDrawing = false;
+        window.map.dragging.enable();
+        window.map.off('mousedown', handleWhiteboardDown);
+        window.map.off('mousemove', handleWhiteboardMove);
+        window.map.off('mouseup', handleWhiteboardUp);
+        document.getElementById('map-container').style.cursor = '';
+        const infoDiv = document.getElementById('auto-route-info'); if(infoDiv) infoDiv.style.display = 'none';
+        document.getElementById('drawing-actions').style.display = 'none';
+        window.whiteboardLines = [];
+    };
+    
+    window.undoWhiteboardStroke = function() {
+        if (window.whiteboardLines.length > 0) {
+            const lastLine = window.whiteboardLines.pop();
+            window.drawnItems.removeLayer(lastLine);
+            if (typeof window.syncMapToRoom === 'function') window.syncMapToRoom();
+        }
+    };
+    
+    function simplifyPoints(points, epsilon) {
+        if (points.length < 3) return points;
+        const sqTolerance = epsilon * epsilon;
+        const last = points.length - 1;
+        const keep = new Uint8Array(points.length);
+        keep[0] = 1; keep[last] = 1;
+        
+        function getSqDist(p, p1, p2) {
+            let x = p1.lng, y = p1.lat, dx = p2.lng - x, dy = p2.lat - y;
+            if (dx !== 0 || dy !== 0) {
+                const t = ((p.lng - x) * dx + (p.lat - y) * dy) / (dx * dx + dy * dy);
+                if (t > 1) { x = p2.lng; y = p2.lat; } else if (t > 0) { x += dx * t; y += dy * t; }
+            }
+            dx = p.lng - x; dy = p.lat - y;
+            return dx * dx + dy * dy;
+        }
+        
+        function simplifyDPStep(points, first, last, sqTolerance, keep) {
+            let maxSqDist = sqTolerance; let index = -1;
+            for (let i = first + 1; i < last; i++) {
+                const sqDist = getSqDist(points[i], points[first], points[last]);
+                if (sqDist > maxSqDist) { index = i; maxSqDist = sqDist; }
+            }
+            if (maxSqDist > sqTolerance) {
+                keep[index] = 1;
+                simplifyDPStep(points, first, index, sqTolerance, keep);
+                simplifyDPStep(points, index, last, sqTolerance, keep);
+            }
+        }
+        simplifyDPStep(points, 0, last, sqTolerance, keep);
+        return points.filter((p, i) => keep[i]);
+    }
+
+    function handleWhiteboardDown(e) {
+        window.whiteboardIsDrawing = true;
+        const weight = parseInt(document.getElementById('drawWeight').value) || 4;
+        const color = document.getElementById('drawColor').value || '#2ecc71';
+        window.currentWhiteboardLine = L.polyline([e.latlng], {color: color, weight: weight, interactive: true});
+        window.currentWhiteboardLine.addTo(window.map);
+    }
+    
+    function handleWhiteboardMove(e) {
+        if (!window.whiteboardIsDrawing || !window.currentWhiteboardLine) return;
+        window.currentWhiteboardLine.addLatLng(e.latlng);
+    }
+    
+    function handleWhiteboardUp(e) {
+        if (!window.whiteboardIsDrawing || !window.currentWhiteboardLine) return;
+        window.whiteboardIsDrawing = false;
+        const latlngs = window.currentWhiteboardLine.getLatLngs();
+        window.map.removeLayer(window.currentWhiteboardLine);
+        if (latlngs.length < 2) { window.currentWhiteboardLine = null; return; }
+        const simplified = simplifyPoints(latlngs, 0.00001); 
+        const weight = parseInt(document.getElementById('drawWeight').value) || 4;
+        const color = document.getElementById('drawColor').value || '#2ecc71';
+        const finalLine = L.polyline(simplified, {color: color, weight: weight});
+        finalLine.feature = { type: 'Feature', properties: { layerName: 'Trazo Pizarra', faction: window.projectName, color: color } };
+        let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${L.stamp(finalLine)})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${L.stamp(finalLine)})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
+        finalLine.bindPopup(`<div><b>🖍️ Trazo Táctico</b></div>` + actionBtns);
+        finalLine.feature.properties.baseText = `<div><b>🖍️ Trazo Táctico</b></div>`;
+        window.drawnItems.addLayer(finalLine);
+        window.whiteboardLines.push(finalLine);
+        window.currentWhiteboardLine = null;
+        if (typeof window.syncMapToRoom === 'function') window.syncMapToRoom();
+    }
+
     window.enableTool = function(type) {
         window.stopDrawing(); window.toggleMenu(); document.getElementById('drawing-actions').style.display = 'flex'; document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon' || type === 'auto-route' || type === 'measure') ? 'block' : 'none';
         const finishBtn = document.getElementById('finish-route-btn'); const routeModeSelect = document.getElementById('route-mode-select');
+        const undoWBtn = document.getElementById('undo-whiteboard-btn'); const finishWBtn = document.getElementById('finish-whiteboard-btn');
         if (finishBtn) finishBtn.style.display = (type === 'auto-route') ? 'block' : 'none'; if (routeModeSelect) routeModeSelect.style.display = (type === 'auto-route') ? 'block' : 'none';
+        if (undoWBtn) undoWBtn.style.display = (type === 'whiteboard') ? 'block' : 'none';
+        if (finishWBtn) finishWBtn.style.display = (type === 'whiteboard') ? 'block' : 'none';
         if (type === 'delete') { document.getElementById('cancel-crop-btn').innerText = "✕ Salir"; drawnItems.eachLayer(layer => layer.on('click', window.deleteClickHandler)); return; } else { document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar"; }
         if (type === 'measure') { measurePoints = []; measureLayer.addTo(map); map.on('click', handleMeasureClick); map.on('mousemove', handleMeasureMove); document.getElementById('map-container').style.cursor = 'crosshair'; const infoDiv = document.getElementById('auto-route-info'); if(infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📐 Modo Regla: Haz clic en el mapa para medir`; } return; }
         if (type === 'auto-route') { autoRoutePoints = []; autoRouteCoordinates = []; autoRouteLayer.addTo(map); map.on('click', handleAutoRouteClick); document.getElementById('map-container').style.cursor = 'crosshair'; return; }
+        if (type === 'whiteboard') { window.startWhiteboard(); return; }
         if (type === 'marker') { drawOptions.marker.icon = getMarkerIconObj(document.getElementById('markerColor').value || '#e74c3c', 'punto'); activeHandler = new L.Draw.Marker(map, drawOptions.marker); }
         if (type === 'polyline') { drawOptions.polyline.shapeOptions.weight = parseInt(document.getElementById('drawWeight').value) || 4; drawOptions.polyline.shapeOptions.color = document.getElementById('drawColor').value || '#2ecc71'; activeHandler = new L.Draw.Polyline(map, drawOptions.polyline); }
         if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, drawOptions.polygon);
@@ -1536,6 +1650,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     };
 
     window.stopDrawing = function() {
+        if (window.isWhiteboardMode) window.stopWhiteboard();
         if (activeHandler) { activeHandler.disable(); activeHandler = null; } window.isSelectingOfflineZone = false;
         drawnItems.eachLayer(layer => layer.off('click', window.deleteClickHandler)); document.getElementById('drawing-actions').style.display = 'none';
         map.off('click', handleAutoRouteClick); if (typeof autoRouteLayer !== 'undefined') { autoRouteLayer.clearLayers(); map.removeLayer(autoRouteLayer); }
@@ -2435,7 +2550,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p12: "<b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.",
             manual_p13: "<b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>\"✏️ Editar\"</b> de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el objetivo.",
             manual_p14: "<b>🌬️ Clima Táctico:</b> En el menú de \"Información MTN\", pulsa en \"Reporte Meteorológico\" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.",
-            manual_p15: "<b>🗺️ Solapar Mapa de Campo:</b> En la pestaña \"Edición de Mapa\", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde \"✏️ Editar\" puedes modificar su transparencia para cuadrarlo con el satélite."
+            manual_p15: "<b>🗺️ Solapar Mapa de Campo:</b> En la pestaña \"Edición de Mapa\", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde \"✏️ Editar\" puedes modificar su transparencia para cuadrarlo con el satélite.",
+            manual_p16: "<b>🖍️ Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones."
         },
         en: {
             manual_btn: "📖 User Manual", search_title: "🔍 Search", search_placeholder: "City or coordinates...", search_go: "Go",
@@ -2483,7 +2599,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p12: "<b>👁️ AR Viewer (Augmented Reality):</b> (Requires active GPS) Activate the camera from the Operations menu to see map markers and overlaid teammates in the real environment floating according to your orientation and distance.",
             manual_p13: "<b>📸 Intelligence & Reconnaissance:</b> In the <b>\"✏️ Edit\"</b> window of any marker, you can add an image URL or take/upload a photo directly. The image will be compressed and displayed when tapping the marker so the team can visualize the target.",
             manual_p14: "<b>🌬️ Tactical Weather:</b> In the \"MTN Info\" menu, tap \"Weather Report\" to get real-time temperature, wind speed/direction, and sunrise/sunset times for the area you are viewing.",
-            manual_p15: "<b>🗺️ Overlay Field Map:</b> In the \"Map Editing\" tab, use this tool to upload an image of your airsoft field map. It will appear on the map with golden markers at the corners that you can drag to adjust its size and position. From \"✏️ Edit\" you can change its opacity to match the satellite view."
+            manual_p15: "<b>🗺️ Overlay Field Map:</b> In the \"Map Editing\" tab, use this tool to upload an image of your airsoft field map. It will appear on the map with golden markers at the corners that you can drag to adjust its size and position. From \"✏️ Edit\" you can change its opacity to match the satellite view.",
+            manual_p16: "<b>🖍️ Tactical Whiteboard (Live):</b> Draw freely on the map from the Edit menu. Your strokes are sent in real time to the Operations Room."
         },
         ca: {
             manual_btn: "📖 Manual d'Usuari", search_title: "🔍 Cercador", search_placeholder: "Ciutat o coordenades...", search_go: "Anar",
@@ -2531,7 +2648,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p12: "<b>👁️ Visor AR (Realitat Augmentada):</b> (Requereix GPS actiu) Activa la càmera des del menú d'Operacions per veure marcadors del mapa i companys superposats en l'entorn real surant segons la teva orientació i distància.",
             manual_p13: "<b>📸 Intel·ligència i Reconeixement:</b> A la finestra de <b>\"✏️ Editar\"</b> de qualsevol marcador, pots afegir la URL d'una imatge o fer/pujar una foto directament. La imatge es comprimirà i es mostrarà en tocar el marcador perquè l'equip pugui visualitzar l'objectiu.",
             manual_p14: "<b>🌬️ Clima Tàctic:</b> Al menú d'\"Informació MTN\", prem \"Report Meteorològic\" per obtenir en temps real la temperatura, velocitat/direcció del vent i hores d'alba/ocàs de la zona que estàs visualitzant.",
-            manual_p15: "<b>🗺️ Solapar Mapa de Camp:</b> A la pestanya \"Edició de Mapa\", utilitza aquesta eina per pujar una imatge del plànol del teu camp d'airsoft. Apareixerà al mapa amb uns marcadors daurats a les cantonades que pots arrossegar per ajustar la seva mida i posició. Des de \"✏️ Editar\" pots modificar la seva transparència per quadrar-lo amb el satèl·lit."
+            manual_p15: "<b>🗺️ Solapar Mapa de Camp:</b> A la pestanya \"Edició de Mapa\", utilitza aquesta eina per pujar una imatge del plànol del teu camp d'airsoft. Apareixerà al mapa amb uns marcadors daurats a les cantonades que pots arrossegar per ajustar la seva mida i posició. Des de \"✏️ Editar\" pots modificar la seva transparència per quadrar-lo amb el satèl·lit.",
+            manual_p16: "<b>🖍️ Pissarra Tàctica (En Viu):</b> Dibuixa lliurement al mapa des del menú Editar. Els teus traços s'envien en temps real a la Sala d'Operacions."
         }
     };
 
