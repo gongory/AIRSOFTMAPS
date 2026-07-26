@@ -280,7 +280,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         <div id="info-app-container" style="display:none;padding:15px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;font-size:12px;color:#475569;line-height:1.5;">
             <div style="text-align:center;margin-bottom:10px;">
                 <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
-                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.41
+                <span style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">v1.42
                 </span>
             </div>
             <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -290,6 +290,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
                 <ul style="margin:5px 0;padding-left:20px;">
                     <li>Nuevo motor 3D de alta precisión para el ajuste manual de mapas solapados.</li>
                     <li>NUEVO: Pizarra Táctica en Vivo (dibujo a mano alzada sincronizado en tiempo real).</li>
+                    <li>NUEVO: Historial automático de Salas Recientes (¡entra con 1 clic!).</li>
                     <li>Mejoras generales de estabilidad y renderizado.</li>
                 </ul>
             </div>
@@ -317,6 +318,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 </div>
         <div id="live-group-container" style="padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;border-left:4px solid #9b59b6;">
             <div id="room-setup-ui">
+                <select id="recent-rooms-select" class="form-select" style="margin-bottom:8px; display:none;" onchange="window.selectRecentRoom()"><option value="">🕒 Salas Recientes...</option></select>
                 <input type="text" id="room-id" class="form-input" placeholder="Nombre de la Sala" style="margin-bottom:8px;" data-i18n-placeholder="room_name_ph">
                 <input type="password" id="room-pass" class="form-input" placeholder="Contraseña de la Sala" style="margin-bottom:8px;" data-i18n-placeholder="room_pass_ph">
                 <input type="text" id="live-alias" class="form-input" placeholder="Tu indicativo (Ej. Escuadra Alfa)" style="margin-bottom:8px;" data-i18n-placeholder="user_alias_ph">
@@ -488,6 +490,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             <p data-i18n="manual_p14"><b>🌬️ Clima Táctico:</b> En el menú de "Información MTN", pulsa en "Reporte Meteorológico" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.</p>
             <p data-i18n="manual_p15"><b>🗺️ Solapar Mapa de Campo:</b> En la pestaña "Edición de Mapa", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde "✏️ Editar" puedes modificar su transparencia para cuadrarlo con el satélite.</p>
             <p data-i18n="manual_p16"><b>🖍️ Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones.</p>
+            <p data-i18n="manual_p17"><b>🕒 Historial de Salas:</b> Al entrar o crear una sala, se guardará automáticamente en un desplegable para que puedas volver a entrar rápidamente sin tener que escribir de nuevo la contraseña.</p>
         </div>
         <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;" onclick="window.closeManual()" data-i18n="manual_understood">Entendido</button></div>
     </div>
@@ -722,7 +725,42 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     };
 
     let currentRoom = null; let roomUnsubs = []; let transmitInterval = null, allyMarkers = {}; let currentRadioMsg = "", currentRadioMsgTime = 0; window.lastLocalSyncTime = 0; let unreadMsgCount = 0; let lastProcessedMsgTime = 0;
-    
+    window.saveRecentRoom = function(id, pass) {
+        let recents = [];
+        try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch(e){}
+        recents = recents.filter(r => r.id !== id);
+        recents.unshift({id: id, pass: pass});
+        if (recents.length > 5) recents = recents.slice(0, 5);
+        localStorage.setItem('am_recent_rooms', JSON.stringify(recents));
+        window.loadRecentRooms();
+    };
+    window.loadRecentRooms = function() {
+        let recents = [];
+        try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch(e){}
+        const sel = document.getElementById('recent-rooms-select');
+        if (!sel) return;
+        if (recents.length === 0) { sel.style.display = 'none'; return; }
+        sel.style.display = 'block';
+        sel.innerHTML = '<option value="">🕒 Salas Recientes...</option>';
+        recents.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.id; opt.innerText = r.id;
+            sel.appendChild(opt);
+        });
+    };
+    window.selectRecentRoom = function() {
+        const sel = document.getElementById('recent-rooms-select');
+        if (!sel || !sel.value) return;
+        let recents = [];
+        try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch(e){}
+        const room = recents.find(r => r.id === sel.value);
+        if (room) {
+            document.getElementById('room-id').value = room.id;
+            document.getElementById('room-pass').value = room.pass;
+        }
+    };
+    window.loadRecentRooms();
+
     window.toggleRoom = async function() {
         if (!auth.currentUser) return window.customAlert("Error", "Conectando al servidor...");
         if (currentRoom) { leaveRoom(); return; }
@@ -737,6 +775,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
     };
 
     function enterRoom(roomId, alias, isAdmin) {
+        window.saveRecentRoom(roomId, document.getElementById('room-pass').value);
         currentRoom = roomId; const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false;
         document.getElementById('room-setup-ui').style.display = 'none'; document.getElementById('room-active-ui').style.display = 'block';
         document.getElementById('active-room-name').innerText = "📍 " + roomId; document.getElementById('active-room-name').style.display = 'inline-block';
@@ -2552,7 +2591,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p13: "<b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>\"✏️ Editar\"</b> de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el objetivo.",
             manual_p14: "<b>🌬️ Clima Táctico:</b> En el menú de \"Información MTN\", pulsa en \"Reporte Meteorológico\" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.",
             manual_p15: "<b>🗺️ Solapar Mapa de Campo:</b> En la pestaña \"Edición de Mapa\", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde \"✏️ Editar\" puedes modificar su transparencia para cuadrarlo con el satélite.",
-            manual_p16: "<b>🖍️ Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones."
+            manual_p16: "<b>🖍️ Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones.",
+            manual_p17: "<b>🕒 Historial de Salas:</b> Al entrar o crear una sala, se guardará automáticamente en un desplegable para que puedas volver a entrar rápidamente sin tener que escribir de nuevo la contraseña."
         },
         en: {
             manual_btn: "📖 User Manual", search_title: "🔍 Search", search_placeholder: "City or coordinates...", search_go: "Go",
@@ -2601,7 +2641,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p13: "<b>📸 Intelligence & Reconnaissance:</b> In the <b>\"✏️ Edit\"</b> window of any marker, you can add an image URL or take/upload a photo directly. The image will be compressed and displayed when tapping the marker so the team can visualize the target.",
             manual_p14: "<b>🌬️ Tactical Weather:</b> In the \"MTN Info\" menu, tap \"Weather Report\" to get real-time temperature, wind speed/direction, and sunrise/sunset times for the area you are viewing.",
             manual_p15: "<b>🗺️ Overlay Field Map:</b> In the \"Map Editing\" tab, use this tool to upload an image of your airsoft field map. It will appear on the map with golden markers at the corners that you can drag to adjust its size and position. From \"✏️ Edit\" you can change its opacity to match the satellite view.",
-            manual_p16: "<b>🖍️ Tactical Whiteboard (Live):</b> Draw freely on the map from the Edit menu. Your strokes are sent in real time to the Operations Room."
+            manual_p16: "<b>🖍️ Tactical Whiteboard (Live):</b> Draw freely on the map from the Edit menu. Your strokes are sent in real time to the Operations Room.",
+            manual_p17: "<b>🕒 Recent Rooms History:</b> When you join or create a room, it will be automatically saved in a dropdown menu so you can rejoin quickly without retyping the password."
         },
         ca: {
             manual_btn: "📖 Manual d'Usuari", search_title: "🔍 Cercador", search_placeholder: "Ciutat o coordenades...", search_go: "Anar",
@@ -2650,7 +2691,8 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
             manual_p13: "<b>📸 Intel·ligència i Reconeixement:</b> A la finestra de <b>\"✏️ Editar\"</b> de qualsevol marcador, pots afegir la URL d'una imatge o fer/pujar una foto directament. La imatge es comprimirà i es mostrarà en tocar el marcador perquè l'equip pugui visualitzar l'objectiu.",
             manual_p14: "<b>🌬️ Clima Tàctic:</b> Al menú d'\"Informació MTN\", prem \"Report Meteorològic\" per obtenir en temps real la temperatura, velocitat/direcció del vent i hores d'alba/ocàs de la zona que estàs visualitzant.",
             manual_p15: "<b>🗺️ Solapar Mapa de Camp:</b> A la pestanya \"Edició de Mapa\", utilitza aquesta eina per pujar una imatge del plànol del teu camp d'airsoft. Apareixerà al mapa amb uns marcadors daurats a les cantonades que pots arrossegar per ajustar la seva mida i posició. Des de \"✏️ Editar\" pots modificar la seva transparència per quadrar-lo amb el satèl·lit.",
-            manual_p16: "<b>🖍️ Pissarra Tàctica (En Viu):</b> Dibuixa lliurement al mapa des del menú Editar. Els teus traços s'envien en temps real a la Sala d'Operacions."
+            manual_p16: "<b>🖍️ Pissarra Tàctica (En Viu):</b> Dibuixa lliurement al mapa des del menú Editar. Els teus traços s'envien en temps real a la Sala d'Operacions.",
+            manual_p17: "<b>🕒 Historial de Sales:</b> En entrar o crear una sala, es desarà automàticament en un desplegable perquè puguis tornar a entrar ràpidament sense haver d'escriure de nou la contrasenya."
         }
     };
 
