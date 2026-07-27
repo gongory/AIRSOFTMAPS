@@ -1,4 +1,4 @@
-const CACHE_NAME = "airsoftmaps-cache-v1.43";
+const CACHE_NAME = "airsoftmaps-cache-v1.44";
 const ASSETS = [
   "./",
   "./index.html",
@@ -34,21 +34,41 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-// Interceptar peticiones
+// Interceptar peticiones (Estrategia mixta: actualizaciones automáticas invisibles)
 self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      return (
-        cached ||
-        fetch(event.request).catch((err) => {
-          // SOLO devolver el index.html si lo que falló fue una petición de navegación (página principal)
-          if (event.request.mode === 'navigate') {
-            return caches.match("/index.html");
-          }
-          // Para otras cosas (imágenes, APIs externas, teselas de mapa), propagamos el error normal
-          throw err;
+  // Ignorar peticiones externas (APIs, Firebase, Leaflet, etc.)
+  if (!event.request.url.startsWith(self.location.origin)) return;
+
+  // 1. NETWORK FIRST para la página (HTML). Asegura tener SIEMPRE la última versión si hay internet.
+  if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
         })
-      );
+        .catch(() => {
+          // Si estamos offline, devuelve la versión en caché
+          return caches.match(event.request).then(cached => cached || caches.match("./index.html"));
+        })
+    );
+    return;
+  }
+
+  // 2. STALE-WHILE-REVALIDATE para recursos estáticos (imágenes, iconos). Carga ultra-rápida.
+  event.respondWith(
+    caches.match(event.request).then(cachedResponse => {
+      const fetchPromise = fetch(event.request)
+        .then(networkResponse => {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return networkResponse;
+        })
+        .catch(() => { /* Ignorar errores en modo offline */ });
+      
+      // Devuelve la caché instantáneamente (si existe), mientras actualiza en segundo plano
+      return cachedResponse || fetchPromise;
     })
   );
 });
