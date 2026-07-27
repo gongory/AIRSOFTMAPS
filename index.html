@@ -318,7 +318,10 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
 </div>
         <div id="live-group-container" style="padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;border-left:4px solid #9b59b6;">
             <div id="room-setup-ui">
-                <select id="recent-rooms-select" class="form-select" style="margin-bottom:8px; display:none;" onchange="window.selectRecentRoom()"><option value="">🕒 Salas Recientes...</option></select>
+                <div id="recent-rooms-container" style="display:none; flex-direction:row; gap:8px; margin-bottom:8px;">
+                    <select id="recent-rooms-select" class="form-select" style="margin-bottom:0; flex:1;" onchange="window.selectRecentRoom()"><option value="">🕒 Salas Recientes...</option></select>
+                    <button class="btn-outline" id="btn-delete-recent-room" style="margin-bottom:0; width:auto; padding:0 15px; border-color:var(--danger); color:var(--danger);" onclick="window.deleteRecentRoom()" title="Eliminar sala de recientes">🗑️</button>
+                </div>
                 <input type="text" id="room-id" class="form-input" placeholder="Nombre de la Sala" style="margin-bottom:8px;" data-i18n-placeholder="room_name_ph">
                 <input type="password" id="room-pass" class="form-input" placeholder="Contraseña de la Sala" style="margin-bottom:8px;" data-i18n-placeholder="room_pass_ph">
                 <input type="text" id="live-alias" class="form-input" placeholder="Tu indicativo (Ej. Escuadra Alfa)" style="margin-bottom:8px;" data-i18n-placeholder="user_alias_ph">
@@ -738,15 +741,35 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         let recents = [];
         try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch(e){}
         const sel = document.getElementById('recent-rooms-select');
+        const container = document.getElementById('recent-rooms-container');
         if (!sel) return;
-        if (recents.length === 0) { sel.style.display = 'none'; return; }
-        sel.style.display = 'block';
+        if (recents.length === 0) { 
+            if (container) container.style.display = 'none';
+            else sel.style.display = 'none';
+            return; 
+        }
+        if (container) container.style.display = 'flex';
+        else sel.style.display = 'block';
         sel.innerHTML = '<option value="">🕒 Salas Recientes...</option>';
         recents.forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.id; opt.innerText = r.id;
             sel.appendChild(opt);
         });
+    };
+
+    window.deleteRecentRoom = function() {
+        const sel = document.getElementById('recent-rooms-select');
+        if (!sel || !sel.value) return window.customAlert("Aviso", "Selecciona una sala reciente primero.");
+        const idToDelete = sel.value;
+        let recents = [];
+        try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch(e){}
+        recents = recents.filter(r => r.id !== idToDelete);
+        localStorage.setItem('am_recent_rooms', JSON.stringify(recents));
+        window.loadRecentRooms();
+        document.getElementById('room-id').value = '';
+        document.getElementById('room-pass').value = '';
+        if (window.customAlert) window.customAlert("Eliminada", "La sala ha sido eliminada del historial local.");
     };
     window.selectRecentRoom = function() {
         const sel = document.getElementById('recent-rooms-select');
@@ -796,6 +819,7 @@ body.dark-mode .fab-menu:hover { border-color:#ff3b30; color:#ff3b30; box-shadow
         roomUnsubs.forEach(u => u()); roomUnsubs = []; 
         if (transmitInterval) { clearInterval(transmitInterval); transmitInterval = null; } 
         window.alliesLayer.clearLayers(); allyMarkers = {}; currentRoom = null; currentRadioMsg = ""; 
+        if (window.drawnItems) window.drawnItems.clearLayers();
         
         const radioBtns = document.getElementById('radio-msgs-container').querySelectorAll('button');
         radioBtns.forEach(b => {
