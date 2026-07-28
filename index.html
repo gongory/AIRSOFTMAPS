@@ -953,7 +953,7 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v1.45
+                        v1.46
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -961,6 +961,7 @@
                 <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;">
                     <b style="color:var(--ign-blue);" data-i18n="latest_changes">Últimos cambios:</b>
                     <ul style="margin:5px 0;padding-left:20px;">
+                        <li>Añadidos textos legales de atribución obligatorios para mapas IGN y OSM (Google Play).</li>
                         <li>Nuevo motor 3D de alta precisión para el ajuste manual de mapas solapados.</li>
                         <li>NUEVO: Pizarra Táctica en Vivo (dibujo a mano alzada sincronizado en tiempo real).</li>
                         <li>NUEVO: Historial automático de Salas Recientes (¡entra con 1 clic!).</li>
@@ -1056,7 +1057,8 @@
                         <div
                             style="color:#64748b; font-weight:bold; margin-bottom:4px; border-bottom:1px dashed #cbd5e0; padding-bottom:4px;">
                             <span data-i18n="room_members">👥 Miembros en sala:</span> <span id="members-count"
-                                style="color:var(--ign-blue);">0</span></div>
+                                style="color:var(--ign-blue);">0</span>
+                        </div>
                         <div id="members-container" style="display:flex; flex-direction:column; gap:2px;"></div>
                     </div>
                     <div id="radio-msgs-container" style="display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap;">
@@ -1429,7 +1431,8 @@
                 <p data-i18n="manual_p1"><b>📍 Marcadores, Áreas y Notas:</b> Usa las herramientas de edición para
                     añadir puntos, rutas o zonas. Si tocas un elemento ya creado en el mapa, pulsa <b>"✏️ Editar"</b>
                     para cambiar su color, bando, añadir un radio de acción, un cono de visión direccional, o escribir
-                    <b>Notas y Comentarios</b> tácticos que todos podrán leer.</p>
+                    <b>Notas y Comentarios</b> tácticos que todos podrán leer.
+                </p>
                 <p data-i18n="manual_p2"><b>📐 Regla Rápida:</b> Herramienta para medir distancias al vuelo. Haz clics
                     en el mapa para trazar una línea temporal y ver la distancia exacta paso a paso sin ensuciar tu
                     proyecto.</p>
@@ -2259,7 +2262,7 @@
         };
 
         const transparentTile = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-        const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile }) };
+        const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors' }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }) };
         let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
         const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 22, layers: [currentBase, currentOverlay], zoomControl: false });
         window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
