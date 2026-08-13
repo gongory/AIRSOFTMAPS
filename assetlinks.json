@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.airsoftmaps.app",
+        "sha256_cert_fingerprints": ["A5:38:C6:3F:4B:E4:DF:87:7C:DD:83:58:0C:44:18:6D:89:AE:D0:D3:99:C8:48:8C:0B:DB:76:25:EB:39:95:97"]
+      }
+    }]
