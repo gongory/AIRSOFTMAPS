@@ -15,19 +15,22 @@
     <meta name="theme-color" content="#003366">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ESTÉTICA ATAK / TÁCTICA HUD */
+        /* ESTÉTICA ATAK / TÁCTICA HUD v2.0 */
         :root {
-            --ign-blue: #1e293b;
-            --ign-gold: #fbbf24;
+            --ign-blue: #141714; /* Dark Olive / Almost Black */
+            --ign-gold: #ff7300; /* Tactical Orange */
+            --neon-green: #00ff41; /* HUD Green */
             --danger: #ef4444;
             --success: #22c55e;
             --info: #3b82f6;
-            --shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-            --bg-sidebar: rgba(15, 23, 42, 0.85);
-            --light-gray: rgba(30, 41, 59, 0.8);
-            --border-color: rgba(255, 255, 255, 0.2);
-            --text-main: #f8fafc;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+            --bg-sidebar: rgba(20, 24, 20, 0.85); /* Glassmorphism Base */
+            --light-gray: rgba(30, 35, 30, 0.9);
+            --border-color: rgba(0, 255, 65, 0.2); /* Neon Tinted Borders */
+            --text-main: #e2e8f0;
+            --bottom-nav-height: 65px;
         }
 
         body,
@@ -35,7 +38,7 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            font-family: 'Rajdhani', sans-serif;
             overflow: hidden;
             background: #000;
             color: var(--text-main);
@@ -142,18 +145,18 @@
             letter-spacing: 1px;
         }
 
-        /* Botones estilo táctico */
+        /* Botones estilo táctico v2.0 */
         .btn-outline {
             background: rgba(0, 0, 0, 0.4);
             color: var(--text-main);
             border: 1px solid var(--border-color);
             width: 100%;
-            padding: 10px;
-            border-radius: 6px;
+            padding: 14px 10px; /* Taller for gloves */
+            border-radius: 4px; /* Sharper corners */
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 700; /* Bolder font */
             margin-bottom: 10px;
-            font-size: 12px;
+            font-size: 13px; /* Slightly larger text */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -162,33 +165,37 @@
             transition: all 0.2s;
             backdrop-filter: blur(4px);
             text-transform: uppercase;
+            min-height: 48px; /* Touch target minimum size */
         }
 
         .btn-outline:hover,
         .btn-outline.active {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 115, 0, 0.1);
             color: var(--ign-gold);
             border-color: var(--ign-gold);
-            box-shadow: 0 0 10px rgba(250, 204, 21, 0.2);
+            box-shadow: 0 0 10px rgba(255, 115, 0, 0.3);
         }
 
         .form-input,
         .form-select {
             width: 100%;
-            padding: 10px;
-            border-radius: 6px;
+            padding: 12px 10px;
+            border-radius: 4px; /* Sharper */
             border: 1px solid var(--border-color);
             margin-bottom: 12px;
             box-sizing: border-box;
-            font-size: 13px;
-            background: rgba(0, 0, 0, 0.5);
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.6);
             color: white;
+            min-height: 48px; /* Touch target size */
+            font-family: 'Rajdhani', sans-serif;
         }
 
         .form-input:focus,
         .form-select:focus {
             outline: none;
-            border-color: var(--ign-gold);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
         }
 
         .mtn-card {
@@ -402,22 +409,76 @@
         }
 
         body.mobile-mode .fab-menu {
-            top: auto !important;
-            width: 50px !important;
-            height: 50px !important;
-            font-size: 24px !important;
+            display: none !important;
         }
 
-        body.mobile-mode #fabBtn {
-            bottom: 30px !important;
-            right: 15px !important;
-            top: auto !important;
+        body.mobile-mode .bottom-nav-bar {
+            display: flex !important;
         }
 
-        body.mobile-mode #fabLiveBtn {
-            bottom: 95px !important;
-            right: 15px !important;
-            top: auto !important;
+        .bottom-nav-bar {
+            display: none; /* Desktop hidden */
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--bottom-nav-height);
+            background: rgba(15, 20, 15, 0.95);
+            backdrop-filter: blur(15px);
+            z-index: 2000;
+            border-top: 2px solid var(--border-color);
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.9);
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .bottom-nav-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 25%;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .bottom-nav-btn.active, .bottom-nav-btn:active {
+            color: var(--ign-gold);
+        }
+
+        .bottom-nav-btn span.icon {
+            font-size: 22px;
+            margin-bottom: 2px;
+            transition: transform 0.2s;
+        }
+
+        .bottom-nav-btn.active span.icon {
+            transform: scale(1.15);
+            text-shadow: 0 0 10px rgba(255, 115, 0, 0.5);
+        }
+
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            margin: -5px auto 10px auto;
+        }
+
+        body.mobile-mode .sidebar {
+            bottom: var(--bottom-nav-height) !important;
+            height: calc(85vh - var(--bottom-nav-height)) !important;
+            max-height: calc(85vh - var(--bottom-nav-height)) !important;
         }
 
         body.mobile-mode .leaflet-control-zoom {
@@ -643,7 +704,27 @@
             style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:white;font-size:10px;font-weight:bold;border-radius:50%;width:18px;height:18px;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.3);">0</span>
     </button>
 
+    <nav class="bottom-nav-bar">
+        <button class="bottom-nav-btn active" onclick="window.closeAllPanels()">
+            <span class="icon">📍</span>
+            <span data-i18n="nav_map">Mapa</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="window.openLayerMixer()">
+            <span class="icon">🗂️</span>
+            <span data-i18n="nav_layers">Capas</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="window.toggleLiveMenu()">
+            <span class="icon">📡</span>
+            <span data-i18n="nav_gps">GPS</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="window.toggleMenu()">
+            <span class="icon">🛠️</span>
+            <span data-i18n="nav_menu">Menú</span>
+        </button>
+    </nav>
+
     <div class="sidebar oculto" id="panelLateral">
+        <div class="bottom-sheet-handle"></div>
         <div class="header">
             <span id="app-title" style="font-weight: 600; font-size: 16px;">AirsoftMaps</span>
             <div style="display:flex; align-items:center; gap:8px;">
@@ -651,6 +732,10 @@
                     style="background:rgba(255,255,255,0.2);border:none;color:white;cursor:pointer;font-size:14px;border-radius:6px;padding: 4px 6px;font-weight:bold;">
                     <option value="es" style="color:black;">ES</option>
                     <option value="en" style="color:black;">EN</option>
+                    <option value="fr" style="color:black;">FR</option>
+                    <option value="pt" style="color:black;">PT</option>
+                    <option value="it" style="color:black;">IT</option>
+                    <option value="de" style="color:black;">DE</option>
                     <option value="ca" style="color:black;">CA</option>
                 </select>
                 <button id="modeToggleBtn"
@@ -751,22 +836,26 @@
                 <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
                     data-i18n="base_layer_lbl">Capa Principal (Fondo)</label>
                 <select id="baseLayer" class="form-select" style="margin-bottom:8px;" onchange="window.changeLayer()">
-                    <option value="mtn" data-i18n="opt_mtn">Mapa Topográfico (MTN)</option>
-                    <option value="pnoa" data-i18n="opt_pnoa">Satélite (PNOA)</option>
+                    <option value="mtn" data-i18n="opt_mtn">Mapa Topográfico (MTN España)</option>
+                    <option value="pnoa" data-i18n="opt_pnoa">Satélite (PNOA España)</option>
                     <option value="base" data-i18n="opt_base">Callejero IGN</option>
                     <option value="osm" data-i18n="opt_osm">OpenStreetMap</option>
-                    <option value="sombreado" data-i18n="opt_relieve">Sombreado 3D (Relieve)</option>
+                    <option value="sombreado" data-i18n="opt_relieve">Sombreado 3D (Relieve España)</option>
+                    <option value="esri" data-i18n="opt_esri">Satélite Global (ESRI)</option>
+                    <option value="opentopo" data-i18n="opt_opentopo">Topográfico Global (OpenTopoMap)</option>
                 </select>
                 <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
                     data-i18n="overlay_layer_lbl">Capa Secundaria</label>
                 <select id="overlayLayer" class="form-select" style="margin-bottom:8px;"
                     onchange="window.changeLayer()">
                     <option value="none" data-i18n="opt_none">Ninguna</option>
-                    <option value="mtn" data-i18n="opt_mtn">Mapa Topográfico (MTN)</option>
-                    <option value="pnoa" selected data-i18n="opt_pnoa">Satélite (PNOA)</option>
+                    <option value="mtn" data-i18n="opt_mtn">Mapa Topográfico (MTN España)</option>
+                    <option value="pnoa" selected data-i18n="opt_pnoa">Satélite (PNOA España)</option>
                     <option value="base" data-i18n="opt_base">Callejero IGN</option>
                     <option value="osm" data-i18n="opt_osm">OpenStreetMap</option>
-                    <option value="sombreado" data-i18n="opt_relieve">Sombreado 3D (Relieve)</option>
+                    <option value="sombreado" data-i18n="opt_relieve">Sombreado 3D (Relieve España)</option>
+                    <option value="esri" data-i18n="opt_esri">Satélite Global (ESRI)</option>
+                    <option value="opentopo" data-i18n="opt_opentopo">Topográfico Global (OpenTopoMap)</option>
                 </select>
                 <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
                     data-i18n="overlay_opacity_lbl">Opacidad Secundaria</label>
@@ -969,7 +1058,7 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v1.49
+                        v2.0
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -996,6 +1085,7 @@
     </div>
 
     <div class="sidebar oculto" id="panelLive">
+        <div class="bottom-sheet-handle"></div>
         <div class="header" style="background:#9b59b6;">
             <span style="font-weight: 600; font-size: 16px;" data-i18n="live_title">Operaciones & GPS</span>
             <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;"
@@ -1500,6 +1590,7 @@
                 <p data-i18n="manual_p17"><b>🕒 Historial de Salas:</b> Al entrar o crear una sala, se guardará
                     automáticamente en un desplegable para que puedas volver a entrar rápidamente sin tener que escribir
                     de nuevo la contraseña.</p>
+                <p data-i18n="manual_p18"><b>🌍 Mapas Globales (NUEVO):</b> Utiliza el Gestor de Capas para seleccionar mapas mundiales como el Satélite ESRI o OpenTopoMap si juegas fuera de España.</p>
             </div>
             <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button
                     style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;"
@@ -2291,7 +2382,7 @@
         };
 
         const transparentTile = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-        const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors' }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }) };
+        const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors' }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 18, errorTileUrl: transparentTile, attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' }), opentopo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 17, errorTileUrl: transparentTile, attribution: 'Map data: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: © <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)' }) };
         let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
         const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 22, layers: [currentBase, currentOverlay], zoomControl: false });
         window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
@@ -3630,7 +3721,8 @@
                 opt_low: "Baja", opt_med: "Media", opt_high: "Gruesa",
                 opt_red: "Rojo", opt_blue: "Azul", opt_green: "Verde", opt_black: "Negro", opt_yellow: "Amarillo",
                 opt_free_scale: "Escala Libre",
-                opt_mtn: "Mapa Topográfico (MTN)", opt_pnoa: "Satélite (PNOA)", opt_base: "Callejero IGN", opt_osm: "OpenStreetMap", opt_relieve: "Sombreado 3D (Relieve)", opt_none: "Ninguna (Sin capa)",
+                opt_mtn: "Mapa Topográfico (MTN España)", opt_pnoa: "Satélite (PNOA España)", opt_base: "Callejero IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Sombreado 3D (Relieve España)", opt_none: "Ninguna (Sin capa)",
+                opt_esri: "Satélite Global (ESRI)", opt_opentopo: "Topográfico Global (OpenTopoMap)",
                 opt_thin: "Fina", opt_normal: "Normal", opt_thick: "Gruesa",
                 opt_modern: "Moderna", opt_classic: "Clásica", opt_military: "Militar", opt_minimal: "Minimalista",
                 opt_blue_side: "🔵 Bando Azul", opt_red_side: "🔴 Bando Rojo", opt_green_side: "🟢 Bando Verde", opt_yellow_side: "🟡 Bando Amarillo", opt_pmc: "⚫ PMC / Mercenarios", opt_marine: "💀 Marine Raider bcn",
@@ -3657,7 +3749,8 @@
                 manual_p14: "<b>🌬️ Clima Táctico:</b> En el menú de \"Información MTN\", pulsa en \"Reporte Meteorológico\" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.",
                 manual_p15: "<b>🗺️ Solapar Mapa de Campo:</b> En la pestaña \"Edición de Mapa\", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde \"✏️ Editar\" puedes modificar su transparencia para cuadrarlo con el satélite.",
                 manual_p16: "<b>🖍️ Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones.",
-                manual_p17: "<b>🕒 Historial de Salas:</b> Al entrar o crear una sala, se guardará automáticamente en un desplegable para que puedas volver a entrar rápidamente sin tener que escribir de nuevo la contraseña."
+                manual_p17: "<b>🕒 Historial de Salas:</b> Al entrar o crear una sala, se guardará automáticamente en un desplegable para que puedas volver a entrar rápidamente sin tener que escribir de nuevo la contraseña.",
+                manual_p18: "<b>🌍 Mapas Globales (NUEVO):</b> Utiliza el Gestor de Capas para seleccionar mapas mundiales como el Satélite ESRI o OpenTopoMap si juegas fuera de España."
             },
             en: {
                 manual_btn: "📖 User Manual", search_title: "🔍 Search", search_placeholder: "City or coordinates...", search_go: "Go",
@@ -3680,7 +3773,8 @@
                 opt_low: "Low", opt_med: "Medium", opt_high: "Thick",
                 opt_red: "Red", opt_blue: "Blue", opt_green: "Green", opt_black: "Black", opt_yellow: "Yellow",
                 opt_free_scale: "Free Scale",
-                opt_mtn: "Topographic Map (MTN)", opt_pnoa: "Satellite (PNOA)", opt_base: "IGN Street Map", opt_osm: "OpenStreetMap", opt_relieve: "3D Shading (Relief)", opt_none: "None",
+                opt_mtn: "Topographic Map (MTN Spain)", opt_pnoa: "Satellite (PNOA Spain)", opt_base: "IGN Street Map", opt_osm: "OpenStreetMap (Global)", opt_relieve: "3D Shading (Relief Spain)", opt_none: "None",
+                opt_esri: "Global Satellite (ESRI)", opt_opentopo: "Global Topo (OpenTopoMap)",
                 opt_thin: "Thin", opt_normal: "Normal", opt_thick: "Thick",
                 opt_modern: "Modern", opt_classic: "Classic", opt_military: "Military", opt_minimal: "Minimalist",
                 opt_blue_side: "🔵 Blue Faction", opt_red_side: "🔴 Red Faction", opt_green_side: "🟢 Green Faction", opt_yellow_side: "🟡 Yellow Faction", opt_pmc: "⚫ PMC / Mercenaries", opt_marine: "💀 Marine Raider bcn",
@@ -3691,6 +3785,7 @@
                 modal_name_title: "Name item", modal_cancel: "Cancel", modal_accept: "Accept", modal_alert_title: "Notification", modal_cloud_title: "☁️ My Projects", modal_close: "Close", modal_drone_title: "🛰️ 3D TACTICAL DRONE SIGNAL", modal_drone_close: "✕ Disconnect", modal_ar_close: "✕ Close AR", modal_confirm_title: "⚠️ Confirmation", modal_confirm: "Confirm", edit_title: "✏️ Edit Item", edit_name: "Name", edit_faction: "Faction", edit_group: "Group", edit_notes: "📝 Notes / Comments", edit_color: "Color", edit_icon: "Military Icon", edit_show_name: "Show name", edit_radius: "⭕ Action Radius (m)", edit_show_cone: "🔦 Show Cone", edit_cone_color: "Color", edit_orientation: "Orientation", edit_spread: "Spread", edit_range: "Range (m)", edit_thickness: "Thickness", edit_route_mode: "Route Mode", modal_save: "Save", modal_rename_title: "✏️ Rename Folder", modal_rename_btn: "Rename", offgrid_title: "📡 Off-Grid Sync", offgrid_desc: "Share the map or send coordinates to your teammates when <b>there is no internet coverage</b>.", offgrid_btn_share: "📲 Send Map via Bluetooth", offgrid_lbl_export: "Export to Radio / SMS (Markers Only):", offgrid_btn_copy: "Copy", offgrid_lbl_import: "Receive Tactical code:", offgrid_ph_import: "Paste AM: code...", offgrid_btn_load: "Load", manual_title: "📖 User Manual", manual_understood: "Understood", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Red Faction", edit_fact_blue: "🔵 Blue Faction", edit_fact_org: "⚙️ Organization", edit_fact_neu: "⚪ Neutral / Civilian", edit_group_ph: "Ex: Alpha Squad", edit_notes_ph: "Instructions, details, tactical info...", opt_purple: "Purple", opt_dark: "Dark", opt_white: "White", icon_dot: "🔴 Normal dot", icon_base: "⛺ Base / Camp", icon_target: "🎯 Target", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defense", icon_heli: "🚁 Extraction", icon_medic: "🏥 Medic", icon_radio: "📡 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️ On foot", route_drive: "🚗 By car", route_bike: "🚲 By bike", btn_undo: "↩️ Undo", btn_finish: "✅ Finish", btn_cancel_action: "✕ Cancel", nav_target: "Destination", btn_stop_nav: "✕ Stop",
                 edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 update_title: "🚀 New version available", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+                update_title: "🚀 New version available (v2.0)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 manual_p1: "<b>📍 Markers, Areas and Notes:</b> Use editing tools to add points, routes, or zones. If you tap an existing element, press <b>\"✏️ Edit\"</b> to change its color, faction, add an action radius, a directional vision cone, or write tactical <b>Notes and Comments</b> that everyone can read.",
                 manual_p2: "<b>📐 Quick Ruler:</b> Tool to measure distances on the fly. Click on the map to draw a temporary line and see the exact distance step by step without cluttering your project.",
                 manual_p3: "<b>🗺️ Smart Route:</b> By selecting this tool, the map will automatically calculate the path through streets or forest trails. It will generate an elevation graph and the estimated time on foot or in a vehicle.",
@@ -3730,7 +3825,8 @@
                 opt_low: "Baixa", opt_med: "Mitjana", opt_high: "Gruixuda",
                 opt_red: "Vermell", opt_blue: "Blau", opt_green: "Verd", opt_black: "Negre", opt_yellow: "Groc",
                 opt_free_scale: "Escala Lliure",
-                opt_mtn: "Mapa Topogràfic (MTN)", opt_pnoa: "Satèl·lit (PNOA)", opt_base: "Llista de Carrers IGN", opt_osm: "OpenStreetMap", opt_relieve: "Ombrejat 3D (Relleu)", opt_none: "Cap (Sense capa)",
+                opt_mtn: "Mapa Topogràfic (MTN Espanya)", opt_pnoa: "Satèl·lit (PNOA Espanya)", opt_base: "Llista de Carrers IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Ombrejat 3D (Relleu Espanya)", opt_none: "Cap (Sense capa)",
+                opt_esri: "Satèl·lit Global (ESRI)", opt_opentopo: "Topogràfic Global (OpenTopoMap)",
                 opt_thin: "Fina", opt_normal: "Normal", opt_thick: "Gruixuda",
                 opt_modern: "Moderna", opt_classic: "Clàssica", opt_military: "Militar", opt_minimal: "Minimalista",
                 opt_blue_side: "🔵 Bàndol Blau", opt_red_side: "🔴 Bàndol Vermell", opt_green_side: "🟢 Bàndol Verd", opt_yellow_side: "🟡 Bàndol Groc", opt_pmc: "⚫ PMC / Mercenaris", opt_marine: "💀 Marine Raider bcn",
@@ -3758,6 +3854,194 @@
                 manual_p15: "<b>🗺️ Solapar Mapa de Camp:</b> A la pestanya \"Edició de Mapa\", utilitza aquesta eina per pujar una imatge del plànol del teu camp d'airsoft. Apareixerà al mapa amb uns marcadors daurats a les cantonades que pots arrossegar per ajustar la seva mida i posició. Des de \"✏️ Editar\" pots modificar la seva transparència per quadrar-lo amb el satèl·lit.",
                 manual_p16: "<b>🖍️ Pissarra Tàctica (En Viu):</b> Dibuixa lliurement al mapa des del menú Editar. Els teus traços s'envien en temps real a la Sala d'Operacions.",
                 manual_p17: "<b>🕒 Historial de Sales:</b> En entrar o crear una sala, es desarà automàticament en un desplegable perquè puguis tornar a entrar ràpidament sense haver d'escriure de nou la contrasenya."
+            },
+            fr: {
+                manual_btn: "📖 Manuel Utilisateur", search_title: "🔍 Recherche", search_placeholder: "Ville ou coordonnées...", search_go: "Aller",
+                proj_menu: "📁 Gestion de Projet", mtn_menu: "🗺️ Informations MTN", mixer_menu: "🎛️ Mixeur de Cartes", grid_menu: "🌐 Système et Grille",
+                edit_menu: "✍️ Édition de Carte", layer_menu: "🗂️ Gestionnaire de Couches", gallery_menu: "📸 Galerie Captures", about_menu: "ℹ️ À Propos",
+                delete_btn: "🗑️ Supprimer Individuel", login_btn: "Enregistrer compte", logout_btn: "Déconnexion", new_proj: "✨ Nouveau", rename_proj: "✏️ Renommer",
+                cloud_save: "☁️ Sauvegarde Cloud", cloud_load: "☁️ Charger Cloud", local_save: "💾 Sauvegarde Locale", local_load: "📂 Charger Local",
+                live_title: "Opérations et GPS", live_gps: "📡 Activer Suivi GPS", live_ar: "👁️ Vision AR", live_menu: "📡 Salle d'Opérations",
+                import_export_lbl: "Importer / Exporter (KML/GPX)", export_kml_btn: "⬇️ Exporter KML", export_gpx_btn: "⬇️ Exporter GPX", import_file_btn: "⬆️ Importer Fichier",
+                sync_offgrid_lbl: "📡 Sync Sans Internet", share_offgrid_btn: "Partager Off-Grid",
+                mtn_grid_btn: "Voir Grilles MTN", identifying_leaf: "Identification feuille...", weather_btn: "🌦️ Bulletin Météo",
+                base_layer_lbl: "Couche Principale", overlay_layer_lbl: "Couche Secondaire", overlay_opacity_lbl: "Opacité Secondaire",
+                offline_mode_lbl: "Mode Hors Ligne", offline_current_btn: "📥 Vue Actuelle", offline_zone_btn: "🔲 Marquer Zone",
+                tools_3d_lbl: "Outils 3D In-App", drone_3d_btn: "🚁 Drone Recon 3D",
+                modal_proj_title: "📁 Gestion de Projet", modal_mtn_title: "🗺️ Informations MTN", modal_mixer_title: "🎛️ Mixeur de Cartes", modal_grid_title: "🌐 Système et Grille", modal_live_title: "📡 Salle d'Opérations Live",
+                modal_edit_title: "✍️ Éditer Carte", modal_layer_title: "🗂️ Gest. Couches", modal_about_title: "ℹ️ À Propos", modal_gallery_title: "📸 Galerie", modal_weather_title: "🌦️ Météo Tactique", modal_recon_title: "🚁 Drone Recon 3D",
+                live_pass_ph: "Mot de passe de la salle...", live_nick_ph: "Votre Indicatif / Alias", live_join_btn: "Rejoindre Salle",
+                live_status: "Statut: Hors ligne", live_role_lbl: "Rôle/Faction:",
+                opt_low: "Basse", opt_med: "Moyenne", opt_high: "Épaisse",
+                opt_red: "Rouge", opt_blue: "Bleu", opt_green: "Vert", opt_black: "Noir", opt_yellow: "Jaune",
+                opt_free_scale: "Échelle Libre",
+                opt_mtn: "Carte Topographique (MTN Esp)", opt_pnoa: "Satellite (PNOA Esp)", opt_base: "Rues IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Ombrage 3D (Relief Esp)", opt_none: "Aucune",
+                opt_esri: "Satellite Global (ESRI)", opt_opentopo: "Topo Global (OpenTopoMap)",
+                opt_thin: "Fine", opt_normal: "Normale", opt_thick: "Épaisse",
+                opt_modern: "Moderne", opt_classic: "Classique", opt_military: "Militaire", opt_minimal: "Minimaliste",
+                opt_blue_side: "🔵 Faction Bleue", opt_red_side: "🔴 Faction Rouge", opt_green_side: "🟢 Faction Verte", opt_yellow_side: "🟡 Faction Jaune", opt_pmc: "⚫ PMC / Mercenaires", opt_marine: "💀 Marine Raider bcn",
+                offgrid_title: "📡 Partage Off-Grid", offgrid_desc: "Utilisez ces options pour envoyer la carte ou les coordonnées à vos coéquipiers quand <b>il n'y a pas d'internet</b>.", offgrid_btn_share: "📱 Envoyer Carte par Bluetooth", offgrid_lbl_export: "Exporter Radio / SMS:", offgrid_btn_copy: "Copier", offgrid_lbl_import: "Recevoir code Tactique:", offgrid_ph_import: "Collez le code AM:...", offgrid_btn_load: "Charger",
+                manual_title: "📖 Manuel Utilisateur", manual_understood: "Compris", edit_fact_gen: "🏳️ Général", edit_fact_red: "🔴 Faction Rouge", edit_fact_blue: "🔵 Faction Bleue", edit_fact_org: "⭐ Organisation", edit_fact_neu: "⚪ Neutre / Civil", edit_group_ph: "Ex: Escouade Alpha", edit_notes_ph: "Instructions, détails tactiques...", opt_purple: "Violet", opt_dark: "Sombre", opt_white: "Blanc", icon_dot: "📍 Point normal", icon_base: "⛺ Base / Camp", icon_target: "🎯 Objectif", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Défense", icon_heli: "🚁 Extraction", icon_medic: "➕ Médecin", icon_radio: "📻 Comms", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️🏃‍♂️ À pied", route_drive: "🚙 En voiture", route_bike: "🚲 À vélo", btn_undo: "↩️ Annuler", btn_finish: "✅ Terminer", btn_cancel_action: "❌ Annuler", nav_target: "Dest", btn_stop_nav: "⏹ Arrêter",
+                edit_recon_photo: "📸 Photo Recon", edit_recon_ph: "URL ou uploader...", edit_recon_upload: "⬆️ Uploader",
+                update_title: "🔄 Nouvelle version dispo", update_desc: "Après MAJ, fermez l'app complètement et relancez.", update_btn: "Mettre à jour", offline_banner: "📡 Vous êtes hors ligne",
+                manual_p1: "<b>✍️ Marqueurs et Notes:</b> Utilisez l'édition pour ajouter des points, routes ou zones. Appuyez sur <b>\"✍️ Éditer\"</b> pour changer couleur, faction, ou écrire des notes tactiques.",
+                manual_p2: "<b>📏 Règle Rapide:</b> Mesurez les distances. Cliquez sur la carte pour tracer une ligne et voir la distance exacte.",
+                manual_p3: "<b>🗺️ Route Intelligente:</b> Calcule automatiquement le chemin, avec profil d'élévation et temps estimé.",
+                manual_p4: "<b>🎯 GPS et Boussole:</b> Activez votre GPS (📡). Un cercle affiche votre position, une flèche indique votre cap.",
+                manual_p5: "<b>📡 Salles Live:</b> Créez une salle privée. Voyez votre équipe en temps réel. Utilisez <b>\"🔄 Partager Carte\"</b> pour envoyer vos dessins.",
+                manual_p6: "<b>🌍 Cartes Offline:</b> Sauvegardez une zone dans le cache de votre appareil pour jouer sans internet.",
+                manual_p7: "<b>📡 Sync Off-Grid:</b> Partagez le projet entier via Bluetooth ou un code tactique par SMS/radio.",
+                manual_p8: "<b>🖨️ Impression Avancée:</b> Utilisez le \"Mode Impression\" pour convertir la carte en viseur dynamique et exporter un PDF topographique (A4/A3).",
+                manual_p9: "<b>🔍 Coordonnées/Grille:</b> Cherchez par lieu ou coordonnées. Activez la grille UTM ou Tactique.",
+                manual_p10: "<b>🎯 Nav Tactique:</b> Touchez un marqueur puis \"🎯 Aller\" pour un guidage en ligne droite.",
+                manual_p11: "<b>👥 Liste d'Escouade:</b> Voyez les statuts de vos coéquipiers en temps réel.",
+                manual_p12: "<b>👁️ Visuel AR:</b> Superposez les marqueurs et alliés sur la réalité via la caméra (GPS requis).",
+                manual_p13: "<b>📸 Reconnaissance:</b> Ajoutez des photos aux marqueurs pour visualiser les cibles.",
+                manual_p14: "<b>🌦️ Météo Tactique:</b> Obtenez vent, température et heures lever/coucher du soleil.",
+                manual_p15: "<b>🗺️ Superposer Carte:</b> Uploadez l'image de votre terrain et ajustez-la sur le satellite.",
+                manual_p16: "<b>✍️ Tableau Tactique Live:</b> Dessinez librement, partagé en temps réel.",
+                manual_p17: "<b>🕒 Historique Salles:</b> Sauvegarde automatique de vos salles pour reconnexion rapide."
+            },
+            pt: {
+                manual_btn: "📖 Manual de Usuário", search_title: "🔍 Busca", search_placeholder: "Cidade ou coordenadas...", search_go: "Ir",
+                proj_menu: "📁 Gestão de Projeto", mtn_menu: "🗺️ Info MTN", mixer_menu: "🎛️ Mixer de Mapas", grid_menu: "🌐 Sistema e Grade",
+                edit_menu: "✍️ Edição de Mapa", layer_menu: "🗂️ Gestor de Camadas", gallery_menu: "📸 Galeria Capturas", about_menu: "ℹ️ Sobre",
+                delete_btn: "🗑️ Apagar Individual", login_btn: "Salvar conta", logout_btn: "Sair", new_proj: "✨ Novo", rename_proj: "✏️ Renomear",
+                cloud_save: "☁️ Salvar Cloud", cloud_load: "☁️ Carregar Cloud", local_save: "💾 Salvar Local", local_load: "📂 Carregar Local",
+                live_title: "Operações e GPS", live_gps: "📡 Ativar GPS", live_ar: "👁️ Visor AR", live_menu: "📡 Sala de Operações",
+                import_export_lbl: "Importar / Exportar (KML/GPX)", export_kml_btn: "⬇️ Exportar KML", export_gpx_btn: "⬇️ Exportar GPX", import_file_btn: "⬆️ Importar Arquivo",
+                sync_offgrid_lbl: "📡 Sincronização Off-Grid", share_offgrid_btn: "Compartilhar Off-Grid",
+                mtn_grid_btn: "Ver Grades MTN", identifying_leaf: "Identificando folha...", weather_btn: "🌦️ Relatório do Clima",
+                base_layer_lbl: "Camada Principal", overlay_layer_lbl: "Camada Secundária", overlay_opacity_lbl: "Opacidade Secundária",
+                offline_mode_lbl: "Modo Offline", offline_current_btn: "📥 Visão Atual", offline_zone_btn: "🔲 Marcar Zona",
+                tools_3d_lbl: "Ferramentas 3D In-App", drone_3d_btn: "🚁 Drone Recon 3D",
+                modal_proj_title: "📁 Gestão de Projeto", modal_mtn_title: "🗺️ Info MTN", modal_mixer_title: "🎛️ Mixer de Mapas", modal_grid_title: "🌐 Sistema e Grade", modal_live_title: "📡 Sala de Operações Live",
+                modal_edit_title: "✍️ Editar Mapa", modal_layer_title: "🗂️ Gestor Camadas", modal_about_title: "ℹ️ Sobre", modal_gallery_title: "📸 Galeria", modal_weather_title: "🌦️ Clima Tático", modal_recon_title: "🚁 Drone Recon 3D",
+                live_pass_ph: "Senha da sala...", live_nick_ph: "Seu Indicativo / Alias", live_join_btn: "Entrar na Sala",
+                live_status: "Status: Offline", live_role_lbl: "Função/Facção:",
+                opt_low: "Baixa", opt_med: "Média", opt_high: "Grossa",
+                opt_red: "Vermelho", opt_blue: "Azul", opt_green: "Verde", opt_black: "Preto", opt_yellow: "Amarelo",
+                opt_free_scale: "Escala Livre",
+                opt_mtn: "Mapa Topográfico (MTN Esp)", opt_pnoa: "Satélite (PNOA Esp)", opt_base: "Ruas IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Sombreamento 3D (Relevo Esp)", opt_none: "Nenhuma",
+                opt_esri: "Satélite Global (ESRI)", opt_opentopo: "Topo Global (OpenTopoMap)",
+                opt_thin: "Fina", opt_normal: "Normal", opt_thick: "Grossa",
+                opt_modern: "Moderna", opt_classic: "Clássica", opt_military: "Militar", opt_minimal: "Minimalista",
+                opt_blue_side: "🔵 Facção Azul", opt_red_side: "🔴 Facção Vermelha", opt_green_side: "🟢 Facção Verde", opt_yellow_side: "🟡 Facção Amarela", opt_pmc: "⚫ PMC / Mercenários", opt_marine: "💀 Marine Raider bcn",
+                offgrid_title: "📡 Compartilhar Off-Grid", offgrid_desc: "Envie o projeto para sua equipe quando <b>não houver internet</b>.", offgrid_btn_share: "📱 Enviar Mapa via Bluetooth", offgrid_lbl_export: "Exportar Rádio / SMS:", offgrid_btn_copy: "Copiar", offgrid_lbl_import: "Receber código Tático:", offgrid_ph_import: "Cole o código AM:...", offgrid_btn_load: "Carregar",
+                manual_title: "📖 Manual de Usuário", manual_understood: "Entendido", edit_fact_gen: "🏳️ Geral", edit_fact_red: "🔴 Facção Vermelha", edit_fact_blue: "🔵 Facção Azul", edit_fact_org: "⭐ Organização", edit_fact_neu: "⚪ Neutro / Civil", edit_group_ph: "Ex: Esquadrão Alpha", edit_notes_ph: "Instruções, detalhes táticos...", opt_purple: "Roxo", opt_dark: "Escuro", opt_white: "Branco", icon_dot: "📍 Ponto normal", icon_base: "⛺ Base / Acampamento", icon_target: "🎯 Objetivo", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combate", icon_defend: "🛡️ Defesa", icon_heli: "🚁 Extração", icon_medic: "➕ Médico", icon_radio: "📻 Comunicação", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️🏃‍♂️ A pé", route_drive: "🚙 De carro", route_bike: "🚲 De bicicleta", btn_undo: "↩️ Desfazer", btn_finish: "✅ Finalizar", btn_cancel_action: "❌ Cancelar", nav_target: "Dest", btn_stop_nav: "⏹ Parar",
+                edit_recon_photo: "📸 Foto Recon", edit_recon_ph: "URL ou upload...", edit_recon_upload: "⬆️ Carregar",
+                update_title: "🔄 Nova versão", update_desc: "Após atualizar, feche e abra o app novamente.", update_btn: "Atualizar", offline_banner: "📡 Você está offline",
+                manual_p1: "<b>✍️ Marcadores e Notas:</b> Adicione pontos ou zonas. Clique em <b>\"✍️ Editar\"</b> para mudar cor, facção ou escrever notas táticas.",
+                manual_p2: "<b>📏 Régua Rápida:</b> Meça distâncias diretamente no mapa sem sujar o projeto.",
+                manual_p3: "<b>🗺️ Rota Inteligente:</b> Calcula caminhos e exibe o gráfico de elevação e o tempo estimado.",
+                manual_p4: "<b>🎯 GPS e Bússola:</b> Ative o GPS. Um círculo mostra sua posição e uma seta indica sua direção real.",
+                manual_p5: "<b>📡 Salas Live:</b> Crie uma sala privada para ver sua equipe. Envie seus desenhos em tempo real.",
+                manual_p6: "<b>🌍 Mapas Offline:</b> Salve zonas no cache do dispositivo para jogar sem internet.",
+                manual_p7: "<b>📡 Sync Off-Grid:</b> Compartilhe via Bluetooth ou códigos de texto por rádio.",
+                manual_p8: "<b>🖨️ Impressão Avançada:</b> Exporte PDFs topográficos a partir de um enquadramento dinâmico.",
+                manual_p9: "<b>🔍 Grade e Coordenadas:</b> Ative a grade UTM ou tática e busque locais.",
+                manual_p10: "<b>🎯 Nav Tática:</b> Pressione \"🎯 Ir\" num marcador para guia em linha reta.",
+                manual_p11: "<b>👥 Lista de Esquadrão:</b> Veja em tempo real quem está ativo ou abatido.",
+                manual_p12: "<b>👁️ Visor AR:</b> Veja os marcadores sobrepostos na câmera do celular (realidade aumentada).",
+                manual_p13: "<b>📸 Reconhecimento:</b> Adicione fotos a marcadores de objetivo.",
+                manual_p14: "<b>🌦️ Clima Tático:</b> Obtenha relatórios de clima locais instantâneos.",
+                manual_p15: "<b>🗺️ Sobrepor Mapa:</b> Envie a imagem do seu campo e alinhe-a ao mapa via satélite.",
+                manual_p16: "<b>✍️ Lousa Tática:</b> Desenhe na tela em tempo real para a sua equipe.",
+                manual_p17: "<b>🕒 Histórico de Salas:</b> O app salva as salas para rápido acesso posterior."
+            },
+            it: {
+                manual_btn: "📖 Manuale Utente", search_title: "🔍 Ricerca", search_placeholder: "Città o coordinate...", search_go: "Vai",
+                proj_menu: "📁 Gestione Progetto", mtn_menu: "🗺️ Info MTN", mixer_menu: "🎛️ Mixer Mappe", grid_menu: "🌐 Sistema e Griglia",
+                edit_menu: "✍️ Modifica Mappa", layer_menu: "🗂️ Gestore Livelli", gallery_menu: "📸 Galleria", about_menu: "ℹ️ Info",
+                delete_btn: "🗑️ Elimina Singolo", login_btn: "Salva account", logout_btn: "Esci", new_proj: "✨ Nuovo", rename_proj: "✏️ Rinomina",
+                cloud_save: "☁️ Salva Cloud", cloud_load: "☁️ Carica Cloud", local_save: "💾 Salva Locale", local_load: "📂 Carica Locale",
+                live_title: "Operazioni e GPS", live_gps: "📡 Attiva GPS", live_ar: "👁️ Visore AR", live_menu: "📡 Sala Operativa",
+                import_export_lbl: "Importa / Esporta (KML/GPX)", export_kml_btn: "⬇️ Esporta KML", export_gpx_btn: "⬇️ Esporta GPX", import_file_btn: "⬆️ Importa File",
+                sync_offgrid_lbl: "📡 Sincronizzazione Off-Grid", share_offgrid_btn: "Condividi Off-Grid",
+                mtn_grid_btn: "Vedi Griglia MTN", identifying_leaf: "Identificazione foglio...", weather_btn: "🌦️ Bollettino Meteo",
+                base_layer_lbl: "Livello Principale", overlay_layer_lbl: "Livello Secondario", overlay_opacity_lbl: "Opacità Secondaria",
+                offline_mode_lbl: "Modalità Offline", offline_current_btn: "📥 Vista Attuale", offline_zone_btn: "🔲 Marca Zona",
+                tools_3d_lbl: "Strumenti 3D In-App", drone_3d_btn: "🚁 Drone Recon 3D",
+                modal_proj_title: "📁 Gestione Progetto", modal_mtn_title: "🗺️ Info MTN", modal_mixer_title: "🎛️ Mixer Mappe", modal_grid_title: "🌐 Sistema e Griglia", modal_live_title: "📡 Sala Operativa Live",
+                modal_edit_title: "✍️ Modifica Mappa", modal_layer_title: "🗂️ Gestore Livelli", modal_about_title: "ℹ️ Informazioni", modal_gallery_title: "📸 Galleria", modal_weather_title: "🌦️ Meteo Tattico", modal_recon_title: "🚁 Drone Recon 3D",
+                live_pass_ph: "Password della stanza...", live_nick_ph: "Tuo Nominativo / Alias", live_join_btn: "Entra nella Stanza",
+                live_status: "Stato: Offline", live_role_lbl: "Ruolo/Fazione:",
+                opt_low: "Bassa", opt_med: "Media", opt_high: "Spessa",
+                opt_red: "Rosso", opt_blue: "Blu", opt_green: "Verde", opt_black: "Nero", opt_yellow: "Giallo",
+                opt_free_scale: "Scala Libera",
+                opt_mtn: "Mappa Topografica (MTN Esp)", opt_pnoa: "Satellite (PNOA Esp)", opt_base: "Strade IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Ombreggiatura 3D (Rilievo Esp)", opt_none: "Nessuno",
+                opt_esri: "Satellite Globale (ESRI)", opt_opentopo: "Topo Globale (OpenTopoMap)",
+                opt_thin: "Fine", opt_normal: "Normale", opt_thick: "Spessa",
+                opt_modern: "Moderna", opt_classic: "Classica", opt_military: "Militare", opt_minimal: "Minimalista",
+                opt_blue_side: "🔵 Fazione Blu", opt_red_side: "🔴 Fazione Rossa", opt_green_side: "🟢 Fazione Verde", opt_yellow_side: "🟡 Fazione Gialla", opt_pmc: "⚫ PMC / Mercenari", opt_marine: "💀 Marine Raider bcn",
+                offgrid_title: "📡 Condividi Off-Grid", offgrid_desc: "Invia il progetto quando <b>non c'è internet</b>.", offgrid_btn_share: "📱 Invia Mappa via Bluetooth", offgrid_lbl_export: "Esporta Radio / SMS:", offgrid_btn_copy: "Copia", offgrid_lbl_import: "Ricevi codice Tattico:", offgrid_ph_import: "Incolla il codice AM:...", offgrid_btn_load: "Carica",
+                manual_title: "📖 Manuale Utente", manual_understood: "Capito", edit_fact_gen: "🏳️ Generale", edit_fact_red: "🔴 Fazione Rossa", edit_fact_blue: "🔵 Fazione Blu", edit_fact_org: "⭐ Organizzazione", edit_fact_neu: "⚪ Neutrale / Civile", edit_group_ph: "Es: Squadra Alpha", edit_notes_ph: "Istruzioni, dettagli tattici...", opt_purple: "Viola", opt_dark: "Scuro", opt_white: "Bianco", icon_dot: "📍 Punto normale", icon_base: "⛺ Base / Accampamento", icon_target: "🎯 Obiettivo", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combattimento", icon_defend: "🛡️ Difesa", icon_heli: "🚁 Estrazione", icon_medic: "➕ Medico", icon_radio: "📻 Comunicazioni", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️🏃‍♂️ A piedi", route_drive: "🚙 In auto", route_bike: "🚲 In bici", btn_undo: "↩️ Annulla", btn_finish: "✅ Termina", btn_cancel_action: "❌ Cancella", nav_target: "Dest", btn_stop_nav: "⏹ Ferma",
+                edit_recon_photo: "📸 Foto Recon", edit_recon_ph: "URL o upload...", edit_recon_upload: "⬆️ Carica",
+                update_title: "🔄 Nuova versione", update_desc: "Dopo l'aggiornamento, riavvia l'app.", update_btn: "Aggiorna", offline_banner: "📡 Sei offline",
+                manual_p1: "<b>✍️ Marcatori e Note:</b> Aggiungi punti o zone. Tocca <b>\"✍️ Modifica\"</b> per cambiare colore, fazione o inserire note tattiche.",
+                manual_p2: "<b>📏 Righello Rapido:</b> Misura distanze cliccando sulla mappa senza sporcare il progetto.",
+                manual_p3: "<b>🗺️ Percorso Intelligente:</b> Calcola percorsi con profilo altimetrico e tempo stimato.",
+                manual_p4: "<b>🎯 GPS e Bussola:</b> Attiva il GPS. Un cerchio mostra la posizione e una freccia l'orientamento.",
+                manual_p5: "<b>📡 Sale Live:</b> Crea una sala privata. Condividi disegni in tempo reale con la squadra.",
+                manual_p6: "<b>🌍 Mappe Offline:</b> Salva zone per giocare senza connessione internet.",
+                manual_p7: "<b>📡 Sync Off-Grid:</b> Condividi tramite Bluetooth o codice tattico.",
+                manual_p8: "<b>🖨️ Stampa Avanzata:</b> Esporta PDF topografici in formato A4/A3.",
+                manual_p9: "<b>🔍 Griglia e Coordinate:</b> Cerca luoghi e attiva la griglia UTM.",
+                manual_p10: "<b>🎯 Navigazione Tattica:</b> Usa \"🎯 Vai\" per la guida in linea d'aria verso un punto.",
+                manual_p11: "<b>👥 Lista Squadra:</b> Controlla chi è attivo e chi è stato colpito in tempo reale.",
+                manual_p12: "<b>👁️ Visore AR:</b> Vedi i marcatori sovrapposti tramite la fotocamera.",
+                manual_p13: "<b>📸 Ricognizione:</b> Aggiungi foto ai marcatori per visualizzare l'obiettivo.",
+                manual_p14: "<b>🌦️ Meteo Tattico:</b> Controlla il vento e la temperatura della zona.",
+                manual_p15: "<b>🗺️ Sovrapponi Mappa:</b> Carica l'immagine del campo di gioco.",
+                manual_p16: "<b>✍️ Lavagna Live:</b> Disegna in tempo reale per la tua squadra.",
+                manual_p17: "<b>🕒 Cronologia Sale:</b> Salvataggio automatico delle sale per riconnessione veloce."
+            },
+            de: {
+                manual_btn: "📖 Benutzerhandbuch", search_title: "🔍 Suche", search_placeholder: "Stadt oder Koordinaten...", search_go: "Los",
+                proj_menu: "📁 Projektverwaltung", mtn_menu: "🗺️ MTN Info", mixer_menu: "🎛️ Karten-Mixer", grid_menu: "🌐 System & Gitter",
+                edit_menu: "✍️ Kartenbearbeitung", layer_menu: "🗂️ Ebenen-Manager", gallery_menu: "📸 Galerie", about_menu: "ℹ️ Über",
+                delete_btn: "🗑️ Einzeln Löschen", login_btn: "Konto speichern", logout_btn: "Abmelden", new_proj: "✨ Neu", rename_proj: "✏️ Umbenennen",
+                cloud_save: "☁️ Cloud Speichern", cloud_load: "☁️ Cloud Laden", local_save: "💾 Lokal Speichern", local_load: "📂 Lokal Laden",
+                live_title: "Operationen & GPS", live_gps: "📡 GPS Aktivieren", live_ar: "👁️ AR Viewer", live_menu: "📡 Einsatzzentrale",
+                import_export_lbl: "Import / Export (KML/GPX)", export_kml_btn: "⬇️ KML Exportieren", export_gpx_btn: "⬇️ GPX Exportieren", import_file_btn: "⬆️ Datei Importieren",
+                sync_offgrid_lbl: "📡 Off-Grid Sync", share_offgrid_btn: "Off-Grid Teilen",
+                mtn_grid_btn: "MTN Gitter", identifying_leaf: "Blatt wird identifiziert...", weather_btn: "🌦️ Wetterbericht",
+                base_layer_lbl: "Haupt-Ebene", overlay_layer_lbl: "Überlagerung", overlay_opacity_lbl: "Deckkraft",
+                offline_mode_lbl: "Offline-Modus", offline_current_btn: "📥 Aktuelle Ansicht", offline_zone_btn: "🔲 Zone Markieren",
+                tools_3d_lbl: "3D-Tools", drone_3d_btn: "🚁 3D Recon Drohne",
+                modal_proj_title: "📁 Projektverwaltung", modal_mtn_title: "🗺️ MTN Info", modal_mixer_title: "🎛️ Karten-Mixer", modal_grid_title: "🌐 System & Gitter", modal_live_title: "📡 Live Einsatzzentrale",
+                modal_edit_title: "✍️ Karte Bearbeiten", modal_layer_title: "🗂️ Ebenen", modal_about_title: "ℹ️ Über", modal_gallery_title: "📸 Galerie", modal_weather_title: "🌦️ Taktisches Wetter", modal_recon_title: "🚁 3D Drohne",
+                live_pass_ph: "Raumpasswort...", live_nick_ph: "Dein Rufzeichen", live_join_btn: "Raum Beitreten",
+                live_status: "Status: Offline", live_role_lbl: "Rolle/Fraktion:",
+                opt_low: "Niedrig", opt_med: "Mittel", opt_high: "Dick",
+                opt_red: "Rot", opt_blue: "Blau", opt_green: "Grün", opt_black: "Schwarz", opt_yellow: "Gelb",
+                opt_free_scale: "Freier Maßstab",
+                opt_mtn: "Topografische Karte (MTN Esp)", opt_pnoa: "Satellit (PNOA Esp)", opt_base: "Straßen IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "3D Schattierung (Relief Esp)", opt_none: "Keine",
+                opt_esri: "Globaler Satellit (ESRI)", opt_opentopo: "Globale Topo (OpenTopoMap)",
+                opt_thin: "Dünn", opt_normal: "Normal", opt_thick: "Dick",
+                opt_modern: "Modern", opt_classic: "Klassisch", opt_military: "Militär", opt_minimal: "Minimalistisch",
+                opt_blue_side: "🔵 Blaue Fraktion", opt_red_side: "🔴 Rote Fraktion", opt_green_side: "🟢 Grüne Fraktion", opt_yellow_side: "🟡 Gelbe Fraktion", opt_pmc: "⚫ PMC / Söldner", opt_marine: "💀 Marine Raider bcn",
+                offgrid_title: "📡 Off-Grid Teilen", offgrid_desc: "Teile Projekte <b>ohne Internetverbindung</b>.", offgrid_btn_share: "📱 Via Bluetooth Senden", offgrid_lbl_export: "Radio / SMS Export:", offgrid_btn_copy: "Kopieren", offgrid_lbl_import: "Code Empfangen:", offgrid_ph_import: "AM Code einfügen...", offgrid_btn_load: "Laden",
+                manual_title: "📖 Benutzerhandbuch", manual_understood: "Verstanden", edit_fact_gen: "🏳️ Allgemein", edit_fact_red: "🔴 Rote Fraktion", edit_fact_blue: "🔵 Blaue Fraktion", edit_fact_org: "⭐ Organisation", edit_fact_neu: "⚪ Neutral / Zivilist", edit_group_ph: "Z.B.: Alpha Squad", edit_notes_ph: "Anweisungen, Taktik...", opt_purple: "Lila", opt_dark: "Dunkel", opt_white: "Weiß", icon_dot: "📍 Normaler Punkt", icon_base: "⛺ Basis / Camp", icon_target: "🎯 Ziel", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Kampf", icon_defend: "🛡️ Verteidigung", icon_heli: "🚁 Extraktion", icon_medic: "➕ Sanitäter", icon_radio: "📻 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️🏃‍♂️ Zu Fuß", route_drive: "🚙 Im Auto", route_bike: "🚲 Fahrrad", btn_undo: "↩️ Rückgängig", btn_finish: "✅ Fertig", btn_cancel_action: "❌ Abbrechen", nav_target: "Ziel", btn_stop_nav: "⏹ Stopp",
+                edit_recon_photo: "📸 Recon Foto", edit_recon_ph: "URL oder Upload...", edit_recon_upload: "⬆️ Hochladen",
+                update_title: "🔄 Update verfügbar", update_desc: "Bitte App neu starten.", update_btn: "Aktualisieren", offline_banner: "📡 Du bist offline",
+                manual_p1: "<b>✍️ Markierungen & Notizen:</b> Klicke auf <b>\"✍️ Bearbeiten\"</b> für Farben, Fraktionen und taktische Notizen.",
+                manual_p2: "<b>📏 Schnelles Lineal:</b> Messe Entfernungen direkt auf der Karte.",
+                manual_p3: "<b>🗺️ Smarte Route:</b> Berechnet Wege, Höhenprofil und geschätzte Zeit.",
+                manual_p4: "<b>🎯 GPS & Kompass:</b> Aktiviere GPS, um deine Live-Position und Blickrichtung zu sehen.",
+                manual_p5: "<b>📡 Live Räume:</b> Erstelle private Räume. Teile Zeichnungen mit deinem Team.",
+                manual_p6: "<b>🌍 Offline Karten:</b> Speichere Zonen im Cache für Gebiete ohne Empfang.",
+                manual_p7: "<b>📡 Off-Grid Sync:</b> Teile Daten via Bluetooth oder taktischem SMS-Code.",
+                manual_p8: "<b>🖨️ Erweiterter Druck:</b> Erstelle topografische PDFs aus dynamischen Kartenausschnitten.",
+                manual_p9: "<b>🔍 Koordinaten & Gitter:</b> UTM oder taktisches Gitter aktivieren.",
+                manual_p10: "<b>🎯 Taktische Nav:</b> Drücke \"🎯 Los\" für direkte Zielführung.",
+                manual_p11: "<b>👥 Squad Liste:</b> Sieh, wer aktiv oder markiert (getroffen) ist.",
+                manual_p12: "<b>👁️ AR Viewer:</b> Augmented Reality Ansicht via Kamera.",
+                manual_p13: "<b>📸 Aufklärung:</b> Lade Fotos von Zielen hoch.",
+                manual_p14: "<b>🌦️ Wetter:</b> Wind- und Temperaturdaten in Echtzeit.",
+                manual_p15: "<b>🗺️ Eigene Karten:</b> Lade dein Spielfeld hoch und passe es an.",
+                manual_p16: "<b>✍️ Live Taktikboard:</b> Zeichne in Echtzeit für dein Team.",
+                manual_p17: "<b>🕒 Raum-Verlauf:</b> Schnelles Beitreten zu vorherigen Räumen."
             }
         };
 
@@ -3866,8 +4150,21 @@
             <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
                 
                 <div style="margin-bottom:20px;">
-                    <h3 style="color:var(--success);margin-bottom:5px;">v1.49 - 15 de Agosto de 2026</h3>
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.0 - 15 de Agosto de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
+                        <li><b>[🔥 REDISEÑO HUD TÁCTICO]:</b> Actualización visual masiva estilo militar con colores oscuros, efecto cristal, botones preparados para uso con guantes y tipografía técnica.</li>
+                        <li><b>[📱 NAVEGACIÓN BOTTOM BAR]:</b> Nuevo menú inferior flotante en móviles para usar el mapa con una sola mano y acceder más rápido al GPS y Capas.</li>
+                    </ul>
+
+                    <h3 style="color:#aaa;margin-bottom:5px;margin-top:15px;">v1.50 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;color:#aaa;">
+                        <li><b>[🌍 EXPANSIÓN GLOBAL]:</b> Añadidos 4 idiomas nuevos (Francés, Portugués, Italiano y Alemán).</li>
+                        <li><b>[🗺️ MAPAS MUNDIALES]:</b> Añadidas las capas Satélite Global (ESRI World Imagery) y Topográfico Global (OpenTopoMap) para campos internacionales.</li>
+                        <li><b>[✨ OPTIMIZACIÓN]:</b> El Gestor de Capas ahora está clasificado por ámbito geográfico.</li>
+                    </ul>
+
+                    <h3 style="color:#aaa;margin-bottom:5px;margin-top:15px;">v1.49 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;color:#aaa;">
                         <li><b>Modo Impresión Avanzado:</b> Creado un motor de impresión tipo QGIS. Ya no recorta una imagen estática, ahora el mapa está vivo debajo del encuadre.</li>
                         <li><b>PDF Topográfico a Escala:</b> Generación directa de PDF (A4/A3) integrando la librería jsPDF. Leyenda y brújula arrastrables libremente en el folio.</li>
                     </ul>
@@ -4134,6 +4431,68 @@
             </div>
         </div>
     </div>
+    <script>
+        // Funciones Bottom Navigation Bar v2.0
+        window.closeAllPanels = function () {
+            document.querySelectorAll('.sidebar').forEach(panel => {
+                panel.classList.add('oculto');
+            });
+            updateBottomNavActive(0); // 0 = Mapa
+        };
+
+        window.openLayerMixer = function () {
+            // Cierra otros paneles
+            document.querySelectorAll('.sidebar').forEach(panel => panel.classList.add('oculto'));
+            // Abre panel principal
+            document.getElementById('panelLateral').classList.remove('oculto');
+            
+            // Cierra todos los sub-grupos
+            const groups = ['project-group-container', 'mtn-group-container', 'map-mixer-container', 'layer-manager-container', 'gallery-container', 'info-app-container'];
+            groups.forEach(g => {
+                const el = document.getElementById(g);
+                if(el) el.style.display = 'none';
+            });
+            
+            // Abre solo el mixer
+            document.getElementById('map-mixer-container').style.display = 'block';
+            updateBottomNavActive(1); // 1 = Capas
+        };
+
+        // Sobrescribir toggleMenu original para actualizar Bottom Nav
+        const originalToggleMenu = window.toggleMenu;
+        window.toggleMenu = function() {
+            if (originalToggleMenu) originalToggleMenu();
+            const panel = document.getElementById('panelLateral');
+            if (!panel.classList.contains('oculto')) {
+                updateBottomNavActive(3); // 3 = Menú
+            } else {
+                updateBottomNavActive(0);
+            }
+        };
+
+        // Sobrescribir toggleLiveMenu original para actualizar Bottom Nav
+        const originalToggleLiveMenu = window.toggleLiveMenu;
+        window.toggleLiveMenu = function() {
+            if (originalToggleLiveMenu) originalToggleLiveMenu();
+            const panel = document.getElementById('panelLive');
+            if (!panel.classList.contains('oculto')) {
+                updateBottomNavActive(2); // 2 = GPS
+            } else {
+                updateBottomNavActive(0);
+            }
+        };
+
+        function updateBottomNavActive(index) {
+            const btns = document.querySelectorAll('.bottom-nav-btn');
+            btns.forEach((btn, i) => {
+                if (i === index) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>
