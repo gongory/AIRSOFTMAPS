@@ -6,7 +6,6 @@
   "description": "App de topografia y navegación para preparacion de eventos airsoft",
   "lang": "es",
   "orientation": "any",
-
   "icons": [
     {
       "src": "./icon-192.png",
@@ -20,7 +19,6 @@
       "purpose": "any maskable"
     }
   ],
-
   "screenshots": [
     {
       "src": "/home-wide.png",

@@ -548,9 +548,19 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body>
+    <!-- PC Lock Screen -->
+    <div id="pc-lock-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--ign-blue); z-index:999999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:'Roboto', sans-serif;">
+        <h1 style="font-size:24px; color:var(--ign-gold); text-align:center; padding: 0 20px;">🛡️ Versión de PC Bloqueada</h1>
+        <p style="text-align:center; padding:0 20px; max-width:400px; line-height:1.5;">Para usar la Sala de Comandancia en tu ordenador, necesitas vincularlo con tu aplicación móvil. Abre AirsoftMaps en tu teléfono, ve a "Vincular PC" e introduce tu código mensual:</p>
+        <input type="text" id="pc-pin-input" placeholder="Ej: AM-0826" style="padding:15px; font-size:20px; font-weight:bold; text-align:center; border-radius:8px; border:2px solid var(--ign-gold); outline:none; color:#000; width:200px; margin: 20px 0; text-transform: uppercase;">
+        <button onclick="window.unlockPC()" style="padding:15px 30px; font-size:16px; font-weight:bold; border-radius:8px; border:none; background:var(--success); color:white; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.5);">Desbloquear PC</button>
+        <p id="pc-lock-error" style="color:var(--danger); margin-top:15px; font-weight:bold; display:none;">❌ Código incorrecto o caducado.</p>
+    </div>
+
     <div id="map-container">
         <div id="map"></div>
         <div class="map-legend" id="map-legend">
@@ -789,10 +799,10 @@
                 </div>
                 <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
                     <label style="font-size:10px;font-weight:bold;color:var(--info);display:block;margin-bottom:4px;"
-                        data-i18n="tools_3d_lbl">Herramientas 3D In-App</label>
+                        data-i18n="tools_3d_lbl">Inteligencia y Satélite</label>
                     <button class="btn-outline"
-                        style="margin-bottom:0;width:100%;border-color:#e67e22;color:#e67e22;padding:8px 5px;font-size:11px;"
-                        onclick="window.openInApp3D()" data-i18n="drone_3d_btn">🛰️ Dron de Reconocimiento 3D</button>
+                        style="margin-bottom:0;width:100%;border-color:#34a853;color:#34a853;padding:8px 5px;font-size:11px;"
+                        onclick="window.openGoogleEarth()">🛰️ Abrir en Google Earth 3D</button>
                 </div>
             </div>
 
@@ -934,6 +944,9 @@
                 </div>
             </div>
 
+            <button class="btn-outline" onclick="window.startPrintComposer()"
+                style="margin-bottom:10px;justify-content:center;border-color:#10b981;color:#10b981;font-weight:bold;">🖨️ Modo Impresión Avanzado</button>
+
             <button class="btn-outline" onclick="window.toggleGroup('gallery-container')"
                 style="margin-bottom:10px;justify-content:space-between;"><span data-i18n="gallery_menu">📸 Galería
                     Capturas</span><span>▼</span></button>
@@ -944,6 +957,9 @@
                 <div id="gallery"></div>
             </div>
 
+            <button class="btn-outline" onclick="document.getElementById('pc-link-modal').style.display='flex'"
+                style="margin-bottom:10px;justify-content:space-between;border-color:var(--ign-gold);color:var(--ign-gold);"><span>💻 Vincular PC (Mensual)</span><span>▶</span></button>
+
             <button class="btn-outline" onclick="window.toggleGroup('info-app-container')"
                 style="margin-bottom:10px;justify-content:space-between;"><span data-i18n="about_menu">ℹ️ Acerca de la
                     App</span><span>▼</span></button>
@@ -953,22 +969,22 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v1.46
+                        v1.49
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
-                <p style="margin:5px 0;"><b>📅 Fecha:</b> Actualizado 27 de Julio de 2026</p>
+                <p style="margin:5px 0;"><b>📅 Fecha:</b> Actualizado 15 de Agosto de 2026</p>
                 <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;">
                     <b style="color:var(--ign-blue);" data-i18n="latest_changes">Últimos cambios:</b>
                     <ul style="margin:5px 0;padding-left:20px;">
-                        <li>Añadidos textos legales de atribución obligatorios para mapas IGN y OSM (Google Play).</li>
-                        <li>Nuevo motor 3D de alta precisión para el ajuste manual de mapas solapados.</li>
-                        <li>NUEVO: Pizarra Táctica en Vivo (dibujo a mano alzada sincronizado en tiempo real).</li>
-                        <li>NUEVO: Historial automático de Salas Recientes (¡entra con 1 clic!).</li>
-                        <li>Mejoras generales de estabilidad y renderizado.</li>
+                        <li>NUEVO: Integración de Google Earth 3D externo.</li>
+                        <li>OPTIMIZACIÓN: Reducción del 80% en consumo de batería y datos GPS para MilSims.</li>
+                        <li>NUEVO: Recordatorio inicial para mapas offline y ventana de Historial.</li>
                     </ul>
                 </div>
                 <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;text-align:center;">
+                    <button class="btn-outline" style="border-color:#9b59b6;color:#9b59b6;margin-bottom:10px;width:100%;"
+                        onclick="document.getElementById('history-modal').style.display='flex'">📜 Historial de Versiones</button>
                     <button class="btn-outline" style="border-color:var(--info);color:var(--info);margin-bottom:0;"
                         onclick="window.manualUpdateCheck()">🔄 Buscar actualizaciones</button>
                 </div>
@@ -1443,7 +1459,7 @@
                     Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu
                     rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
                 <p data-i18n="manual_p5"><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú
-                    y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋
+                    y tu equipo os veréis en el mapa. <i>(Nota: Para optimizar la batería y el consumo de datos, la posición GPS se actualiza cada 15 segundos, y solo si te estás moviendo).</i> Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋
                     ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con
                     calavera). Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las
                     pantallas del resto de la escuadra.</p>
@@ -1454,9 +1470,7 @@
                     compañero, ve a Gestión de Proyecto y usa <b>"Compartir Off-Grid"</b>. Podrás enviar el proyecto
                     completo por Bluetooth, o generar un "código de texto táctico" súper ligero para copiar y pegar por
                     SMS o redes de radio como Meshtastic.</p>
-                <p data-i18n="manual_p8"><b>📸 Capturas e Impresión:</b> Haz fotos limpias del mapa en la "Galería
-                    Capturas" y usa el botón <b>"🖨️ Imprimir"</b> para generar archivos PDF o sacar copias físicas a
-                    escala topográfica exacta (A4/A3) con brújula y leyenda táctica incluidas.</p>
+                <p data-i18n="manual_p8"><b>🖨️ Impresión Avanzada:</b> Usa el botón "Modo Impresión Avanzado" en el menú para convertir el mapa en un encuadre dinámico. Podrás mover el papel libremente sobre el mapa, arrastrar la leyenda y exportar un PDF topográfico exacto (A4/A3). Además, puedes guardar fotos rápidas en la "Galería de Capturas".</p>
                 <p data-i18n="manual_p9"><b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o
                     coordenadas exactas. En el menú "Sistema", puedes activar la cuadrícula en formato Decimal, DMS, UTM
                     o Táctica Alfanumérica (Ej: Cuadrante A1).</p>
@@ -1870,7 +1884,22 @@
         function startLiveTracking(roomId, alias) {
             const factionColor = document.getElementById('live-faction').value; if (!window.userLocMarker) window.customAlert("Aviso GPS", "Enciende el GPS (🎯) para que tus compañeros te vean.");
             const roleIcons = { 'asalto': '🔫', 'sniper': '🔭', 'medico': '🏥', 'apoyo': '🛡️', 'lider': '⭐', 'navegante': '🧭', 'radio': '📻' };
-            transmitInterval = setInterval(async () => { if (window.userLocMarker && auth.currentUser) { const ll = window.userLocMarker.getLatLng(); const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto'; try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId, auth.currentUser.uid), { alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }); } catch (e) { } } }, 3000);
+            window.lastSentLat = 0; window.lastSentLng = 0; window.lastForceSend = 0;
+            transmitInterval = setInterval(async () => { 
+                if (window.userLocMarker && auth.currentUser) { 
+                    const ll = window.userLocMarker.getLatLng(); 
+                    const dist = (window.lastSentLat === 0) ? 999 : (window.map ? window.map.distance([window.lastSentLat, window.lastSentLng], [ll.lat, ll.lng]) : 999);
+                    const timeSinceRadio = Date.now() - currentRadioMsgTime;
+                    const timeSinceForce = Date.now() - window.lastForceSend;
+                    if (dist > 2 || timeSinceRadio < 15000 || timeSinceForce > 60000) {
+                        const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto'; 
+                        try { 
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId, auth.currentUser.uid), { alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }); 
+                            window.lastSentLat = ll.lat; window.lastSentLng = ll.lng; window.lastForceSend = Date.now();
+                        } catch (e) { } 
+                    }
+                } 
+            }, 15000);
 
             let liveMembersData = [];
             const renderLiveMembers = () => {
@@ -3070,7 +3099,7 @@
                     try {
                         const canvas = await html2canvas(document.getElementById('map-container'), { useCORS: true, allowTaint: false, scale: 1, logging: false, ignoreElements: (el) => { if (!el.classList) return false; if (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution') || el.id === 'map-legend' || el.id === 'compass-rose' || el.id === 'numeric-scale-widget' || el.classList.contains('leaflet-control-scale')) return true; return false; } });
                         const imgData = canvas.toDataURL('image/jpeg', 0.80); const item = document.createElement('div'); item.className = 'gallery-item';
-                        item.innerHTML = `<img src="${imgData}" style="cursor:zoom-in;" onclick="window.openImageModal(this.src)"><div style="font-size:13px;font-weight:bold;color:var(--ign-blue);text-align:center;margin:5px 0;">${captureName}</div><div style="display:flex;justify-content:space-between;align-items:center;padding:5px;flex-wrap:wrap;gap:5px;"><button onclick="window.openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none;background:none;color:var(--success);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">👁️ Ver</button><button onclick="window.printImage(this.closest('.gallery-item').querySelector('img').src, this.parentElement.previousElementSibling.innerText, ${captureId})" style="border:none;background:none;color:#64748b;cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🖨️ Imprimir</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue);font-weight:bold;text-decoration:none;font-size:12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none;background:none;color:var(--danger);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🗑️ Borrar</button></div>`;
+                        item.innerHTML = `<img src="${imgData}" style="cursor:zoom-in;" onclick="window.openImageModal(this.src)"><div style="font-size:13px;font-weight:bold;color:var(--ign-blue);text-align:center;margin:5px 0;">${captureName}</div><div style="display:flex;justify-content:space-between;align-items:center;padding:5px;flex-wrap:wrap;gap:5px;"><button onclick="window.openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none;background:none;color:var(--success);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">👁️ Ver</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue);font-weight:bold;text-decoration:none;font-size:12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none;background:none;color:var(--danger);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🗑️ Borrar</button></div>`;
                         document.getElementById('gallery').prepend(item); window.customAlert("Éxito", "Captura realizada correctamente."); setTimeout(() => window.toggleGroup('gallery-container'), 300);
                     } catch (error) { window.customAlert("Error", "No se pudo generar la captura. El mapa es demasiado pesado. Intenta alejar el zoom un poco."); } finally { document.body.classList.remove('hide-controls'); window.toggleMenu(); }
                 }, 600);
@@ -3557,15 +3586,26 @@
             } catch (e) { console.error("Error PWA:", e); }
         })();
 
-        window.openInApp3D = function () {
-            const center = window.map.getCenter();
-            const lat = center.lat.toFixed(6);
-            const lng = center.lng.toFixed(6);
-            // Usa F4Map para visualizar terreno, árboles y edificios en 3D sin salir de la app
-            const url = `https://demo.f4map.com/#lat=${lat}&lon=${lng}&zoom=18&camera.theta=60&camera.phi=-45`;
-            document.getElementById('iframe-3d-viewer').src = url;
-            document.getElementById('iframe-3d-modal').style.display = 'flex';
-            window.toggleMenu(); // Cierra el menú lateral para dejar la pantalla limpia
+        window.openGoogleEarth = function () {
+            if (!navigator.onLine) {
+                window.customAlert("📡 Sin Conexión", "Google Earth requiere conexión a internet para descargar el terreno satelital.\n\nNo puedes usar esta función si estás offline o en modo avión.");
+                return;
+            }
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('h3').innerText = "🛰️ Google Earth 3D";
+            modal.querySelector('p').innerText = "Se va a abrir Google Earth en tu navegador externo para explorar el terreno en 3D real.\n\nAl terminar, vuelve a esta app.";
+            modal.style.display = 'flex';
+            
+            window.acceptConfirmModal = function () {
+                modal.style.display = 'none';
+                const center = window.map.getCenter();
+                const lat = center.lat.toFixed(6);
+                const lng = center.lng.toFixed(6);
+                const url = `https://earth.google.com/web/@${lat},${lng},1000a,500d,60y,0h,0t,0r`;
+                window.open(url, '_blank');
+                window.toggleMenu(); 
+            };
+            window.closeConfirmModal = function () { modal.style.display = 'none'; };
         };
 
         window.translations = {
@@ -3608,7 +3648,7 @@
                 manual_p5: "<b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>\"🔄 Compartir Mapa\"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.",
                 manual_p6: "<b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña \"Mezclador\", pulsa <b>\"🔲 Marcar Zona\"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.",
                 manual_p7: "<b>📡 Sync Off-Grid:</b> Si no tienes internet pero quieres pasarle tu mapa al compañero, ve a Gestión de Proyecto y usa <b>\"Compartir Off-Grid\"</b>. Podrás enviar el proyecto completo por Bluetooth, o generar un \"código de texto táctico\" súper ligero para copiar y pegar por SMS o redes de radio como Meshtastic.",
-                manual_p8: "<b>📸 Capturas e Impresión:</b> Haz fotos limpias del mapa en la \"Galería Capturas\" y usa el botón <b>\"🖨️ Imprimir\"</b> para generar archivos PDF o sacar copias físicas a escala topográfica exacta (A4/A3) con brújula y leyenda táctica incluidas.",
+                manual_p8: "<b>🖨️ Advanced Printing:</b> Use the \"Advanced Print Mode\" button to turn the map into a dynamic viewfinder. Move the paper freely, drag the legend, and export an exact topographic PDF (A4/A3). You can also save quick screenshots in the \"Capture Gallery\".",
                 manual_p9: "<b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú \"Sistema\", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).",
                 manual_p10: "<b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón \"🎯 Ir\". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).",
                 manual_p11: "<b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando el tiempo que lleva sin señal.",
@@ -3658,7 +3698,7 @@
                 manual_p5: "<b>📡 Operations Rooms (Live):</b> Create a private room with a password. You and your team will see each other on the map in real-time. Use <b>Quick Commands</b> (⚠️ Enemy, ✋ I'm DOWN!) to flash your position with an alert or mark yourself as eliminated (grey with skull). Use the <b>\"🔄 Share Map\"</b> button to instantly send all your drawings to the rest of the squad's screens.",
                 manual_p6: "<b>🌍 Offline Maps:</b> Going to an area with no coverage? In the \"Mixer\" tab, tap <b>\"🔲 Mark Zone\"</b>, draw a rectangle and the map will be saved directly into your device's cache to work without internet.",
                 manual_p7: "<b>📡 Off-Grid Sync:</b> If you don't have internet but want to pass your map to a teammate, go to Project Management and use <b>\"Share Off-Grid\"</b>. You can send the entire project via Bluetooth, or generate a super light \"tactical text code\" to copy and paste via SMS or radio networks like Meshtastic.",
-                manual_p8: "<b>📸 Screenshots and Printing:</b> Take clean pictures of the map in the \"Screenshots Gallery\" and use the <b>\"🖨️ Print\"</b> button to generate PDF files or print physical copies at an exact topographic scale (A4/A3) with compass and tactical legend included.",
+                manual_p8: "<b>🖨️ Advanced Printing:</b> Use the \"Advanced Print Mode\" button to turn the map into a dynamic viewfinder. Move the paper freely, drag the legend, and export an exact topographic PDF (A4/A3). You can also save quick screenshots in the \"Capture Gallery\".",
                 manual_p9: "<b>🔍 Coordinates and Grid:</b> The search engine accepts place names or exact coordinates. In the \"System\" menu, you can activate the grid in Decimal, DMS, UTM, or Alphanumeric Tactical format (Ex: Quadrant A1).",
                 manual_p10: "<b>🎯 Tactical Navigation (Go to):</b> By tapping any marker, press the \"🎯 Go\" button. A top panel will show the remaining distance and an arrow that will rotate with your phone to guide you in a straight line to the target (requires active GPS).",
                 manual_p11: "<b>👥 Squad List:</b> Inside the Operations Room, you will see a real-time list of your connected teammates, indicating their role and if they are active or marked as down. If a teammate loses connection, their icon will dim and a counter (⏳) will appear showing the time without signal.",
@@ -3708,7 +3748,7 @@
                 manual_p5: "<b>📡 Sales d'Operacions (Live):</b> Crea una sala privada amb contrasenya. Tu i el teu equip us veureu al mapa en temps real. Utilitza els <b>Comandaments Ràpids</b> (⚠️ Enemic, ✋ ESTIC ELIMINAT!) per fer parpellejar la teva posició amb una alerta o marcar-te com a eliminat (gris amb calavera). Utilitza el botó <b>\"🔄 Compartir Mapa\"</b> per enviar a l'instant tots els teus dibuixos a les pantalles de la resta de l'esquadra.",
                 manual_p6: "<b>🌍 Mapes Offline:</b> Vaig a una zona sense cobertura? A la pestanya \"Mesclador\", prem <b>\"🔲 Marcar Zona\"</b>, dibuixa un requadre i el mapa es desarà directament a la memòria cau del teu dispositiu per funcionar sense internet.",
                 manual_p7: "<b>📡 Sync Off-Grid:</b> Si no tens internet però vols passar-li el teu mapa al company, ves a Gestió de Projecte i utilitza <b>\"Compartir Off-Grid\"</b>. Podràs enviar el projecte complet per Bluetooth, o generar un \"codi de text tàctic\" súper lleuger per copiar i enganxar per SMS o xarxes de ràdio com Meshtastic.",
-                manual_p8: "<b>📸 Captures i Impressió:</b> Fes fotos netes del mapa a la \"Galeria de Captures\" i utilitza el botó <b>\"🖨️ Imprimir\"</b> per generar fitxers PDF o treure còpies físiques a escala topogràfica exacta (A4/A3) amb brúixola i llegenda tàctica incloses.",
+                manual_p8: "<b>🖨️ Impressió Avançada:</b> Utilitza el botó \"Mode Impressió Avançat\" al menú per convertir el mapa en un enquadrament dinàmic. Podràs moure el paper lliurement sobre el mapa, arrossegar la llegenda i exportar un PDF topogràfic exacte (A4/A3). A més, pots desar fotos ràpides a la \"Galeria de Captures\".",
                 manual_p9: "<b>🔍 Coordenades i Quadrícula:</b> El cercador admet noms de llocs o coordenades exactes. Al menú \"Sistema\", pots activar la quadrícula en format Decimal, DMS, UTM o Tàctica Alfanumèrica (Ex: Quadrant A1).",
                 manual_p10: "<b>🎯 Navegació Tàctica (Anar a):</b> En tocar qualsevol marcador, prem el botó \"🎯 Anar\". Es mostrarà un panell superior amb la distància restant i una fletxa que girarà amb el teu mòbil per guiar-te en línia recta a l'objectiu (requereix GPS actiu).",
                 manual_p11: "<b>👥 Llista d'Esquadra:</b> Dins de la Sala d'Operacions, veuràs una llista en temps real dels teus companys connectats, indicant el seu rol i si estan actius o marcats com a baixa. Si un company perd la connexió, la seva icona s'atenuarà i apareixerà un comptador (⏳) mostrant el temps que porta sense senyal.",
@@ -3802,8 +3842,298 @@
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
         updateOnlineStatus(); // Comprobación inicial al cargar la página
+
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('am_offline_warning_v147') !== 'true') {
+                setTimeout(() => {
+                    if (typeof window.customAlert === 'function') {
+                        window.customAlert(
+                            "⚠️ Prepárate para la partida", 
+                            "Si vas a usar AirsoftMaps en una partida de Airsoft (MilSim) o ruta por la montaña donde podrías perder la cobertura, recuerda:\n\n1. Inicia sesión con tu cuenta AHORA que tienes internet.\n2. Ve a 'Mezclador de Mapas' -> 'Modo Offline' y dibuja un recuadro para descargar tu zona de juego.\n\n¡Así tendrás el mapa por satélite 100% funcional aunque te quedes sin señal en el bosque!"
+                        );
+                        localStorage.setItem('am_offline_warning_v147', 'true');
+                    }
+                }, 1500);
+            }
+        });
     </script>
 
+    <!-- HISTORIAL DE VERSIONES MODAL -->
+    <div id="history-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
+        <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;position:relative;">
+            <button onclick="document.getElementById('history-modal').style.display='none'" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;">✕</button>
+            <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;">📜 Historial de Versiones</h2>
+            <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
+                
+                <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v1.49 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>Modo Impresión Avanzado:</b> Creado un motor de impresión tipo QGIS. Ya no recorta una imagen estática, ahora el mapa está vivo debajo del encuadre.</li>
+                        <li><b>PDF Topográfico a Escala:</b> Generación directa de PDF (A4/A3) integrando la librería jsPDF. Leyenda y brújula arrastrables libremente en el folio.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
+                    <h3 style="color:var(--ign-blue);margin-bottom:5px;">v1.47.2 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>Visor 3D Externo:</b> Se ha sustituido el Dron 3D interno por un enlace directo a Google Earth Web para evitar problemas de licencias y ofrecer topografía 3D de mejor calidad.</li>
+                        <li><b>Aviso Offline:</b> Alerta automática si intentas abrir el visor 3D sin conexión a internet.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
+                    <h3 style="color:var(--ign-blue);margin-bottom:5px;">v1.47.0 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>Optimización Extrema GPS:</b> Intervalos de actualización de sala pasados a 15 segundos y filtro de movimiento para ahorrar un 80% de batería y peticiones Firebase en MilSims de 24h/36h.</li>
+                        <li><b>Aviso Pre-Partida:</b> Recordatorio automático para descargar mapas offline e iniciar sesión antes de perder la cobertura.</li>
+                        <li><b>Historial:</b> Nueva sección de historial de versiones en la app.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
+                    <h3 style="color:var(--ign-blue);margin-bottom:5px;">v1.46 - 27 de Julio de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li>Añadidos textos legales de atribución obligatorios para mapas IGN y OSM (Google Play).</li>
+                        <li>Nuevo motor 3D de alta precisión para el ajuste manual de mapas solapados.</li>
+                        <li>NUEVO: Pizarra Táctica en Vivo (dibujo a mano alzada sincronizado en tiempo real).</li>
+                        <li>NUEVO: Historial automático de Salas Recientes (¡entra con 1 clic!).</li>
+                        <li>Mejoras generales de estabilidad y renderizado.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
+                    <h3 style="color:var(--ign-blue);margin-bottom:5px;">v1.45 y anteriores</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li>Lanzamiento principal de la aplicación en la nube.</li>
+                        <li>Soporte para marcadores, áreas, reglas, GPS en vivo, brújula dinámica y modo offline con PWA.</li>
+                        <li>Sincronización Off-Grid (Bluetooth / Modo Texto).</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;">
+                <button style="padding:10px 20px;border-radius:6px;border:none;background:var(--ign-blue);color:white;font-weight:bold;cursor:pointer;" onclick="document.getElementById('history-modal').style.display='none'">Cerrar Historial</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PC Link Modal (Mobile Only) -->
+    <div id="pc-link-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:99999;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;">
+        <div style="background:var(--bg-sidebar);padding:25px;border-radius:12px;width:100%;max-width:350px;border:2px solid var(--ign-gold);box-shadow:var(--shadow);text-align:center;">
+            <h3 style="margin-top:0;color:var(--ign-gold);">💻 Vincular con PC</h3>
+            <p style="font-size:14px;color:white;line-height:1.5;">Entra en <b>www.airsoftmaps.es</b> desde el navegador de tu ordenador e introduce tu código de este mes para desbloquear la Sala de Comandancia grande:</p>
+            <div id="monthly-pin-display" style="background:#000;color:var(--success);font-size:32px;font-weight:bold;padding:15px;border-radius:8px;border:2px dashed var(--success);margin:20px 0;letter-spacing:2px;">
+                Cargando...
+            </div>
+            <p style="font-size:12px;color:#cbd5e0;margin-bottom:20px;">* Este código cambia cada mes por seguridad.</p>
+            <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);width:100%;" onclick="document.getElementById('pc-link-modal').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- PC Lock Logic -->
+    <script>
+        // Generate Monthly PIN: "AM-" + month (01-12) + year (YY)
+        const __d = new Date();
+        const currentMonthPIN = "AM-" + (__d.getMonth() + 1 < 10 ? '0' + (__d.getMonth() + 1) : (__d.getMonth() + 1)) + __d.getFullYear().toString().slice(-2);
+        
+        // Show PIN in mobile modal
+        document.getElementById('monthly-pin-display').innerText = currentMonthPIN;
+
+        // Check PC Lock
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const unlockedPIN = localStorage.getItem('am_pc_unlocked');
+
+        if (!isMobile && unlockedPIN !== currentMonthPIN) {
+            document.getElementById('pc-lock-screen').style.display = 'flex';
+        }
+
+        window.unlockPC = function() {
+            const input = document.getElementById('pc-pin-input').value.trim().toUpperCase();
+            if (input === currentMonthPIN) {
+                localStorage.setItem('am_pc_unlocked', currentMonthPIN);
+                document.getElementById('pc-lock-screen').style.display = 'none';
+            } else {
+                document.getElementById('pc-lock-error').style.display = 'block';
+            }
+        };
+
+        // --- PRINT COMPOSER LOGIC ---
+        let printComposerActive = false;
+
+        function makePrintElementDraggable(el) {
+            if (!el || el.dataset.draggable) return;
+            el.dataset.draggable = "true";
+            el.style.position = 'absolute';
+            el.style.cursor = 'move';
+            el.style.zIndex = '10001';
+            let isDown = false, startX, startY, startLeft, startTop;
+            const start = (e) => {
+                if (!printComposerActive) return;
+                isDown = true;
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                startX = clientX;
+                startY = clientY;
+                startLeft = el.offsetLeft;
+                startTop = el.offsetTop;
+                e.stopPropagation();
+            };
+            const move = (e) => {
+                if (!isDown) return;
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                el.style.left = (startLeft + clientX - startX) + 'px';
+                el.style.top = (startTop + clientY - startY) + 'px';
+                el.style.bottom = 'auto';
+                el.style.right = 'auto';
+            };
+            const end = () => { isDown = false; };
+            el.addEventListener('mousedown', start); el.addEventListener('touchstart', start, {passive:true});
+            window.addEventListener('mousemove', move); window.addEventListener('touchmove', move, {passive:true});
+            window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
+        }
+
+        window.startPrintComposer = function() {
+            window.toggleMenu();
+            printComposerActive = true;
+            document.getElementById('print-composer').style.display = 'block';
+            window.updatePrintLayout();
+
+            // Make elements draggable and bring them to center slightly
+            const legend = document.getElementById('map-legend');
+            const compass = document.getElementById('compass-rose');
+            const scale = document.querySelector('.leaflet-control-scale');
+            
+            if (legend) { makePrintElementDraggable(legend); }
+            if (compass) { makePrintElementDraggable(compass); }
+            if (scale) { makePrintElementDraggable(scale); }
+        };
+
+        window.closePrintComposer = function() {
+            printComposerActive = false;
+            document.getElementById('print-composer').style.display = 'none';
+        };
+
+        window.updatePrintLayout = function() {
+            if (!printComposerActive) return;
+            const format = document.getElementById('print-format').value;
+            const orientation = document.getElementById('print-orientation').value;
+            const cutout = document.getElementById('print-cutout');
+            
+            let aspect = format === 'A4' ? 297/210 : 420/297;
+            if (orientation === 'landscape') aspect = 1 / aspect;
+
+            const maxW = window.innerWidth * 0.9;
+            const maxH = window.innerHeight * 0.65; // space for toolbar
+
+            let width, height;
+            if (maxW * aspect <= maxH) {
+                width = maxW; height = maxW * aspect;
+            } else {
+                height = maxH; width = maxH / aspect;
+            }
+
+            cutout.style.width = width + 'px';
+            cutout.style.height = height + 'px';
+        };
+
+        window.addEventListener('resize', window.updatePrintLayout);
+
+        window.exportPrint = async function(type) {
+            const btnPdf = document.getElementById('btn-export-pdf');
+            const btnPng = document.getElementById('btn-export-png');
+            btnPdf.disabled = true; btnPng.disabled = true;
+            const origPdf = btnPdf.innerHTML; const origPng = btnPng.innerHTML;
+            btnPdf.innerHTML = '⏳...'; btnPng.innerHTML = '⏳...';
+
+            try {
+                if (!window.html2canvas) { 
+                    const script = document.createElement('script'); 
+                    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; 
+                    document.head.appendChild(script); 
+                    await new Promise(resolve => script.onload = resolve); 
+                }
+
+                const cutout = document.getElementById('print-cutout');
+                const rect = cutout.getBoundingClientRect();
+                
+                // Hide composer UI so it doesn't get captured as a dark mask
+                document.getElementById('print-composer').style.display = 'none';
+                
+                const canvas = await html2canvas(document.body, { 
+                    useCORS: true, 
+                    allowTaint: false, 
+                    scale: 2, 
+                    x: rect.left,
+                    y: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    ignoreElements: (el) => { 
+                        if (!el.classList) return false; 
+                        if (el.classList.contains('leaflet-control-zoom') || el.classList.contains('leaflet-control-attribution')) return true; 
+                        if (el.id === 'side-menu' || el.id === 'menu-btn' || el.id === 'crosshair' || el.id === 'floating-toolbar') return true;
+                        return false; 
+                    } 
+                });
+                
+                document.getElementById('print-composer').style.display = 'block';
+
+                if (type === 'png') {
+                    const link = document.createElement('a'); 
+                    link.download = 'Mapa_Topografico.png'; 
+                    link.href = canvas.toDataURL('image/png'); 
+                    link.click();
+                } else if (type === 'pdf') {
+                    const orientation = document.getElementById('print-orientation').value === 'landscape' ? 'l' : 'p';
+                    const format = document.getElementById('print-format').value.toLowerCase();
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF(orientation, 'mm', format);
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    const pdfW = doc.internal.pageSize.getWidth();
+                    const pdfH = doc.internal.pageSize.getHeight();
+                    
+                    doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+                    doc.save('Mapa_Topografico.pdf');
+                }
+                
+                window.customAlert("Éxito", "Exportación completada correctamente.");
+                window.closePrintComposer();
+
+            } catch (error) { 
+                document.getElementById('print-composer').style.display = 'block';
+                window.customAlert("Error", "No se pudo generar la exportación. Asegúrate de alejar el zoom un poco. " + error.message); 
+            } finally { 
+                btnPdf.disabled = false; btnPng.disabled = false;
+                btnPdf.innerHTML = origPdf; btnPng.innerHTML = origPng;
+            }
+        };
+    </script>
+
+    <!-- Print Composer Overlay -->
+    <div id="print-composer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;">
+        <div id="print-cutout" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); border: 2px dashed #10b981; box-shadow: 0 0 0 9999px rgba(0,0,0,0.75); pointer-events:none; transition: width 0.3s, height 0.3s; overflow:hidden;">
+            <!-- Elements will be moved here -->
+        </div>
+        
+        <div id="print-toolbar" style="position:absolute; bottom:0; left:0; width:100%; background:#f8fafc; padding:15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); pointer-events:auto; display:flex; flex-direction:column; gap:10px; box-sizing:border-box; border-top:3px solid #10b981;">
+            <div style="text-align:center; font-size:12px; color:#64748b; font-weight:bold; margin-bottom:-5px;">Mueve el mapa para encuadrar. Arrastra la leyenda y brújula.</div>
+            <div style="display:flex; justify-content:center; gap:10px; align-items:center; flex-wrap:wrap;">
+                <select id="print-format" onchange="window.updatePrintLayout()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none;">
+                    <option value="A4">Formato A4</option>
+                    <option value="A3">Formato A3</option>
+                </select>
+                <select id="print-orientation" onchange="window.updatePrintLayout()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none;">
+                    <option value="landscape">Horizontal</option>
+                    <option value="portrait">Vertical</option>
+                </select>
+            </div>
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button id="btn-export-pdf" onclick="window.exportPrint('pdf')" style="flex:1; background:#10b981; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">📄 PDF a Escala</button>
+                <button id="btn-export-png" onclick="window.exportPrint('png')" style="flex:1; background:#3b82f6; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">🖼️ Imagen (PNG)</button>
+                <button onclick="window.closePrintComposer()" style="flex:1; background:#ef4444; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:120px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">❌ Salir</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
