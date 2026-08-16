@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ESTÉTICA ATAK / TÁCTICA HUD v2.01 */
+        /* ESTÉTICA ATAK / TÁCTICA HUD v2.02 */
         :root {
             --ign-blue: #0f140f; /* Dark Olive / Almost Black */
             --ign-gold: #ff7300; /* Tactical Orange */
@@ -145,7 +145,7 @@
             letter-spacing: 1px;
         }
 
-        /* Botones estilo táctico v2.01 */
+        /* Botones estilo táctico v2.02 */
         .btn-outline {
             background: rgba(0, 0, 0, 0.6);
             color: var(--neon-green);
@@ -920,6 +920,10 @@
                             onclick="window.startOfflineSelection()" data-i18n="offline_zone_btn">🔲 Marcar
                             Zona</button>
                     </div>
+                    <label style="font-size:11px;color:#475569;display:flex;align-items:center;gap:5px;margin-top:10px;cursor:pointer;">
+                        <input type="checkbox" id="chk-offline-warning" onchange="localStorage.setItem('am_offline_warning_disabled', !this.checked)" checked>
+                        <span>Mostrar aviso "Prepárate para la partida" al iniciar</span>
+                    </label>
                     <div id="offline-progress"
                         style="display:none;font-size:11px;font-weight:bold;color:#475569;text-align:center;width:100%;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-bottom:10px;">
                         <div id="offline-bar"
@@ -1104,7 +1108,7 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v2.01
+                        v2.02
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -3831,7 +3835,7 @@
                 modal_name_title: "Name item", modal_cancel: "Cancel", modal_accept: "Accept", modal_alert_title: "Notification", modal_cloud_title: "☁️ My Projects", modal_close: "Close", modal_drone_title: "🛰️ 3D TACTICAL DRONE SIGNAL", modal_drone_close: "✕ Disconnect", modal_ar_close: "✕ Close AR", modal_confirm_title: "⚠️ Confirmation", modal_confirm: "Confirm", edit_title: "✏️ Edit Item", edit_name: "Name", edit_faction: "Faction", edit_group: "Group", edit_notes: "📝 Notes / Comments", edit_color: "Color", edit_icon: "Military Icon", edit_show_name: "Show name", edit_radius: "⭕ Action Radius (m)", edit_show_cone: "🔦 Show Cone", edit_cone_color: "Color", edit_orientation: "Orientation", edit_spread: "Spread", edit_range: "Range (m)", edit_thickness: "Thickness", edit_route_mode: "Route Mode", modal_save: "Save", modal_rename_title: "✏️ Rename Folder", modal_rename_btn: "Rename", offgrid_title: "📡 Off-Grid Sync", offgrid_desc: "Share the map or send coordinates to your teammates when <b>there is no internet coverage</b>.", offgrid_btn_share: "📲 Send Map via Bluetooth", offgrid_lbl_export: "Export to Radio / SMS (Markers Only):", offgrid_btn_copy: "Copy", offgrid_lbl_import: "Receive Tactical code:", offgrid_ph_import: "Paste AM: code...", offgrid_btn_load: "Load", manual_title: "📖 User Manual", manual_understood: "Understood", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Red Faction", edit_fact_blue: "🔵 Blue Faction", edit_fact_org: "⚙️ Organization", edit_fact_neu: "⚪ Neutral / Civilian", edit_group_ph: "Ex: Alpha Squad", edit_notes_ph: "Instructions, details, tactical info...", opt_purple: "Purple", opt_dark: "Dark", opt_white: "White", icon_dot: "🔴 Normal dot", icon_base: "⛺ Base / Camp", icon_target: "🎯 Target", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defense", icon_heli: "🚁 Extraction", icon_medic: "🏥 Medic", icon_radio: "📡 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️ On foot", route_drive: "🚗 By car", route_bike: "🚲 By bike", btn_undo: "↩️ Undo", btn_finish: "✅ Finish", btn_cancel_action: "✕ Cancel", nav_target: "Destination", btn_stop_nav: "✕ Stop",
                 edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 update_title: "🚀 New version available", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
-                update_title: "🚀 New version available (v2.01)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+                update_title: "🚀 New version available (v2.02)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 manual_p1: "<b>📍 Markers, Areas and Notes:</b> Use editing tools to add points, routes, or zones. If you tap an existing element, press <b>\"✏️ Edit\"</b> to change its color, faction, add an action radius, a directional vision cone, or write tactical <b>Notes and Comments</b> that everyone can read.",
                 manual_p2: "<b>📐 Quick Ruler:</b> Tool to measure distances on the fly. Click on the map to draw a temporary line and see the exact distance step by step without cluttering your project.",
                 manual_p3: "<b>🗺️ Smart Route:</b> By selecting this tool, the map will automatically calculate the path through streets or forest trails. It will generate an elevation graph and the estimated time on foot or in a vehicle.",
@@ -4174,14 +4178,14 @@
         updateOnlineStatus(); // Comprobación inicial al cargar la página
 
         window.addEventListener('load', () => {
-            if (localStorage.getItem('am_offline_warning_v147') !== 'true') {
+            if (localStorage.getItem('am_offline_warning_v201') !== 'true') {
                 setTimeout(() => {
                     if (typeof window.customAlert === 'function') {
                         window.customAlert(
                             "⚠️ Prepárate para la partida", 
                             "Si vas a usar AirsoftMaps en una partida de Airsoft (MilSim) o ruta por la montaña donde podrías perder la cobertura, recuerda:\n\n1. Inicia sesión con tu cuenta AHORA que tienes internet.\n2. Ve a 'Mezclador de Mapas' -> 'Modo Offline' y dibuja un recuadro para descargar tu zona de juego.\n\n¡Así tendrás el mapa por satélite 100% funcional aunque te quedes sin señal en el bosque!"
                         );
-                        localStorage.setItem('am_offline_warning_v147', 'true');
+                        localStorage.setItem('am_offline_warning_v201', 'true');
                     }
                 }, 1500);
             }
@@ -4196,7 +4200,7 @@
             <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
                 
                 <div style="margin-bottom:20px;">
-                    <h3 style="color:var(--success);margin-bottom:5px;">v2.01 - 16 de Agosto de 2026</h3>
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.02 - 16 de Agosto de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🛠️ CORRECCIONES MENORES]:</b> Arreglado el problema visual de la barra de ruta inteligente en móviles (los botones ahora se envuelven correctamente en la pantalla sin desbordarse).</li>
                         <li><b>[🧭 ENRUTAMIENTO MEJORADO]:</b> Actualizado el servidor interno de GPS (OSRM a FOSSGIS OSM) para que diferencie de verdad entre rutas de coche (carreteras) y rutas peatonales (senderos de bosque y campo a través).</li>
@@ -4205,7 +4209,7 @@
                 </div>
                 
                 <div style="margin-bottom:20px;">
-                    <h3 style="color:var(--success);margin-bottom:5px;">v2.01 - 15 de Agosto de 2026</h3>
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.02 - 15 de Agosto de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🔥 REDISEÑO HUD TÁCTICO]:</b> Actualización visual masiva estilo militar con colores oscuros, efecto cristal, botones preparados para uso con guantes y tipografía técnica.</li>
                         <li><b>[📱 NAVEGACIÓN BOTTOM BAR]:</b> Nuevo menú inferior flotante en móviles para usar el mapa con una sola mano y acceder más rápido al GPS y Capas.</li>
@@ -4487,7 +4491,7 @@
         </div>
     </div>
     <script>
-        // Funciones Bottom Navigation Bar v2.01
+        // Funciones Bottom Navigation Bar v2.02
         window.closeAllPanels = function () {
             document.querySelectorAll('.sidebar').forEach(panel => {
                 panel.classList.add('oculto');
@@ -4558,3 +4562,4 @@
 </body>
 
 </html>
+
