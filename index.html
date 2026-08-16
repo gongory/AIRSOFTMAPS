@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ESTÉTICA ATAK / TÁCTICA HUD v2.03 */
+        /* ESTÉTICA ATAK / TÁCTICA HUD v2.03.3 */
         :root {
             --ign-blue: #0f140f; /* Dark Olive / Almost Black */
             --ign-gold: #ff7300; /* Tactical Orange */
@@ -145,10 +145,10 @@
             letter-spacing: 1px;
         }
 
-        /* Botones estilo táctico v2.03 */
+        /* Botones estilo táctico v2.03.3 */
         .btn-outline {
             background: rgba(0, 0, 0, 0.4);
-            color: #94a3b8; /* Tactical Gray */
+            color: #000000; /* Black font requested by user */
             border: 1px solid #475569;
             width: 100%;
             padding: 14px 10px; /* Taller for gloves */
@@ -1112,7 +1112,7 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v2.03
+                        v2.03.3
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -3839,7 +3839,7 @@
                 modal_name_title: "Name item", modal_cancel: "Cancel", modal_accept: "Accept", modal_alert_title: "Notification", modal_cloud_title: "☁️ My Projects", modal_close: "Close", modal_drone_title: "🛰️ 3D TACTICAL DRONE SIGNAL", modal_drone_close: "✕ Disconnect", modal_ar_close: "✕ Close AR", modal_confirm_title: "⚠️ Confirmation", modal_confirm: "Confirm", edit_title: "✏️ Edit Item", edit_name: "Name", edit_faction: "Faction", edit_group: "Group", edit_notes: "📝 Notes / Comments", edit_color: "Color", edit_icon: "Military Icon", edit_show_name: "Show name", edit_radius: "⭕ Action Radius (m)", edit_show_cone: "🔦 Show Cone", edit_cone_color: "Color", edit_orientation: "Orientation", edit_spread: "Spread", edit_range: "Range (m)", edit_thickness: "Thickness", edit_route_mode: "Route Mode", modal_save: "Save", modal_rename_title: "✏️ Rename Folder", modal_rename_btn: "Rename", offgrid_title: "📡 Off-Grid Sync", offgrid_desc: "Share the map or send coordinates to your teammates when <b>there is no internet coverage</b>.", offgrid_btn_share: "📲 Send Map via Bluetooth", offgrid_lbl_export: "Export to Radio / SMS (Markers Only):", offgrid_btn_copy: "Copy", offgrid_lbl_import: "Receive Tactical code:", offgrid_ph_import: "Paste AM: code...", offgrid_btn_load: "Load", manual_title: "📖 User Manual", manual_understood: "Understood", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Red Faction", edit_fact_blue: "🔵 Blue Faction", edit_fact_org: "⚙️ Organization", edit_fact_neu: "⚪ Neutral / Civilian", edit_group_ph: "Ex: Alpha Squad", edit_notes_ph: "Instructions, details, tactical info...", opt_purple: "Purple", opt_dark: "Dark", opt_white: "White", icon_dot: "🔴 Normal dot", icon_base: "⛺ Base / Camp", icon_target: "🎯 Target", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defense", icon_heli: "🚁 Extraction", icon_medic: "🏥 Medic", icon_radio: "📡 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️ On foot", route_drive: "🚗 By car", route_bike: "🚲 By bike", btn_undo: "↩️ Undo", btn_finish: "✅ Finish", btn_cancel_action: "✕ Cancel", nav_target: "Destination", btn_stop_nav: "✕ Stop",
                 edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 update_title: "🚀 New version available", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
-                update_title: "🚀 New version available (v2.03)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+                update_title: "🚀 New version available (v2.03.3)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 manual_p1: "<b>📍 Markers, Areas and Notes:</b> Use editing tools to add points, routes, or zones. If you tap an existing element, press <b>\"✏️ Edit\"</b> to change its color, faction, add an action radius, a directional vision cone, or write tactical <b>Notes and Comments</b> that everyone can read.",
                 manual_p2: "<b>📐 Quick Ruler:</b> Tool to measure distances on the fly. Click on the map to draw a temporary line and see the exact distance step by step without cluttering your project.",
                 manual_p3: "<b>🗺️ Smart Route:</b> By selecting this tool, the map will automatically calculate the path through streets or forest trails. It will generate an elevation graph and the estimated time on foot or in a vehicle.",
@@ -4217,6 +4217,14 @@
             <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;">📜 Historial de Versiones</h2>
             <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
                 
+                                <div style="margin-bottom:20px;">
+                    <h3 style="margin-bottom:5px;">v2.03.3 - 16 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>[🛠️ ESTABILIDAD]:</b> Resolución de bugs críticos que impedían la carga del mapa y la generación de códigos PIN para PC.</li>
+                        <li><b>[🎨 UI]:</b> Mejora de contraste táctico (texto negro sobre botones pill-shape grises) para máxima legibilidad en exteriores bajo el sol.</li>
+                        <li><b>[⚙️ SERVICE WORKER]:</b> Forzado de purga de caché automática para clientes con versiones rotas previas.</li>
+                    </ul>
+                </div>
                 <div style="margin-bottom:20px;">
                     <h3 style="margin-bottom:5px;">v2.02 - 16 de Agosto de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
@@ -4503,7 +4511,7 @@
         </div>
     </div>
     <script>
-        // Funciones Bottom Navigation Bar v2.03
+        // Funciones Bottom Navigation Bar v2.03.3
         window.closeAllPanels = function () {
             document.querySelectorAll('.sidebar').forEach(panel => {
                 panel.classList.add('oculto');
@@ -4574,6 +4582,10 @@
 </body>
 
 </html>
+
+
+
+
 
 
 
