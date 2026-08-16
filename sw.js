@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = "airsoftmaps-cache-v2.03.5";
+﻿const CACHE_NAME = "airsoftmaps-cache-v2.03.7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -79,6 +79,7 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
 
 
 
