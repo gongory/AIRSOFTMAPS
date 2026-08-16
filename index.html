@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ESTÉTICA ATAK / TÁCTICA HUD v2.03.5 */
+        /* ESTÉTICA ATAK / TÁCTICA HUD v2.03.6 */
         :root {
             --ign-blue: #0f140f; /* Dark Olive / Almost Black */
             --ign-gold: #ff7300; /* Tactical Orange */
@@ -145,7 +145,7 @@
             letter-spacing: 1px;
         }
 
-        /* Botones estilo táctico v2.03.5 */
+        /* Botones estilo táctico v2.03.6 */
         .btn-outline {
             background: rgba(0, 0, 0, 0.4);
             color: #ffffff; /* Tactical White */
@@ -622,10 +622,32 @@
             backdrop-filter: none;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        div[id$="-container"] .btn-outline:hover {
+                div[id$="-container"] .btn-outline:hover {
             background: #f8fafc;
             border-color: var(--ign-gold);
             color: #000000;
+        }
+
+        /* Tarjetas dentro de paneles claros */
+                div[id$="-container"] .mtn-card {
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid #cbd5e0;
+            border-left: 4px solid var(--ign-gold);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Forzar texto oscuro y nítido en todos los paneles claros */
+        div[id$="-container"], 
+        div[id$="-container"] p, 
+        div[id$="-container"] span, 
+        div[id$="-container"] label, 
+        div[id$="-container"] .section-title {
+            color: #0f172a !important;
+        }
+        div[id$="-container"] .mtn-card a {
+            color: #2563eb !important;
+            font-weight: 600;
         }
 
         body.dark-mode .fab-menu:hover {
@@ -957,7 +979,7 @@
                     </div>
                 </div>
                 <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
-                    <label style="font-size:13px;font-weight:bold;color:var(--info);display:block;margin-bottom:4px;"
+                    <label style="font-size:13px;font-weight:bold;color:#2563eb; font-weight:600;display:block;margin-bottom:4px;"
                         data-i18n="tools_3d_lbl">Inteligencia y Satélite</label>
                     <button class="btn-outline"
                         style="margin-bottom:0;width:100%;padding:8px 5px;font-size:11px;"
@@ -1128,7 +1150,7 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v2.03.5
+                        v2.03.6
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -3268,7 +3290,7 @@
         };
 
         function getMTNLeaf(lat, lon) { const refLat = 44.0, refLon = -9.5; const row = Math.floor((refLat - lat) / (10 / 60)) + 1; const col = Math.floor((lon - refLon) / (20 / 60)) + 1; return (row * 30 + col).toString().padStart(4, '0'); }
-        function updateMtnInfo() { const center = map.getCenter(); const hoja = getMTNLeaf(center.lat, center.lng); const infoDiv = document.getElementById('mtnInfo'); if (infoDiv) { infoDiv.innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div><a href="https://centrodedescargas.cnig.es/CentroDescargas/buscar.do?serie=MTN50&numHoja=${hoja}" target="_blank" style="font-size:10px; color:var(--info); text-decoration:none;">Descargar Hoja Oficial</a>`; } }
+        function updateMtnInfo() { const center = map.getCenter(); const hoja = getMTNLeaf(center.lat, center.lng); const infoDiv = document.getElementById('mtnInfo'); if (infoDiv) { infoDiv.innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div><a href="https://centrodedescargas.cnig.es/CentroDescargas/buscar.do?serie=MTN50&numHoja=${hoja}" target="_blank" style="font-size:10px; color:#2563eb; font-weight:600; text-decoration:none;">Descargar Hoja Oficial</a>`; } }
 
         window.getWeatherReport = async function () {
             const center = window.map.getCenter();
@@ -3437,7 +3459,7 @@
             function elementDragTouch(e) { e = e || window.event; e.stopPropagation(); e.preventDefault(); pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY; pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
             function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
         }
-        dragElement(document.getElementById("map-legend")); dragElement(document.getElementById("compass-rose")); dragElement(document.getElementById("numeric-scale-widget")); dragElement(document.getElementById("liveCoords"));
+        dragElement(document.getElementById("map-legend")); dragElement(document.getElementById("compass-rose")); dragElement(document.getElementById("numeric-scale-widget")); dragElement(document.getElementById("liveCoords")); dragElement(document.getElementById("print-title-overlay"));
 
         let isMobileMode = window.innerWidth <= 768;
         function initMobileMode() { const btn = document.getElementById('modeToggleBtn'); if (isMobileMode) { document.body.classList.add('mobile-mode'); btn.innerText = '💻'; btn.title = 'Cambiar a modo escritorio'; } else { document.body.classList.remove('mobile-mode'); btn.innerText = '📱'; btn.title = 'Cambiar a modo móvil'; } }
@@ -3855,7 +3877,7 @@
                 modal_name_title: "Name item", modal_cancel: "Cancel", modal_accept: "Accept", modal_alert_title: "Notification", modal_cloud_title: "☁️ My Projects", modal_close: "Close", modal_drone_title: "🛰️ 3D TACTICAL DRONE SIGNAL", modal_drone_close: "✕ Disconnect", modal_ar_close: "✕ Close AR", modal_confirm_title: "⚠️ Confirmation", modal_confirm: "Confirm", edit_title: "✏️ Edit Item", edit_name: "Name", edit_faction: "Faction", edit_group: "Group", edit_notes: "📝 Notes / Comments", edit_color: "Color", edit_icon: "Military Icon", edit_show_name: "Show name", edit_radius: "⭕ Action Radius (m)", edit_show_cone: "🔦 Show Cone", edit_cone_color: "Color", edit_orientation: "Orientation", edit_spread: "Spread", edit_range: "Range (m)", edit_thickness: "Thickness", edit_route_mode: "Route Mode", modal_save: "Save", modal_rename_title: "✏️ Rename Folder", modal_rename_btn: "Rename", offgrid_title: "📡 Off-Grid Sync", offgrid_desc: "Share the map or send coordinates to your teammates when <b>there is no internet coverage</b>.", offgrid_btn_share: "📲 Send Map via Bluetooth", offgrid_lbl_export: "Export to Radio / SMS (Markers Only):", offgrid_btn_copy: "Copy", offgrid_lbl_import: "Receive Tactical code:", offgrid_ph_import: "Paste AM: code...", offgrid_btn_load: "Load", manual_title: "📖 User Manual", manual_understood: "Understood", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Red Faction", edit_fact_blue: "🔵 Blue Faction", edit_fact_org: "⚙️ Organization", edit_fact_neu: "⚪ Neutral / Civilian", edit_group_ph: "Ex: Alpha Squad", edit_notes_ph: "Instructions, details, tactical info...", opt_purple: "Purple", opt_dark: "Dark", opt_white: "White", icon_dot: "🔴 Normal dot", icon_base: "⛺ Base / Camp", icon_target: "🎯 Target", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defense", icon_heli: "🚁 Extraction", icon_medic: "🏥 Medic", icon_radio: "📡 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️ On foot", route_drive: "🚗 By car", route_bike: "🚲 By bike", btn_undo: "↩️ Undo", btn_finish: "✅ Finish", btn_cancel_action: "✕ Cancel", nav_target: "Destination", btn_stop_nav: "✕ Stop",
                 edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 update_title: "🚀 New version available", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
-                update_title: "🚀 New version available (v2.03.5)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+                update_title: "🚀 New version available (v2.03.6)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 manual_p1: "<b>📍 Markers, Areas and Notes:</b> Use editing tools to add points, routes, or zones. If you tap an existing element, press <b>\"✏️ Edit\"</b> to change its color, faction, add an action radius, a directional vision cone, or write tactical <b>Notes and Comments</b> that everyone can read.",
                 manual_p2: "<b>📐 Quick Ruler:</b> Tool to measure distances on the fly. Click on the map to draw a temporary line and see the exact distance step by step without cluttering your project.",
                 manual_p3: "<b>🗺️ Smart Route:</b> By selecting this tool, the map will automatically calculate the path through streets or forest trails. It will generate an elevation graph and the estimated time on foot or in a vehicle.",
@@ -4233,7 +4255,14 @@
             <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;">📜 Historial de Versiones</h2>
             <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
                 
-                                <div style="margin-bottom:20px;">
+                                                <div style="margin-bottom:20px;">
+                    <h3 style="margin-bottom:5px;">v2.03.6 - 16 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>[🖨️ IMPRESIÓN PRO]:</b> Rediseño completo del Modo Impresión estilo QGIS. Añadido sistema de cuadrículas tácticas, título arrastrable y botón de impresión directa a papel.</li>
+                        <li><b>[🎨 UI]:</b> Corrección de contraste en textos y paneles claros para máxima legibilidad.</li>
+                    </ul>
+                </div>
+                <div style="margin-bottom:20px;">
                     <h3 style="margin-bottom:5px;">v2.03.5 - 16 de Agosto de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🛠️ ESTABILIDAD]:</b> Resolución de bugs críticos que impedían la carga del mapa y la generación de códigos PIN para PC.</li>
@@ -4498,7 +4527,61 @@
                 btnPdf.innerHTML = origPdf; btnPng.innerHTML = origPng;
             }
         };
-    </script>
+    
+        window.updatePrintTitle = function() {
+            const input = document.getElementById('print-title-input').value;
+            const overlay = document.getElementById('print-title-overlay');
+            if(input.trim() === '') {
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.display = 'block';
+                overlay.innerText = input;
+            }
+        };
+
+        window.directPrint = async function() {
+            const rect = document.getElementById('print-cutout').getBoundingClientRect();
+            
+            // Hide composer UI so it doesn't get captured
+            document.getElementById('print-composer').style.display = 'none';
+            
+            try {
+                const canvas = await html2canvas(document.body, { 
+                    useCORS: true, 
+                    allowTaint: false, 
+                    scale: 2, 
+                    x: rect.left,
+                    y: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    ignoreElements: (el) => { 
+                        if (!el.classList) return false; 
+                        if (el.classList.contains('leaflet-control-zoom') || el.classList.contains('leaflet-control-attribution')) return true; 
+                        if (el.id === 'side-menu' || el.id === 'menu-btn' || el.id === 'crosshair' || el.id === 'floating-toolbar') return true;
+                        return false; 
+                    } 
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                
+                const printWindow = window.open('', '_blank');
+                if(!printWindow) {
+                    alert('Tu navegador ha bloqueado la ventana de impresión. Por favor, permite las ventanas emergentes.');
+                    return;
+                }
+                
+                printWindow.document.write('<html><head><title>Imprimir Mapa</title></head><body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#fff;"><img src="' + imgData + '" style="max-width:100%;max-height:100%;object-fit:contain;" onload="window.print(); window.close();"/></body></html>');
+                printWindow.document.close();
+                
+            } catch (error) {
+                console.error("Error direct printing:", error);
+                alert("Hubo un error al preparar la impresión.");
+            } finally {
+                // Restore composer
+                document.getElementById('print-composer').style.display = 'block';
+            }
+        };
+</script>
 
     <!-- Offline Composer Overlay -->
     <div id="offline-composer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;">
@@ -4517,29 +4600,52 @@
     <div id="print-composer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;">
         <div id="print-cutout" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); border: 35px solid white; box-sizing: border-box; box-shadow: 0 0 0 9999px rgba(0,0,0,0.75); pointer-events:none; transition: width 0.3s, height 0.3s; overflow:hidden;">
             <!-- Elements will be moved here -->
+            <div id="print-title-overlay" style="display:none; position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,0.8); padding:5px 15px; border-radius:4px; font-weight:bold; font-size:24px; color:black; border:2px solid black; cursor:move; pointer-events:auto; z-index:1000;"></div>
         </div>
         
-        <div id="print-toolbar" style="position:absolute; bottom:0; left:0; width:100%; background:#f8fafc; padding:15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); pointer-events:auto; display:flex; flex-direction:column; gap:10px; box-sizing:border-box; border-top:3px solid #10b981;">
-            <div style="text-align:center; font-size:12px;  font-weight:bold; margin-bottom:-5px;">Mueve el mapa para encuadrar. Arrastra la leyenda y brújula.</div>
-            <div style="display:flex; justify-content:center; gap:10px; align-items:center; flex-wrap:wrap;">
+                <div id="print-toolbar" style="position:absolute; bottom:0; left:0; width:100%; background:#f8fafc; padding:15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); pointer-events:auto; display:flex; flex-direction:column; gap:10px; box-sizing:border-box; border-top:3px solid #10b981;">
+            
+            <div style="text-align:center; font-size:12px; font-weight:bold; margin-bottom:5px;">Mueve el mapa para encuadrar. Arrastra la leyenda, brújula y título.</div>
+            
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; align-items:center;">
+                <input type="text" id="print-title-input" placeholder="Título del Mapa (Opcional)" oninput="window.updatePrintTitle()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none; flex:1; min-width:200px;">
                 <select id="print-format" onchange="window.updatePrintLayout()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none;">
-                    <option value="A4">Formato A4</option>
-                    <option value="A3">Formato A3</option>
+                    <option value="A4">A4</option>
+                    <option value="A3">A3</option>
                 </select>
                 <select id="print-orientation" onchange="window.updatePrintLayout()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none;">
-                    <option value="landscape">Horizontal</option>
-                    <option value="portrait">Vertical</option>
+                    <option value="landscape">Horiz.</option>
+                    <option value="portrait">Vert.</option>
                 </select>
             </div>
+
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; align-items:center;">
+                <select id="print-grid-type" onchange="document.getElementById('gridType').value=this.value; window.onGridTypeChange()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none; flex:1; min-width:120px;">
+                    <option value="decimal">Geo Decimal</option>
+                    <option value="dms">Geo DMS</option>
+                    <option value="utm">UTM</option>
+                    <option value="alpha">Táctica (B4)</option>
+                </select>
+                <select id="print-grid-scale" onchange="document.getElementById('gridScale').value=this.value; window.updateGridByScale()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none; flex:1; min-width:120px;">
+                    <option value="auto">Auto (Zoom)</option>
+                    <option value="5000">1:5.000</option>
+                    <option value="10000">1:10.000</option>
+                    <option value="25000">1:25.000</option>
+                    <option value="50000">1:50.000</option>
+                </select>
+                <button onclick="window.toggleGrid()" style="background:#475569; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">🌐 Cuadrícula</button>
+            </div>
+
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-                <button id="btn-export-pdf" onclick="window.exportPrint('pdf')" style="flex:1; background:#10b981; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">📄 PDF a Escala</button>
-                <button id="btn-export-png" onclick="window.exportPrint('png')" style="flex:1; background:#3b82f6; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">🖼️ Imagen (PNG)</button>
+                <button onclick="window.directPrint()" style="flex:1; background:#f59e0b; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">🖨️ Imprimir</button>
+                <button id="btn-export-pdf" onclick="window.exportPrint('pdf')" style="flex:1; background:#10b981; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">📄 PDF Escala</button>
+                <button id="btn-export-png" onclick="window.exportPrint('png')" style="flex:1; background:#3b82f6; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">🖼️ PNG</button>
                 <button onclick="window.closePrintComposer()" style="flex:1; background:#ef4444; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:120px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">❌ Salir</button>
             </div>
         </div>
     </div>
     <script>
-        // Funciones Bottom Navigation Bar v2.03.5
+        // Funciones Bottom Navigation Bar v2.03.6
         window.closeAllPanels = function () {
             document.querySelectorAll('.sidebar').forEach(panel => {
                 panel.classList.add('oculto');
@@ -4610,6 +4716,13 @@
 </body>
 
 </html>
+
+
+
+
+
+
+
 
 
 
