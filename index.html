@@ -1175,7 +1175,7 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v2.03.8
+                        v2.03.9
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -4515,64 +4515,86 @@
                             rotas previas.</li>
                     </ul>
                 </div>
-                printComposerActive = true;
-                document.getElementById('print-composer').style.display = 'block';
-                window.updatePrintLayout();
+            </div>
+        </div>
+    </div>
 
-                // Make elements draggable and bring them to center slightly
-                const legend = document.getElementById('map-legend');
-                const compass = document.getElementById('compass-rose');
-                const scale = document.querySelector('.leaflet-control-scale');
+    <script>
+        let printComposerActive = false;
 
-                if (legend) { makePrintElementDraggable(legend); }
-                if (compass) { makePrintElementDraggable(compass); }
-                if (scale) { makePrintElementDraggable(scale); }
-                };
+        window.openPrintComposer = function() {
+            printComposerActive = true;
+            document.getElementById('print-composer').style.display = 'block';
+            window.updatePrintLayout();
+            
+            // Make elements draggable and bring them to center slightly
+            const legend = document.getElementById('map-legend');
+            const compass = document.getElementById('compass-rose');
+            const scale = document.querySelector('.leaflet-control-scale');
+            
+            if (legend) { makePrintElementDraggable(legend); }
+            if (compass) { makePrintElementDraggable(compass); }
+            if (scale) { makePrintElementDraggable(scale); }
+        };
 
-                window.closePrintComposer = function() {
-                printComposerActive = false;
+        window.closePrintComposer = function() {
+            printComposerActive = false;
+            document.getElementById('print-composer').style.display = 'none';
+        };
+
+        window.updatePrintLayout = function() {
+            if (!printComposerActive) return;
+            const format = document.getElementById('print-format').value;
+            const orientation = document.getElementById('print-orientation').value;
+            const cutout = document.getElementById('print-cutout');
+
+            let aspect = format === 'A4' ? 297/210 : 420/297;
+            if (orientation === 'landscape') aspect = 1 / aspect;
+
+            const maxW = window.innerWidth * 0.9;
+            const maxH = window.innerHeight * 0.65; // space for toolbar
+
+            let width, height;
+            if (maxW * aspect <= maxH) { width = maxW; height = maxW * aspect; } else { height = maxH; width = maxH / aspect; } 
+            cutout.style.width = width + 'px'; 
+            cutout.style.height = height + 'px'; 
+        };
+
+        window.exportPrint = async function(type) {
+            const rect = document.getElementById('print-cutout').getBoundingClientRect();
+            const btnSave = document.getElementById('btn-export-save');
+            const origSaveText = btnSave.options[0].text;
+            
+            btnSave.disabled = true;
+            btnSave.options[0].text = 'Generando...';
+            
+            try {
+                // Hide composer UI so it doesn't get captured as a dark mask 
                 document.getElementById('print-composer').style.display = 'none';
-                };
-
-                window.updatePrintLayout = function() {
-                if (!printComposerActive) return;
-                const format = document.getElementById('print-format').value;
-                const orientation = document.getElementById('print-orientation').value;
-                const cutout = document.getElementById('print-cutout');
-
-                let aspect = format === 'A4' ? 297/210 : 420/297;
-                if (orientation === 'landscape') aspect = 1 / aspect;
-
-                const maxW = window.innerWidth * 0.9;
-                const maxH = window.innerHeight * 0.65; // space for toolbar
-
-                let width, height;
-                if (maxW * aspect <= maxH) { width=maxW; height=maxW * aspect; } else { height=maxH; width=maxH /
-                    aspect; } cutout.style.width=width + 'px' ; cutout.style.height=height + 'px' ; };
-                    window.exportPrint=async function(type) { const
-                    rect=document.getElementById('print-cutout').getBoundingClientRect(); const
-                    btnSave=document.getElementById('btn-export-save'); const origSaveText=btnSave.options[0].text;
-                    btnSave.disabled=true; btnSave.options[0].text='Generando...' ; try { // Hide composer UI so it
-                    doesn't get captured as a dark mask document.getElementById('print-composer').style.display='none' ;
-                    const canvas=await html2canvas(document.body, { useCORS: true, allowTaint: false, scale: 2, x:
-                    rect.left, y: rect.top, width: rect.width, height: rect.height, ignoreElements: (el)=> {
-                    if (!el.classList) return false;
-                    if (el.classList.contains('leaflet-control-zoom') ||
-                    el.classList.contains('leaflet-control-attribution')) return true;
-                    if (el.id === 'side-menu' || el.id === 'menu-btn' || el.id === 'crosshair' || el.id ===
-                    'floating-toolbar') return true;
-                    return false;
+                const canvas = await html2canvas(document.body, { 
+                    useCORS: true, 
+                    allowTaint: false, 
+                    scale: 2, 
+                    x: rect.left, 
+                    y: rect.top, 
+                    width: rect.width, 
+                    height: rect.height, 
+                    ignoreElements: (el) => {
+                        if (!el.classList) return false;
+                        if (el.classList.contains('leaflet-control-zoom') || el.classList.contains('leaflet-control-attribution')) return true;
+                        if (el.id === 'side-menu' || el.id === 'menu-btn' || el.id === 'crosshair' || el.id === 'floating-toolbar') return true;
+                        return false;
                     }
-                    });
+                });
 
-                    document.getElementById('print-composer').style.display = 'block';
+                document.getElementById('print-composer').style.display = 'block';
 
-                    if (type === 'png') {
+                if (type === 'png') {
                     const link = document.createElement('a');
                     link.download = 'Mapa_Topografico.png';
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                    } else if (type === 'pdf') {
+                } else if (type === 'pdf') {
                     const orientation = document.getElementById('print-orientation').value === 'landscape' ? 'l' : 'p';
                     const format = document.getElementById('print-format').value.toLowerCase();
                     const { jsPDF } = window.jspdf;
@@ -4584,40 +4606,40 @@
 
                     doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
                     doc.save('Mapa_Topografico.pdf');
-                    }
+                }
 
-                    window.customAlert("Éxito", "Exportación completada correctamente.");
-                    window.closePrintComposer();
+                window.customAlert("Éxito", "Exportación completada correctamente.");
+                window.closePrintComposer();
 
-                    } catch (error) {
-                    document.getElementById('print-composer').style.display = 'block';
-                    window.customAlert("Error", "No se pudo generar la exportación. Asegúrate de alejar el zoom un poco.
-                    " + error.message);
-                    } finally {
-                    btnPdf.disabled = false; btnPng.disabled = false;
-                    btnPdf.innerHTML = origPdf; btnPng.innerHTML = origPng;
-                    }
-                    };
+            } catch (error) {
+                document.getElementById('print-composer').style.display = 'block';
+                window.customAlert("Error", "No se pudo generar la exportación. Asegúrate de alejar el zoom un poco. " + error.message);
+            } finally {
+                btnSave.disabled = false;
+                btnSave.options[0].text = origSaveText;
+                btnSave.selectedIndex = 0;
+            }
+        };
 
-                    window.updatePrintTitle = function() {
-                    const input = document.getElementById('print-title-input').value;
-                    const overlay = document.getElementById('print-title-overlay');
-                    if(input.trim() === '') {
-                    overlay.style.display = 'none';
-                    } else {
-                    overlay.style.display = 'block';
-                    overlay.innerText = input;
-                    }
-                    };
+        window.updatePrintTitle = function() {
+            const input = document.getElementById('print-title-input').value;
+            const overlay = document.getElementById('print-title-overlay');
+            if(input.trim() === '') {
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.display = 'block';
+                overlay.innerText = input;
+            }
+        };
 
-                    window.directPrint = async function() {
-                    const rect = document.getElementById('print-cutout').getBoundingClientRect();
+        window.directPrint = async function() {
+            const rect = document.getElementById('print-cutout').getBoundingClientRect();
 
-                    // Hide composer UI so it doesn't get captured
-                    document.getElementById('print-composer').style.display = 'none';
+            // Hide composer UI so it doesn't get captured
+            document.getElementById('print-composer').style.display = 'none';
 
-                    try {
-                    const canvas = await html2canvas(document.body, {
+            try {
+                const canvas = await html2canvas(document.body, {
                     useCORS: true,
                     allowTaint: false,
                     scale: 2,
@@ -4626,47 +4648,33 @@
                     width: rect.width,
                     height: rect.height,
                     ignoreElements: (el) => {
-                    if (!el.classList) return false;
-                    if (el.classList.contains('leaflet-control-zoom') ||
-                    el.classList.contains('leaflet-control-attribution')) return true;
-                    if (el.id === 'side-menu' || el.id === 'menu-btn' || el.id === 'crosshair' || el.id ===
-                    'floating-toolbar') return true;
-                    return false;
+                        if (!el.classList) return false;
+                        if (el.classList.contains('leaflet-control-zoom') || el.classList.contains('leaflet-control-attribution')) return true;
+                        if (el.id === 'side-menu' || el.id === 'menu-btn' || el.id === 'crosshair' || el.id === 'floating-toolbar') return true;
+                        return false;
                     }
-                    });
+                });
 
-                    const imgData = canvas.toDataURL('image/png');
+                const imgData = canvas.toDataURL('image/png');
 
-                    const printWindow = window.open('', '_blank');
-                    if(!printWindow) {
-                    alert('Tu navegador ha bloqueado la ventana de impresión. Por favor, permite las ventanas
-                    emergentes.');
+                const printWindow = window.open('', '_blank');
+                if(!printWindow) {
+                    alert('Tu navegador ha bloqueado la ventana de impresión. Por favor, permite las ventanas emergentes.');
                     return;
-                    }
+                }
 
-                    printWindow.document.write('<html>
+                printWindow.document.write('<html><head><title>Imprimir Mapa</title></head><body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#fff;"><img src="' + imgData + '" style="max-width:100%;max-height:100%;object-fit:contain;" onload="window.print(); window.close();" /></body></html>');
+                printWindow.document.close();
 
-                    <head>
-                        <title>Imprimir Mapa</title>
-                    </head>
-
-                    <body
-                        style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#fff;">
-                        <img src="' + imgData + '" style="max-width:100%;max-height:100%;object-fit:contain;"
-                            onload="window.print(); window.close();" /></body>
-
-                    </html>');
-                    printWindow.document.close();
-
-                    } catch (error) {
-                    console.error("Error direct printing:", error);
-                    alert("Hubo un error al preparar la impresión.");
-                    } finally {
-                    // Restore composer
-                    document.getElementById('print-composer').style.display = 'block';
-                    }
-                    };
-                    </script>
+            } catch (error) {
+                console.error("Error direct printing:", error);
+                alert("Hubo un error al preparar la impresión.");
+            } finally {
+                // Restore composer
+                document.getElementById('print-composer').style.display = 'block';
+            }
+        };
+    </script>
 
                     <!-- Offline Composer Overlay -->
                     <div id="offline-composer"
