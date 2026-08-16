@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ESTÉTICA ATAK / TÁCTICA HUD v2.02 */
+        /* ESTÉTICA ATAK / TÁCTICA HUD v2.03 */
         :root {
             --ign-blue: #0f140f; /* Dark Olive / Almost Black */
             --ign-gold: #ff7300; /* Tactical Orange */
@@ -145,7 +145,7 @@
             letter-spacing: 1px;
         }
 
-        /* Botones estilo táctico v2.02 */
+        /* Botones estilo táctico v2.03 */
         .btn-outline {
             background: rgba(0, 0, 0, 0.6);
             color: var(--neon-green);
@@ -657,11 +657,11 @@
 <body>
     <!-- PC Lock Screen -->
     <div id="pc-lock-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--ign-blue); z-index:999999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:'Roboto', sans-serif;">
-        <h1 style="font-size:24px; color:var(--ign-gold); text-align:center; padding: 0 20px;">🛡️ Versión de PC Bloqueada</h1>
+        <h1 style="font-size:24px;  text-align:center; padding: 0 20px;">🛡️ Versión de PC Bloqueada</h1>
         <p style="text-align:center; padding:0 20px; max-width:400px; line-height:1.5;">Para usar la Sala de Comandancia en tu ordenador, necesitas vincularlo con tu aplicación móvil. Abre AirsoftMaps en tu teléfono, ve a "Vincular PC" e introduce tu código mensual:</p>
         <input type="text" id="pc-pin-input" placeholder="Ej: AM-0826" style="padding:15px; font-size:20px; font-weight:bold; text-align:center; border-radius:8px; border:2px solid var(--ign-gold); outline:none; color:#000; width:200px; margin: 20px 0; text-transform: uppercase;">
         <button onclick="window.unlockPC()" style="padding:15px 30px; font-size:16px; font-weight:bold; border-radius:8px; border:none; background:var(--success); color:white; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.5);">Desbloquear PC</button>
-        <p id="pc-lock-error" style="color:var(--danger); margin-top:15px; font-weight:bold; display:none;">❌ Código incorrecto o caducado.</p>
+        <p id="pc-lock-error" style=" margin-top:15px; font-weight:bold; display:none;">❌ Código incorrecto o caducado.</p>
     </div>
 
     <div id="map-container">
@@ -702,19 +702,19 @@
                 <option value="bike" data-i18n="route_bike">🚲 En bici</option>
             </select>
             <button id="undo-point-btn" onclick="window.undoLastPoint()"
-                style="background:rgba(255,115,0,0.2);color:var(--ign-gold);border:1px solid var(--ign-gold);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;"
+                style="background:rgba(255,115,0,0.2);border:1px solid var(--ign-gold);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;"
                 data-i18n="btn_undo">↺ Deshacer</button>
             <button id="finish-route-btn" onclick="window.finishAutoRoute()"
-                style="background:rgba(34,197,94,0.2);color:var(--success);border:1px solid var(--success);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;"
+                style="background:rgba(34,197,94,0.2);border:1px solid var(--success);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;"
                 data-i18n="btn_finish">✔ Finalizar</button>
             <button id="undo-whiteboard-btn" onclick="window.undoWhiteboardStroke()"
-                style="background:rgba(255,115,0,0.2);color:var(--ign-gold);border:1px solid var(--ign-gold);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;">↺
+                style="background:rgba(255,115,0,0.2);border:1px solid var(--ign-gold);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;">↺
                 Deshacer Trazo</button>
             <button id="finish-whiteboard-btn" onclick="window.stopWhiteboard()"
-                style="background:rgba(34,197,94,0.2);color:var(--success);border:1px solid var(--success);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;">✔
+                style="background:rgba(34,197,94,0.2);border:1px solid var(--success);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;">✔
                 Terminar Dibujo</button>
             <button id="cancel-crop-btn" onclick="window.stopDrawing()"
-                style="background:rgba(239,68,68,0.2);color:var(--danger);border:1px solid var(--danger);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;flex:1;min-width:110px;text-transform:uppercase;"
+                style="background:rgba(239,68,68,0.2);border:1px solid var(--danger);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;flex:1;min-width:110px;text-transform:uppercase;"
                 data-i18n="btn_cancel_action">✖ Cancelar</button>
         </div>
     </div>
@@ -725,7 +725,7 @@
 
     <div id="nav-panel"
         style="display:none;position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:2500;background:var(--bg-sidebar);border:2px solid #9b59b6;border-radius:12px;padding:10px 20px;box-shadow:var(--shadow);text-align:center;pointer-events:auto;min-width:200px;">
-        <div style="font-size:11px;font-weight:bold;color:#64748b;margin-bottom:5px;" id="nav-target-name"
+        <div style="font-size:11px;font-weight:bold;margin-bottom:5px;" id="nav-target-name"
             data-i18n="nav_target">Destino</div>
         <div style="display:flex;align-items:center;gap:15px;justify-content:center;">
             <div id="nav-arrow"
@@ -746,7 +746,7 @@
             style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:white;font-size:10px;font-weight:bold;border-radius:50%;width:18px;height:18px;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.3);">0</span>
     </button>
     <!-- Botón flotante para recuperar la barra inferior -->
-    <button id="show-bottom-nav-btn" onclick="window.toggleBottomNav(true)" style="display:none; position:absolute; bottom:15px; left:50%; transform:translateX(-50%); z-index:2001; background:rgba(20,24,20,0.85); border:1px solid var(--border-color); color:var(--ign-gold); width:40px; height:40px; border-radius:20px; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; font-size:20px;">
+    <button id="show-bottom-nav-btn" onclick="window.toggleBottomNav(true)" style="display:none; position:absolute; bottom:15px; left:50%; transform:translateX(-50%); z-index:2001; background:rgba(20,24,20,0.85); border:1px solid var(--border-color);  width:40px; height:40px; border-radius:20px; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; font-size:20px;">
         ▲
     </button>
 
@@ -795,7 +795,7 @@
             </div>
         </div>
         <div class="content">
-            <button class="btn-outline" style="border-color:var(--success);color:var(--success);margin-bottom:10px;"
+            <button class="btn-outline" style="margin-bottom:10px;"
                 onclick="window.openManual()" data-i18n="manual_btn">📖 Manual de Usuario</button>
             <div class="section-title" style="margin-top:0;" data-i18n="search_title">🔍 Buscador</div>
             <div style="display:flex;gap:5px;margin-bottom:12px;">
@@ -813,17 +813,17 @@
                 style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
                 <div style="border-bottom:1px dashed #cbd5e0;margin-bottom:15px;padding-bottom:10px;text-align:center;">
                     <button id="btn-login-google" class="btn-outline"
-                        style="border-color:#4285F4;color:#4285F4;margin-bottom:0;"
+                        style="margin-bottom:0;"
                         onclick="window.iniciarSesionGoogle()"><span style="font-weight:bold;font-size:16px;">G</span>
                         <span data-i18n="login_btn">Guardar cuenta</span></button>
-                    <button id="btn-logout" class="btn-outline"
-                        style="border-color:#64748b;color:#64748b;margin-bottom:0;display:none;"
+                    <button id="btn-logout" class="btn-outline btn-danger"
+                        style="margin-bottom:0;display:none;"
                         onclick="window.cerrarSesion()" data-i18n="logout_btn">Cerrar sesión</button>
-                    <p id="login-status-text" style="font-size:11px;color:#64748b;margin:5px 0 0 0;"><b>👤 Modo
+                    <p id="login-status-text" style="font-size:11px;margin:5px 0 0 0;"><b>👤 Modo
                             Anónimo</b></p>
                 </div>
                 <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline"
-                        style="border-color:var(--danger);color:var(--danger);margin-bottom:0;padding:10px 5px;"
+                        style="margin-bottom:0;padding:10px 5px;"
                         onclick="window.nuevoProyecto()" data-i18n="new_proj">📄 Nuevo</button><button
                         class="btn-outline" style="margin-bottom:0;padding:10px 5px;"
                         onclick="window.renombrarProyecto()" data-i18n="rename_proj">✏️ Renombrar</button></div>
@@ -838,7 +838,7 @@
                         type="file" id="file-loader" style="position:absolute;width:0;height:0;opacity:0;z-index:-1;"
                         onchange="window.cargarProyecto(event)"></div>
                 <div style="border-top:1px dashed #cbd5e0;margin-top:15px;padding-top:10px;">
-                    <label style="font-size:11px;font-weight:bold;color:#475569;display:block;margin-bottom:8px;"
+                    <label style="font-size:13px;font-weight:bold;color:#475569;display:block;margin-bottom:8px;"
                         data-i18n="import_export_lbl">Importar / Exportar (KML/GPX)</label>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><button
                             class="btn-outline" style="margin-bottom:0;font-size:11px;" onclick="window.exportKML()"
@@ -846,16 +846,16 @@
                             style="margin-bottom:0;font-size:11px;" onclick="window.exportGPX()"
                             data-i18n="export_gpx_btn">⬇️ Exportar GPX</button></div>
                     <label class="btn-outline" for="kml-gpx-loader"
-                        style="margin-bottom:0;font-size:11px;cursor:pointer;" data-i18n="import_file_btn">⬆️ Importar
+                        style="margin-bottom:0;font-size:13px;cursor:pointer;" data-i18n="import_file_btn">⬆️ Importar
                         Archivo</label><input type="file" id="kml-gpx-loader"
                         style="position:absolute;width:0;height:0;opacity:0;z-index:-1;"
                         onchange="window.importKMLGPX(event)">
                 </div>
                 <div style="border-top:1px dashed #cbd5e0;margin-top:15px;padding-top:10px;">
-                    <label style="font-size:11px;font-weight:bold;color:var(--success);display:block;margin-bottom:8px;"
+                    <label style="font-size:13px;font-weight:bold;display:block;margin-bottom:8px;"
                         data-i18n="sync_offgrid_lbl">📡 Sincronización Sin Internet</label>
                     <button class="btn-outline"
-                        style="margin-bottom:0;border-color:var(--success);color:var(--success);"
+                        style="margin-bottom:0;"
                         onclick="window.openOffGridModal()" data-i18n="share_offgrid_btn">Compartir Off-Grid</button>
                 </div>
             </div>
@@ -870,7 +870,7 @@
                 </div>
                 <button id="mtnGridBtn" class="btn-outline" style="margin-bottom:10px;" onclick="window.toggleMtnGrid()"
                     data-i18n="mtn_grid_btn">Ver Cuadrículas MTN</button>
-                <button class="btn-outline" style="margin-bottom:0;border-color:#3498db;color:#3498db;"
+                <button class="btn-outline" style="margin-bottom:0;"
                     onclick="window.getWeatherReport()" data-i18n="weather_btn">🌬️ Reporte Meteorológico</button>
             </div>
 
@@ -879,7 +879,7 @@
                     data-i18n="mixer_menu">🌍 Mezclador de Mapas</span><span>▼</span></button>
             <div id="map-mixer-container"
                 style="display:none;background:#f1f5f9;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;">
-                <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                <label style="font-size:13px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
                     data-i18n="base_layer_lbl">Capa Principal (Fondo)</label>
                 <select id="baseLayer" class="form-select" style="margin-bottom:8px;" onchange="window.changeLayer()">
                     <option value="mtn" data-i18n="opt_mtn">Mapa Topográfico (MTN España)</option>
@@ -890,7 +890,7 @@
                     <option value="esri" data-i18n="opt_esri">Satélite Global (ESRI)</option>
                     <option value="opentopo" data-i18n="opt_opentopo">Topográfico Global (OpenTopoMap)</option>
                 </select>
-                <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                <label style="font-size:13px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
                     data-i18n="overlay_layer_lbl">Capa Secundaria</label>
                 <select id="overlayLayer" class="form-select" style="margin-bottom:8px;"
                     onchange="window.changeLayer()">
@@ -903,24 +903,24 @@
                     <option value="esri" data-i18n="opt_esri">Satélite Global (ESRI)</option>
                     <option value="opentopo" data-i18n="opt_opentopo">Topográfico Global (OpenTopoMap)</option>
                 </select>
-                <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                <label style="font-size:13px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
                     data-i18n="overlay_opacity_lbl">Opacidad Secundaria</label>
                 <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4"
                     style="width:100%;margin-bottom:0;" oninput="window.changeLayer()">
                 <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
-                    <label style="font-size:10px;font-weight:bold;color:var(--success);display:block;margin-bottom:4px;"
+                    <label style="font-size:13px;font-weight:bold;display:block;margin-bottom:4px;"
                         data-i18n="offline_mode_lbl">Modo Offline</label>
                     <div style="display:flex; gap:5px; margin-bottom:5px;">
                         <button class="btn-outline" id="btn-offline"
-                            style="margin-bottom:0;border-color:var(--success);color:var(--success);padding:8px 5px;font-size:11px;"
+                            style="margin-bottom:0;padding:8px 5px;font-size:11px;"
                             onclick="window.downloadOfflineMap()" data-i18n="offline_current_btn">⬇️ Visión
                             Actual</button>
                         <button class="btn-outline"
-                            style="margin-bottom:0;border-color:var(--success);color:var(--success);padding:8px 5px;font-size:11px;"
+                            style="margin-bottom:0;padding:8px 5px;font-size:11px;"
                             onclick="window.startOfflineSelection()" data-i18n="offline_zone_btn">🔲 Marcar
                             Zona</button>
                     </div>
-                    <label style="font-size:11px;color:#475569;display:flex;align-items:center;gap:5px;margin-top:10px;cursor:pointer;">
+                    <label style="font-size:13px;color:#475569;display:flex;align-items:center;gap:5px;margin-top:10px;cursor:pointer;">
                         <input type="checkbox" id="chk-offline-warning" onchange="localStorage.setItem('am_offline_warning_disabled', !this.checked)" checked>
                         <span>Mostrar aviso "Prepárate para la partida" al iniciar</span>
                     </label>
@@ -932,15 +932,15 @@
                     </div>
                     <div id="offline-zones-list"
                         style="max-height:150px;overflow-y:auto;background:#fff;border:1px solid #cbd5e0;border-radius:8px;padding:5px;margin-top:5px;">
-                        <div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay zonas
+                        <div style="font-size:13px;text-align:center;padding:10px;">No hay zonas
                             descargadas</div>
                     </div>
                 </div>
                 <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
-                    <label style="font-size:10px;font-weight:bold;color:var(--info);display:block;margin-bottom:4px;"
+                    <label style="font-size:13px;font-weight:bold;color:var(--info);display:block;margin-bottom:4px;"
                         data-i18n="tools_3d_lbl">Inteligencia y Satélite</label>
                     <button class="btn-outline"
-                        style="margin-bottom:0;width:100%;border-color:#34a853;color:#34a853;padding:8px 5px;font-size:11px;"
+                        style="margin-bottom:0;width:100%;padding:8px 5px;font-size:11px;"
                         onclick="window.openGoogleEarth()">🛰️ Abrir en Google Earth 3D</button>
                 </div>
             </div>
@@ -958,14 +958,14 @@
                     <option value="alpha" data-i18n="opt_alpha">Táctica Alfanumérica (A1)</option>
                 </select>
                 <div class="grid-config-group">
-                    <div><label style="font-size:10px;font-weight:bold;color:#475569;"
+                    <div><label style="font-size:13px;font-weight:bold;color:#475569;"
                             data-i18n="thickness_lbl">Grosor</label><select id="gridWeight" class="form-select"
                             style="margin-bottom:0;font-size:12px;" onchange="window.updateGrid()">
                             <option value="1" data-i18n="opt_low">Baja</option>
                             <option value="2.5" selected data-i18n="opt_med">Media</option>
                             <option value="5" data-i18n="opt_high">Gruesa</option>
                         </select></div>
-                    <div><label style="font-size:10px;font-weight:bold;color:#475569;"
+                    <div><label style="font-size:13px;font-weight:bold;color:#475569;"
                             data-i18n="color_lbl">Color</label><select id="gridColor" class="form-select"
                             style="margin-bottom:0;font-size:12px;" onchange="window.updateGrid()">
                             <option value="red" selected data-i18n="opt_red">Rojo</option>
@@ -1005,14 +1005,14 @@
             <div id="edit-group-container"
                 style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:10px;border:1px solid #cbd5e0;">
                 <div class="grid-config-group" style="margin-bottom:10px;">
-                    <div><label style="font-size:10px;font-weight:bold;color:#475569;"
+                    <div><label style="font-size:13px;font-weight:bold;color:#475569;"
                             data-i18n="line_thickness_lbl">Grosor Línea</label><select id="drawWeight"
                             class="form-select" style="margin-bottom:0;font-size:12px;">
                             <option value="2" data-i18n="opt_thin">Fina</option>
                             <option value="4" selected data-i18n="opt_normal">Normal</option>
                             <option value="6" data-i18n="opt_thick">Gruesa</option>
                         </select></div>
-                    <div><label style="font-size:10px;font-weight:bold;color:#475569;" data-i18n="line_color_lbl">Color
+                    <div><label style="font-size:13px;font-weight:bold;color:#475569;" data-i18n="line_color_lbl">Color
                             Línea</label><select id="drawColor" class="form-select"
                             style="margin-bottom:0;font-size:12px;">
                             <option value="#2ecc71" selected data-i18n="opt_green">Verde</option>
@@ -1020,7 +1020,7 @@
                             <option value="#3498db" data-i18n="opt_blue">Azul</option>
                             <option value="#f1c40f" data-i18n="opt_yellow">Amarillo</option>
                         </select></div>
-                    <div style="grid-column:span 2;"><label style="font-size:10px;font-weight:bold;color:#475569;"
+                    <div style="grid-column:span 2;"><label style="font-size:13px;font-weight:bold;color:#475569;"
                             data-i18n="marker_color_lbl">Color Marcador</label><select id="markerColor"
                             class="form-select" style="margin-bottom:0;font-size:12px;">
                             <option value="#2ecc71" data-i18n="opt_green">Verde</option>
@@ -1029,7 +1029,7 @@
                             <option value="#f1c40f" data-i18n="opt_yellow">Amarillo</option>
                         </select></div>
                     <div style="grid-column:span 2;"><label
-                            style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                            style="font-size:13px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
                             data-i18n="compass_style_lbl">Estilo Brújula</label>
                         <div style="display:flex; gap:5px; align-items:center;"><select id="compassStyle"
                                 class="form-select" style="margin-bottom:0;font-size:12px;flex:1;"
@@ -1039,7 +1039,7 @@
                                 <option value="military" data-i18n="opt_military">Militar</option>
                                 <option value="minimal" data-i18n="opt_minimal">Minimalista</option>
                             </select><label
-                                style="font-size:10px;font-weight:bold;color:#475569;display:flex;align-items:center;gap:4px;cursor:pointer;background:rgba(255,255,255,0.5);padding:8px;border-radius:6px;border:1px solid var(--border-color);"><input
+                                style="font-size:13px;font-weight:bold;color:#475569;display:flex;align-items:center;gap:4px;cursor:pointer;background:rgba(255,255,255,0.5);padding:8px;border-radius:6px;border:1px solid var(--border-color);"><input
                                     type="checkbox" id="compass-auto-rotate" onchange="window.toggleCompassRotation()"
                                     style="margin:0;"> <span data-i18n="dynamic_lbl">🔄 Dinámica</span></label></div>
                     </div>
@@ -1050,19 +1050,19 @@
                     <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polyline')"
                         data-i18n="path_tool">📏 Ruta Manual</button>
                     <button class="btn-outline"
-                        style="margin-bottom:0;grid-column:span 2;border-color:#9b59b6;color:#9b59b6;"
+                        style="margin-bottom:0;grid-column:span 2;"
                         onclick="window.enableTool('whiteboard')">🖍️ Pizarra Táctica</button>
                     <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;"
                         onclick="window.enableTool('measure')" data-i18n="ruler_tool">📐 Regla Rápida</button>
                     <button class="btn-outline"
-                        style="margin-bottom:0;grid-column:span 2;border-color:var(--info);color:var(--info);"
+                        style="margin-bottom:0;grid-column:span 2;"
                         onclick="window.enableTool('auto-route')" data-i18n="smart_route_tool">🗺️ Ruta
                         Inteligente</button>
                     <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polygon')"
                         data-i18n="area_tool">🔲 Área</button><button class="btn-outline" style="margin-bottom:0;"
                         id="btn-compass" onclick="window.toggleCompass()" data-i18n="compass_tool">🧭 Brújula</button>
                     <label class="btn-outline"
-                        style="margin-bottom:0;grid-column:span 2;border-color:var(--ign-gold);color:var(--ign-gold);cursor:pointer;"
+                        style="margin-bottom:0;grid-column:span 2;cursor:pointer;"
                         for="field-map-loader" data-i18n="field_map_tool">🗺️ Solapar Mapa Campo</label>
                     <input type="file" id="field-map-loader" accept="image/*" style="display:none;"
                         onchange="window.processFieldMap(event)">
@@ -1079,12 +1079,12 @@
                 style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
                 <div id="layer-list"
                     style="max-height:250px;overflow-y:auto;background:#fff;border:1px solid #cbd5e0;border-radius:8px;">
-                    <div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay elementos</div>
+                    <div style="font-size:13px;text-align:center;padding:10px;">No hay elementos</div>
                 </div>
             </div>
 
             <button class="btn-outline" onclick="window.startPrintComposer()"
-                style="margin-bottom:10px;justify-content:center;border-color:#10b981;color:#10b981;font-weight:bold;">🖨️ Modo Impresión Avanzado</button>
+                style="margin-bottom:10px;justify-content:center;font-weight:bold;">🖨️ Modo Impresión Avanzado</button>
 
             <button class="btn-outline" onclick="window.toggleGroup('gallery-container')"
                 style="margin-bottom:10px;justify-content:space-between;"><span data-i18n="gallery_menu">📸 Galería
@@ -1097,7 +1097,7 @@
             </div>
 
             <button class="btn-outline" onclick="document.getElementById('pc-link-modal').style.display='flex'"
-                style="margin-bottom:10px;justify-content:space-between;border-color:var(--ign-gold);color:var(--ign-gold);"><span>💻 Vincular PC (Mensual)</span><span>▶</span></button>
+                style="margin-bottom:10px;justify-content:space-between;"><span>💻 Vincular PC (Mensual)</span><span>▶</span></button>
 
             <button class="btn-outline" onclick="window.toggleGroup('info-app-container')"
                 style="margin-bottom:10px;justify-content:space-between;"><span data-i18n="about_menu">ℹ️ Acerca de la
@@ -1108,7 +1108,7 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v2.02
+                        v2.03
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -1122,14 +1122,14 @@
                     </ul>
                 </div>
                 <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;text-align:center;">
-                    <button class="btn-outline" style="border-color:#9b59b6;color:#9b59b6;margin-bottom:10px;width:100%;"
+                    <button class="btn-outline" style="margin-bottom:10px;width:100%;"
                         onclick="document.getElementById('history-modal').style.display='flex'">📜 Historial de Versiones</button>
-                    <button class="btn-outline" style="border-color:var(--info);color:var(--info);margin-bottom:0;"
+                    <button class="btn-outline" style="margin-bottom:0;"
                         onclick="window.manualUpdateCheck()">🔄 Buscar actualizaciones</button>
                 </div>
             </div>
 
-            <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;"
+            <button class="btn-outline" style="margin-bottom:0;"
                 onclick="window.enableTool('delete')" data-i18n="delete_btn">🗑️ Borrar Individual</button>
         </div>
     </div>
@@ -1143,11 +1143,11 @@
         </div>
         <div class="content">
             <button class="btn-outline"
-                style="border-color:var(--success);color:var(--success);font-size:16px;padding:12px;margin-bottom:20px;font-weight:bold;"
+                style="font-size:16px;padding:12px;margin-bottom:20px;font-weight:bold;"
                 onclick="window.toggleLocation()" title="Mi Ubicación" data-i18n="live_gps">🎯 Activar Seguimiento
                 GPS</button>
             <button class="btn-outline"
-                style="border-color:#3498db;color:#3498db;font-size:16px;padding:12px;margin-bottom:20px;font-weight:bold;display:none;"
+                style="font-size:16px;padding:12px;margin-bottom:20px;font-weight:bold;display:none;"
                 id="ar-view-btn" onclick="window.toggleARView()" title="Visor de Realidad Aumentada"
                 data-i18n="live_ar">👁️ Visor AR</button>
 
@@ -1156,7 +1156,7 @@
                 data-i18n="live_menu">
                 <span>📡 Sala de Operaciones</span>
                 <span id="active-room-name"
-                    style="font-weight:bold; color:var(--success); display:none; font-size:12px; text-transform:none;"></span>
+                    style="font-weight:bold;  display:none; font-size:12px; text-transform:none;"></span>
             </div>
             <div id="live-group-container"
                 style="padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;border-left:4px solid #9b59b6;">
@@ -1168,7 +1168,7 @@
                             <option value="">🕒 Salas Recientes...</option>
                         </select>
                         <button class="btn-outline" id="btn-delete-recent-room"
-                            style="margin-bottom:0; width:auto; padding:0 15px; border-color:var(--danger); color:var(--danger);"
+                            style="margin-bottom:0; width:auto; padding:0 15px; "
                             onclick="window.deleteRecentRoom()" title="Eliminar sala de recientes">🗑️</button>
                     </div>
                     <input type="text" id="room-id" class="form-input" placeholder="Nombre de la Sala"
@@ -1196,22 +1196,22 @@
                         <option value="radio" data-i18n="opt_radio">📻 Radio Operador</option>
                     </select>
                     <button class="btn-outline" id="btn-room-toggle"
-                        style="margin-bottom:0;border-color:#9b59b6;color:#9b59b6;width:100%;"
+                        style="margin-bottom:0;width:100%;"
                         onclick="window.toggleRoom()" data-i18n="enter_room_btn">🚪 Entrar / Crear Sala</button>
                 </div>
                 <div id="room-active-ui" style="display:none; margin-top:5px;">
                     <div style="display:flex;gap:5px;margin-bottom:10px;">
                         <button class="btn-outline" id="btn-sync-map"
-                            style="margin-bottom:0;border-color:#3498db;color:#3498db;flex:1;font-size:11px;padding:8px;"
+                            style="margin-bottom:0;flex:1;font-size:11px;padding:8px;"
                             onclick="window.syncDrawingsToRoom()" data-i18n="share_map_btn">🔄 Compartir Mapa</button>
                         <button class="btn-outline" id="btn-delete-room"
-                            style="margin-bottom:0;border-color:var(--danger);color:white;background:var(--danger);flex:1;font-size:11px;padding:8px;display:none;"
+                            style="margin-bottom:0;background:var(--danger);flex:1;font-size:11px;padding:8px;display:none;"
                             onclick="window.deleteRoom()" data-i18n="delete_room_btn">🗑️ Eliminar Sala</button>
                     </div>
                     <div id="active-members-list"
                         style="margin-bottom:10px; font-size:11px; background:#fff; border:1px solid #cbd5e0; border-radius:6px; padding:5px; max-height:85px; overflow-y:auto;">
                         <div
-                            style="color:#64748b; font-weight:bold; margin-bottom:4px; border-bottom:1px dashed #cbd5e0; padding-bottom:4px;">
+                            style=" font-weight:bold; margin-bottom:4px; border-bottom:1px dashed #cbd5e0; padding-bottom:4px;">
                             <span data-i18n="room_members">👥 Miembros en sala:</span> <span id="members-count"
                                 style="color:var(--ign-blue);">0</span>
                         </div>
@@ -1219,23 +1219,23 @@
                     </div>
                     <div id="radio-msgs-container" style="display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap;">
                         <button class="btn-outline"
-                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--danger); color:var(--danger);"
+                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; "
                             onclick="window.sendRadioMessage('⚠️ Enemigo', this)" data-i18n="msg_enemy">⚠️
                             Enemigo</button>
                         <button class="btn-outline"
-                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--success); color:var(--success);"
+                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; "
                             onclick="window.sendRadioMessage('🏥 Médico', this)" data-i18n="msg_medic">🏥
                             Médico</button>
                         <button class="btn-outline"
-                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--info); color:var(--info);"
+                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; "
                             onclick="window.sendRadioMessage('🛡️ Defendiendo', this)" data-i18n="msg_defend">🛡️
                             Defensa</button>
                         <button class="btn-outline"
-                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--ign-gold); color:var(--ign-gold);"
+                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; "
                             onclick="window.sendRadioMessage('🏃 Avanzando', this)" data-i18n="msg_move">🏃
                             Avanzando</button>
                         <button class="btn-outline"
-                            style="margin-bottom:0; padding:8px; font-size:11px; flex:1 1 100%; border-color:#475569; background:#475569; color:white; font-weight:800;"
+                            style="margin-bottom:0; padding:8px; font-size:11px; flex:1 1 100%; background:#475569; font-weight:800;"
                             onclick="window.sendRadioMessage('✋ ¡BAJA!', this)" data-i18n="msg_down">💀 ESTOY
                             ELIMINADO</button>
                     </div>
@@ -1247,11 +1247,11 @@
                             style="margin-bottom:0; padding:6px; font-size:11px;"
                             onkeypress="if(event.key==='Enter') window.sendChatMsg()" data-i18n-placeholder="chat_ph">
                         <button class="btn-outline"
-                            style="margin-bottom:0; width:auto; padding:0 12px; background:var(--ign-blue); color:white; border:none;"
+                            style="margin-bottom:0; width:auto; padding:0 12px; background:var(--ign-blue); border:none;"
                             onclick="window.sendChatMsg()">➤</button>
                     </div>
                     <button class="btn-outline"
-                        style="margin-top:10px;margin-bottom:0;border-color:var(--danger);color:var(--danger);width:100%;"
+                        style="margin-top:10px;margin-bottom:0;width:100%;"
                         onclick="window.toggleRoom()" data-i18n="exit_room_btn">🚪 Salir de la Sala</button>
                 </div>
             </div>
@@ -1266,7 +1266,7 @@
                 data-i18n="modal_name_title">Nombrar elemento</h3><input type="text" id="modal-input"
                 style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;box-sizing:border-box;">
             <div style="display:flex;justify-content:flex-end;gap:10px;"><button
-                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;"
+                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;cursor:pointer;"
                     onclick="window.closeModal()" data-i18n="modal_cancel">Cancelar</button><button
                     style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;"
                     onclick="window.confirmModal()" data-i18n="modal_accept">Aceptar</button></div>
@@ -1308,7 +1308,7 @@
             style="width:95%;height:90%;background:#000;border:2px solid var(--ign-gold);border-radius:8px;position:relative;display:flex;flex-direction:column;box-shadow:0 0 30px rgba(251,191,36,0.2);">
             <div
                 style="background:var(--bg-sidebar);padding:10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--ign-gold);border-radius:8px 8px 0 0;">
-                <span style="color:var(--ign-gold);font-weight:bold;font-family:'Courier New', monospace;">🛰️ SEÑAL DE
+                <span style="font-weight:bold;font-family:'Courier New', monospace;">🛰️ SEÑAL DE
                     DRON TÁCTICO 3D</span>
                 <button
                     onclick="document.getElementById('iframe-3d-modal').style.display='none'; document.getElementById('iframe-3d-viewer').src='';"
@@ -1335,7 +1335,7 @@
     <div id="confirm-modal"
         style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
         <div style="background:white;padding:20px;border-radius:12px;width:300px;text-align:center;">
-            <h3 style="margin-top:0;margin-bottom:15px;color:var(--danger);font-size:18px;">⚠️ Confirmación</h3>
+            <h3 style="margin-top:0;margin-bottom:15px;font-size:18px;">⚠️ Confirmación</h3>
             <p style="font-size:14px;color:#475569;margin-bottom:20px;"></p>
             <div style="display:flex;justify-content:center;gap:10px;"><button
                     style="padding:8px 15px;border-radius:6px;border:1px solid #cbd5e0;background:white;color:#475569;cursor:pointer;"
@@ -1385,7 +1385,7 @@
                     onclick="document.getElementById('edit-image-file').click()" data-i18n="edit_recon_upload">📷
                     Cargar</button>
                 <button class="btn-outline"
-                    style="width:auto;margin-bottom:0;padding:0 10px;color:var(--danger);border-color:var(--danger);"
+                    style="width:auto;margin-bottom:0;padding:0 10px;"
                     onclick="if(typeof window.clearReconImage==='function') window.clearReconImage()"
                     title="Borrar foto">🗑️</button>
                 <input type="file" id="edit-image-camera" accept="image/*" capture="environment" style="display:none;"
@@ -1428,7 +1428,7 @@
                             type="checkbox" id="edit-show-label-input" style="width:16px;height:16px;"> Mostrar
                         nombre</label>
                     <label
-                        style="font-size:12px;font-weight:bold;color:var(--ign-gold);display:block;margin-bottom:4px;">⭕
+                        style="font-size:12px;font-weight:bold;display:block;margin-bottom:4px;">⭕
                         Radio de Acción (m)</label><input type="number" id="edit-buffer-input" min="0" step="1"
                         style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;">
                     <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
@@ -1439,7 +1439,7 @@
                             🔦 Mostrar Cono</label>
                         <div id="edit-cone-options" style="display:none;margin-left:24px;">
                             <label
-                                style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">Color</label><select
+                                style="font-size:13px;font-weight:bold;display:block;margin-bottom:4px;">Color</label><select
                                 id="edit-cone-color-input"
                                 style="width:100%;padding:8px;border-radius:6px;border:1px solid #cbd5e0;margin-bottom:8px;box-sizing:border-box;">
                                 <option value="#f1c40f">Amarillo</option>
@@ -1451,7 +1451,7 @@
                                 <option value="#34495e">Oscuro</option>
                             </select>
                             <label
-                                style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">Orientación</label>
+                                style="font-size:13px;font-weight:bold;display:block;margin-bottom:4px;">Orientación</label>
                             <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><input type="range"
                                     id="edit-cone-angle-range" min="0" max="360" value="0" style="flex:1;"
                                     oninput="document.getElementById('edit-cone-angle-val').innerText=this.value+'°'"><span
@@ -1459,7 +1459,7 @@
                                     style="font-size:11px;width:30px;font-weight:bold;color:var(--ign-blue);">0°</span>
                             </div>
                             <label
-                                style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">Apertura</label>
+                                style="font-size:13px;font-weight:bold;display:block;margin-bottom:4px;">Apertura</label>
                             <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><input type="range"
                                     id="edit-cone-spread-range" min="10" max="180" value="60" style="flex:1;"
                                     oninput="document.getElementById('edit-cone-spread-val').innerText=this.value+'°'"><span
@@ -1467,7 +1467,7 @@
                                     style="font-size:11px;width:30px;font-weight:bold;color:var(--ign-blue);">60°</span>
                             </div>
                             <label
-                                style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">Alcance
+                                style="font-size:13px;font-weight:bold;display:block;margin-bottom:4px;">Alcance
                                 (m)</label><input type="number" id="edit-cone-dist" min="10" step="10" value="100"
                                 style="width:100%;padding:8px;border-radius:6px;border:1px solid #cbd5e0;box-sizing:border-box;">
                         </div>
@@ -1506,7 +1506,7 @@
                 </div>
             </div>
             <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:15px;"><button
-                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;"
+                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;cursor:pointer;"
                     onclick="window.closeEditModal()">Cancelar</button><button
                     style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;"
                     onclick="window.confirmEditModal()">Guardar</button></div>
@@ -1523,7 +1523,7 @@
                 id="rename-folder-input"
                 style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;">
             <div style="display:flex;justify-content:flex-end;gap:10px;"><button
-                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;"
+                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;cursor:pointer;"
                     onclick="window.closeRenameFolderModal()">Cancelar</button><button
                     style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;"
                     onclick="window.confirmRenameFolderModal()">Renombrar</button></div>
@@ -1545,13 +1545,13 @@
     <div id="offgrid-modal"
         style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
         <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:350px;position:relative;">
-            <h3 style="margin-top:0;color:var(--success);font-size:18px;">📡 Sync Off-Grid</h3>
+            <h3 style="margin-top:0;font-size:18px;">📡 Sync Off-Grid</h3>
             <p style="font-size:12px;color:#475569;margin-bottom:15px;line-height:1.4;">Comparte el mapa o envía
                 coordenadas a tus compañeros cuando <b>no hay cobertura de internet</b>.</p>
-            <button class="btn-outline" style="background:var(--success);color:white;border:none;margin-bottom:15px;"
+            <button class="btn-outline" style="background:var(--success);border:none;margin-bottom:15px;"
                 onclick="window.shareOffGridFile()">📲 Enviar Mapa por Bluetooth</button>
             <div style="border-top:1px dashed #cbd5e0; margin-bottom:15px; padding-top:15px;">
-                <label style="font-size:11px;font-weight:bold;color:#64748b;">Exportar a Radio / SMS (Solo
+                <label style="font-size:13px;font-weight:bold;">Exportar a Radio / SMS (Solo
                     Marcadores):</label>
                 <div style="display:flex;gap:5px;margin-bottom:15px;margin-top:5px;">
                     <input type="text" id="offgrid-code-export" class="form-input"
@@ -1559,17 +1559,17 @@
                     <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 12px;"
                         onclick="window.copyOffGridCode()">Copiar</button>
                 </div>
-                <label style="font-size:11px;font-weight:bold;color:#64748b;">Recibir código Táctico:</label>
+                <label style="font-size:13px;font-weight:bold;">Recibir código Táctico:</label>
                 <div style="display:flex;gap:5px;margin-top:5px;margin-bottom:5px;">
                     <input type="text" id="offgrid-code-import" class="form-input" placeholder="Pega el código AM:..."
                         style="margin-bottom:0;font-family:monospace;font-size:10px;">
                     <button class="btn-outline"
-                        style="width:auto;margin-bottom:0;padding:0 12px;background:var(--ign-blue);color:white;border:none;"
+                        style="width:auto;margin-bottom:0;padding:0 12px;background:var(--ign-blue);border:none;"
                         onclick="window.importOffGridCode()">Cargar</button>
                 </div>
             </div>
             <div style="display:flex;justify-content:flex-end;"><button class="btn-outline"
-                    style="width:auto;border-color:var(--danger);color:var(--danger);margin-bottom:0;padding:8px 15px;"
+                    style="width:auto;margin-bottom:0;padding:8px 15px;"
                     onclick="document.getElementById('offgrid-modal').style.display='none'">Cerrar</button></div>
         </div>
     </div>
@@ -1579,7 +1579,7 @@
         <div
             style="background:white;padding:25px;border-radius:12px;width:90%;max-width:650px;max-height:85vh;overflow-y:auto;position:relative;">
             <button onclick="window.closeManual()"
-                style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;">✕</button>
+                style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
             <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;"
                 data-i18n="manual_title">📖 Manual de Usuario</h2>
             <div
@@ -1689,8 +1689,8 @@
 
         function renderCloudProjects() {
             const list = document.getElementById('cloud-project-list'); if (!list) return;
-            if (!cloudProjects || cloudProjects.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay proyectos en la nube</div>'; return; }
-            let html = ''; cloudProjects.forEach(p => { const date = new Date(p.updatedAt || Date.now()).toLocaleString('es-ES'); html += `<div style="padding:10px; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:8px;"><div style="font-size:13px; font-weight:bold; color:var(--ign-blue); word-break:break-all;">${p.name}</div><div style="font-size:10px; color:#64748b;">Actualizado: ${date}</div><div style="display:flex; gap:5px;"><button style="flex:1; padding:6px; background:var(--ign-blue); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.cargarProyectoNube('${p.id}')">⬇️ Cargar</button><button style="padding:6px; background:var(--danger); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.eliminarProyectoNube('${p.id}')">🗑️</button></div></div>`; });
+            if (!cloudProjects || cloudProjects.length === 0) { list.innerHTML = '<div style="font-size:13px;text-align:center;padding:10px;">No hay proyectos en la nube</div>'; return; }
+            let html = ''; cloudProjects.forEach(p => { const date = new Date(p.updatedAt || Date.now()).toLocaleString('es-ES'); html += `<div style="padding:10px; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:8px;"><div style="font-size:13px; font-weight:bold; color:var(--ign-blue); word-break:break-all;">${p.name}</div><div style="font-size:10px; ">Actualizado: ${date}</div><div style="display:flex; gap:5px;"><button style="flex:1; padding:6px; background:var(--ign-blue); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.cargarProyectoNube('${p.id}')">⬇️ Cargar</button><button style="padding:6px; background:var(--danger); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.eliminarProyectoNube('${p.id}')">🗑️</button></div></div>`; });
             list.innerHTML = html;
         }
         window.renderCloudProjects = renderCloudProjects;
@@ -1864,7 +1864,7 @@
 
                     const lat = m.l; const lng = m.g;
                     let coordText = `Lat: ${lat}<br>Lon: ${lng}`;
-                    let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lng}, '${m.n.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
+                    let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lng}, '${m.n.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style=" cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
                     let baseText = `<div><b>📍 ${m.n}</b><br>${coordText}</div>`;
                     newMarker.bindPopup(baseText + actionBtns);
                     newMarker.feature.properties.baseText = baseText;
@@ -2064,9 +2064,9 @@
                     if (diff > 15000 && !isMe) {
                         isOffline = true;
                         const diffSec = Math.floor(diff / 1000); const diffMin = Math.floor(diffSec / 60); const diffHour = Math.floor(diffMin / 60);
-                        if (diffHour > 0) offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffHour}h)</span>`;
-                        else if (diffMin > 0) offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffMin}m)</span>`;
-                        else offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffSec}s)</span>`;
+                        if (diffHour > 0) offlineText = ` <span style="font-size:9px;">(⏳ ${diffHour}h)</span>`;
+                        else if (diffMin > 0) offlineText = ` <span style="font-size:9px;">(⏳ ${diffMin}m)</span>`;
+                        else offlineText = ` <span style="font-size:9px;">(⏳ ${diffSec}s)</span>`;
                     }
 
                     membersHtml += `<div style="display:flex; align-items:center; gap:5px; padding:3px; font-size:11px; background:${isMe ? '#f1f5f9' : 'transparent'}; border-radius:4px;"><span style="color:${data.color}; font-size:14px; line-height:1; ${isOffline ? 'opacity:0.3;' : ''}">●</span> <span style="font-size:12px; ${isOffline ? 'opacity:0.3;' : ''}">${rIconList}</span> <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${isEliminatedList ? 'text-decoration:line-through;color:#94a3b8;' : 'color:#475569;'} ${isOffline ? 'opacity:0.5;' : ''}">${isMe ? `<b>${data.alias} (Tú)</b>` : data.alias}${offlineText}</span></div>`;
@@ -2082,8 +2082,8 @@
                     let offlinePopupText = '';
                     if (isOffline) {
                         const diffSec = Math.floor(diff / 1000); const diffMin = Math.floor(diffSec / 60); const timeStr = diffMin > 59 ? Math.floor(diffMin / 60) + 'h' : (diffMin > 0 ? diffMin + 'm' : diffSec + 's');
-                        displayAlias += `<br><span style="font-size:9px;color:var(--danger);background:rgba(255,255,255,0.8);padding:1px 3px;border-radius:2px;display:inline-block;margin-top:2px;">⏳ Sin señal (${timeStr})</span>`;
-                        offlinePopupText = `<br><span style="color:var(--danger);font-size:10px;">⏳ Desconectado hace ${timeStr}</span>`;
+                        displayAlias += `<br><span style="font-size:9px;background:rgba(255,255,255,0.8);padding:1px 3px;border-radius:2px;display:inline-block;margin-top:2px;">⏳ Sin señal (${timeStr})</span>`;
+                        offlinePopupText = `<br><span style="font-size:10px;">⏳ Desconectado hace ${timeStr}</span>`;
                     }
 
                     const roleIcon = isEliminated ? '💀' : (roleIcons[data.role] || '🔫');
@@ -2314,9 +2314,9 @@
                     let actionBtns = extrasHtml;
                     if (layer instanceof L.Marker) {
                         const latlng = layer.getLatLng();
-                        actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                        actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
                     } else {
-                        actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+                        actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
                     }
                     if (!feature.properties.baseText) {
                         if (layer instanceof L.Marker) {
@@ -2364,7 +2364,7 @@
             if (geojsonData.view && geojsonData.view.center) { window.map.setView([geojsonData.view.center.lat, geojsonData.view.center.lng], geojsonData.view.zoom); } else if (window.drawnItems.getLayers().length > 0) { window.map.fitBounds(window.drawnItems.getBounds()); }
         };
 
-        window.renderOfflineZones = function () { const list = document.getElementById('offline-zones-list'); if (!list) return; let zones = []; try { zones = JSON.parse(localStorage.getItem('offlineZones')) || []; } catch (e) { } if (zones.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay zonas descargadas</div>'; return; } let html = ''; zones.forEach(z => { html += `<div style="padding:8px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:12px;font-weight:bold;color:var(--ign-blue);text-overflow:ellipsis;overflow:hidden;white-space:nowrap;max-width:140px;" title="${z.name}">${z.name}</div><div style="display:flex;gap:5px;"><button style="padding:4px 8px;background:var(--ign-blue);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;" onclick="window.loadOfflineZone('${z.id}')">Ir</button><button style="padding:4px 8px;background:var(--danger);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;" onclick="window.deleteOfflineZone('${z.id}')">🗑️</button></div></div>`; }); list.innerHTML = html; };
+        window.renderOfflineZones = function () { const list = document.getElementById('offline-zones-list'); if (!list) return; let zones = []; try { zones = JSON.parse(localStorage.getItem('offlineZones')) || []; } catch (e) { } if (zones.length === 0) { list.innerHTML = '<div style="font-size:13px;text-align:center;padding:10px;">No hay zonas descargadas</div>'; return; } let html = ''; zones.forEach(z => { html += `<div style="padding:8px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:12px;font-weight:bold;color:var(--ign-blue);text-overflow:ellipsis;overflow:hidden;white-space:nowrap;max-width:140px;" title="${z.name}">${z.name}</div><div style="display:flex;gap:5px;"><button style="padding:4px 8px;background:var(--ign-blue);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;" onclick="window.loadOfflineZone('${z.id}')">Ir</button><button style="padding:4px 8px;background:var(--danger);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;" onclick="window.deleteOfflineZone('${z.id}')">🗑️</button></div></div>`; }); list.innerHTML = html; };
         window.loadOfflineZone = function (id) { let zones = []; try { zones = JSON.parse(localStorage.getItem('offlineZones')) || []; } catch (e) { } const zone = zones.find(z => z.id === id); if (zone && zone.bounds) { map.fitBounds(zone.bounds); window.customAlert("Zona Cargada", `Viendo zona: ${zone.name}`); } };
         window.deleteOfflineZone = function (id) { let zones = []; try { zones = JSON.parse(localStorage.getItem('offlineZones')) || []; } catch (e) { } zones = zones.filter(z => z.id !== id); localStorage.setItem('offlineZones', JSON.stringify(zones)); if (zones.length === 0 && 'caches' in window) { caches.delete('airsoftmaps-offline'); } window.renderOfflineZones(); };
         window.downloadOfflineMap = async function (customBounds) {
@@ -2471,19 +2471,19 @@
 
         function updateLegend() {
             if (!isLegendVisible) return; const content = document.getElementById('legend-content'); const layers = drawnItems.getLayers();
-            if (layers.length === 0) { content.innerHTML = '<div style="color:#64748b; font-style:italic;">Mapa vacio</div>'; return; }
+            if (layers.length === 0) { content.innerHTML = '<div style=" font-style:italic;">Mapa vacio</div>'; return; }
             const uniqueTypes = new Map();
             layers.forEach(layer => {
                 if (layer.isHidden) return; const props = layer.feature?.properties || {}; const color = props.color || (layer.options && layer.options.color) || '#e74c3c';
                 if (layer instanceof L.Marker) { const type = props.iconType || 'punto'; uniqueTypes.set(`marker_${type}_${color}`, { category: 'marker', color, type }); if (props.coneEnabled) { const coneColor = props.coneColor || color; uniqueTypes.set(`cone_${coneColor}`, { category: 'cone', color: coneColor }); } } else if (layer instanceof L.Polygon) { uniqueTypes.set(`polygon_${color}`, { category: 'polygon', color }); } else if (layer instanceof L.Polyline) { uniqueTypes.set(`polyline_${color}`, { category: 'polyline', color }); }
             });
-            if (uniqueTypes.size === 0) { content.innerHTML = '<div style="color:#64748b; font-style:italic;">Sin elementos</div>'; return; }
+            if (uniqueTypes.size === 0) { content.innerHTML = '<div style=" font-style:italic;">Sin elementos</div>'; return; }
             let html = '';
             uniqueTypes.forEach(info => { if (info.category === 'marker') { const icon = info.type === 'images_2' ? `<img src="images_2.jpg" style="width:14px;height:14px;border-radius:50%;">` : (tacticalIcons[info.type] || '📍'); html += `<div class="legend-item"><div style="background-color:${info.color};width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${info.type === 'punto' ? '' : icon}</div><span>${info.type}</span></div>`; } else if (info.category === 'cone') { html += `<div class="legend-item"><div style="font-size:12px;width:20px;text-align:center;">🔦</div><div style="width:14px;height:14px;background-color:${info.color};opacity:0.4;border:1px dashed #333;border-radius:50% 50% 0 0;transform:rotate(45deg);"></div><span>Cono Visión</span></div>`; } else if (info.category === 'polygon') { html += `<div class="legend-item"><div class="legend-color-box" style="background-color:${info.color};opacity:0.5;border-color:${info.color};"></div><span>Área</span></div>`; } else if (info.category === 'polyline') { html += `<div class="legend-item"><div style="width:18px;height:4px;background-color:${info.color};border-radius:2px;"></div><span>Ruta</span></div>`; } }); content.innerHTML = html;
         }
 
         function updateLayerTree() {
-            const list = document.getElementById('layer-list'); const layers = drawnItems.getLayers(); if (layers.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">Vacio</div>'; updateLegend(); return; }
+            const list = document.getElementById('layer-list'); const layers = drawnItems.getLayers(); if (layers.length === 0) { list.innerHTML = '<div style="font-size:13px;text-align:center;padding:10px;">Vacio</div>'; updateLegend(); return; }
             const factions = {}; layers.forEach(layer => { const faction = layer.feature?.properties?.faction || window.projectName; if (!factions[faction]) factions[faction] = []; factions[faction].push(layer); });
             let html = ''; const factionIcons = { 'General': '🏳️', 'Rojo': '🔴', 'Azul': '🔵', 'Organizacion': '⚙️', 'Neutral': '⚪', 'Marine Raider bcn': '<img src="image_ef21e1.png" style="width:14px;height:14px;display:inline-block;vertical-align:middle;border-radius:2px;" onerror="this.src=\'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png\'">' };
             for (const [factionName, factionLayers] of Object.entries(factions)) {
@@ -2493,9 +2493,9 @@
                     const id = L.stamp(layer); const name = layer.feature?.properties?.layerName || 'Elemento'; const isHidden = layer.isHidden || false; const lEyeIcon = isHidden ? '👁️‍🗨️' : '👁️'; const lEyeClass = isHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'; let typeIcon = '📍'; let labelBtnHtml = '';
                     if (layer instanceof L.Marker) { const hasLabel = layer.feature?.properties?.showLabel || false; labelBtnHtml = `<button style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 5px;opacity:${hasLabel ? '1' : '0.3'};" onclick="window.toggleMarkerLabel(${id})">🏷️</button>`; }
                     if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) { typeIcon = layer.feature?.properties?.isAutoRoute ? '🗺️' : '📏'; } if (layer instanceof L.Polygon) typeIcon = '🔲';
-                    html += `<div class="layer-item"><span class="layer-name-text" title="${name}" onclick="window.zoomToLayer(${id})" style="cursor:pointer;flex:1;">${typeIcon} ${name}</span><div style="display:flex;align-items:center;gap:5px;">${labelBtnHtml}<button class="${lEyeClass}" onclick="window.toggleLayerVisibility(${id})">${lEyeIcon}</button><button style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:12px;padding:0 5px;" onclick="window.removeLayerById(${id})">🗑️</button></div></div>`;
-                    if (layer instanceof L.Marker && layer.feature?.properties?.bufferRadius > 0 && layer.bufferCircle) { const bHidden = layer.bufferCircle.isHidden || false; html += `<div class="layer-item" style="padding-left:20px;background:#f8fafc;border-top:none;"><span class="layer-name-text" style="font-size:11px;color:#64748b;">└ ⭕ Radio (${layer.feature.properties.bufferRadius}m)</span><div style="display:flex;align-items:center;gap:5px;"><button class="${bHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'}" onclick="window.toggleBufferVisibility(${id})">${bHidden ? '👁️‍🗨️' : '👁️'}</button></div></div>`; }
-                    if (layer instanceof L.Marker && layer.feature?.properties?.coneEnabled && layer.conePolygon) { const cHidden = layer.conePolygon.isHidden || false; html += `<div class="layer-item" style="padding-left:20px;background:#f8fafc;border-top:none;"><span class="layer-name-text" style="font-size:11px;color:#64748b;">└ 🔦 Visión (${layer.feature.properties.coneDist}m)</span><div style="display:flex;align-items:center;gap:5px;"><button class="${cHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'}" onclick="window.toggleConeVisibility(${id})">${cHidden ? '👁️‍🗨️' : '👁️'}</button><button style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:12px;padding:0 5px;" onclick="window.removeConeById(${id})">🗑️</button></div></div>`; }
+                    html += `<div class="layer-item"><span class="layer-name-text" title="${name}" onclick="window.zoomToLayer(${id})" style="cursor:pointer;flex:1;">${typeIcon} ${name}</span><div style="display:flex;align-items:center;gap:5px;">${labelBtnHtml}<button class="${lEyeClass}" onclick="window.toggleLayerVisibility(${id})">${lEyeIcon}</button><button style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 5px;" class="btn-outline btn-danger" onclick="window.removeLayerById(${id})">🗑️</button></div></div>`;
+                    if (layer instanceof L.Marker && layer.feature?.properties?.bufferRadius > 0 && layer.bufferCircle) { const bHidden = layer.bufferCircle.isHidden || false; html += `<div class="layer-item" style="padding-left:20px;background:#f8fafc;border-top:none;"><span class="layer-name-text" style="font-size:11px;">└ ⭕ Radio (${layer.feature.properties.bufferRadius}m)</span><div style="display:flex;align-items:center;gap:5px;"><button class="${bHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'}" onclick="window.toggleBufferVisibility(${id})">${bHidden ? '👁️‍🗨️' : '👁️'}</button></div></div>`; }
+                    if (layer instanceof L.Marker && layer.feature?.properties?.coneEnabled && layer.conePolygon) { const cHidden = layer.conePolygon.isHidden || false; html += `<div class="layer-item" style="padding-left:20px;background:#f8fafc;border-top:none;"><span class="layer-name-text" style="font-size:11px;">└ 🔦 Visión (${layer.feature.properties.coneDist}m)</span><div style="display:flex;align-items:center;gap:5px;"><button class="${cHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'}" onclick="window.toggleConeVisibility(${id})">${cHidden ? '👁️‍🗨️' : '👁️'}</button><button style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 5px;" onclick="window.removeConeById(${id})">🗑️</button></div></div>`; }
                 });
                 html += `</div>`;
             } list.innerHTML = html; updateLegend();
@@ -2691,7 +2691,7 @@
             const color = document.getElementById('drawColor').value || '#2ecc71';
             const finalLine = L.polyline(simplified, { color: color, weight: weight });
             finalLine.feature = { type: 'Feature', properties: { layerName: 'Trazo Pizarra', faction: window.projectName, color: color } };
-            let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${L.stamp(finalLine)})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${L.stamp(finalLine)})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
+            let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${L.stamp(finalLine)})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${L.stamp(finalLine)})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
             finalLine.bindPopup(`<div><b>🖍️ Trazo Táctico</b></div>` + actionBtns);
             finalLine.feature.properties.baseText = `<div><b>🖍️ Trazo Táctico</b></div>`;
             window.drawnItems.addLayer(finalLine);
@@ -2758,7 +2758,7 @@
                     window.fieldMapOverlays[id] = overlay;
                     window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, L.latLngBounds([p1, p3]));
 
-                    let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.toggleFieldMapAdjust(${id})" style="color:var(--ign-gold);border:1px solid var(--ign-gold);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🔄 Ajustar</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
+                    let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.toggleFieldMapAdjust(${id})" style="border:1px solid var(--ign-gold);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🔄 Ajustar</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
                     let baseText = `<div><b>🗺️ ${file.name}</b><br>Mapa de campo solapado.</div>`;
                     layer.bindPopup(baseText + actionBtns);
                     layer.feature.properties.baseText = baseText;
@@ -3002,9 +3002,9 @@
             let actionBtns = extrasHtml;
             if (e.layerType === 'marker') {
                 const latlng = layer.getLatLng();
-                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${layerName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${layerName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
             } else {
-                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
             }
             drawnItems.addLayer(layer); updateLayerTree(); window.stopDrawing();
 
@@ -3097,9 +3097,9 @@
                 let actionBtns = extrasHtml;
                 if (isMarker) {
                     const latlng = layer.getLatLng();
-                    actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${newName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                    actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${newName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
                 } else {
-                    actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+                    actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
                 }
 
                 if (isShape) {
@@ -3240,7 +3240,7 @@
                     try {
                         const canvas = await html2canvas(document.getElementById('map-container'), { useCORS: true, allowTaint: false, scale: 1, logging: false, ignoreElements: (el) => { if (!el.classList) return false; if (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution') || el.id === 'map-legend' || el.id === 'compass-rose' || el.id === 'numeric-scale-widget' || el.classList.contains('leaflet-control-scale')) return true; return false; } });
                         const imgData = canvas.toDataURL('image/jpeg', 0.80); const item = document.createElement('div'); item.className = 'gallery-item';
-                        item.innerHTML = `<img src="${imgData}" style="cursor:zoom-in;" onclick="window.openImageModal(this.src)"><div style="font-size:13px;font-weight:bold;color:var(--ign-blue);text-align:center;margin:5px 0;">${captureName}</div><div style="display:flex;justify-content:space-between;align-items:center;padding:5px;flex-wrap:wrap;gap:5px;"><button onclick="window.openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none;background:none;color:var(--success);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">👁️ Ver</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue);font-weight:bold;text-decoration:none;font-size:12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none;background:none;color:var(--danger);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🗑️ Borrar</button></div>`;
+                        item.innerHTML = `<img src="${imgData}" style="cursor:zoom-in;" onclick="window.openImageModal(this.src)"><div style="font-size:13px;font-weight:bold;color:var(--ign-blue);text-align:center;margin:5px 0;">${captureName}</div><div style="display:flex;justify-content:space-between;align-items:center;padding:5px;flex-wrap:wrap;gap:5px;"><button onclick="window.openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none;background:none;cursor:pointer;font-weight:bold;font-size:12px;padding:0;">👁️ Ver</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue);font-weight:bold;text-decoration:none;font-size:12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none;background:none;cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🗑️ Borrar</button></div>`;
                         document.getElementById('gallery').prepend(item); window.customAlert("Éxito", "Captura realizada correctamente."); setTimeout(() => window.toggleGroup('gallery-container'), 300);
                     } catch (error) { window.customAlert("Error", "No se pudo generar la captura. El mapa es demasiado pesado. Intenta alejar el zoom un poco."); } finally { document.body.classList.remove('hide-controls'); window.toggleMenu(); }
                 }, 600);
@@ -3399,7 +3399,7 @@
             const type = document.getElementById('gridType').value; let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}`;
             if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`; else if (type === 'utm') { const u = latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
 
-            let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
+            let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style=" cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
             let baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
             newMarker.bindPopup(baseText + actionBtns).openPopup(); newMarker.feature.properties.baseText = baseText; drawnItems.addLayer(newMarker); updateLayerTree();
             try {
@@ -3788,9 +3788,9 @@
                 manual_p3: "<b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el tiempo estimado a pie o en vehículo.",
                 manual_p4: "<b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.",
                 manual_p5: "<b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>\"🔄 Compartir Mapa\"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.",
-                manual_p6: "<b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña \"Mezclador\", pulsa <b>\"🔲 Marcar Zona\"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.",
+                manual_p6: "<b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña \"Mezclador\", pulsa <b>\"🔲 Marcar Zona\"</b>. Aparecerá un visor fijo tipo cámara. Mueve el mapa hasta encuadrar lo que necesitas y pulsa descargar. El mapa se guardará en la caché para funcionar sin internet.",
                 manual_p7: "<b>📡 Sync Off-Grid:</b> Si no tienes internet pero quieres pasarle tu mapa al compañero, ve a Gestión de Proyecto y usa <b>\"Compartir Off-Grid\"</b>. Podrás enviar el proyecto completo por Bluetooth, o generar un \"código de texto táctico\" súper ligero para copiar y pegar por SMS o redes de radio como Meshtastic.",
-                manual_p8: "<b>🖨️ Advanced Printing:</b> Use the \"Advanced Print Mode\" button to turn the map into a dynamic viewfinder. Move the paper freely, drag the legend, and export an exact topographic PDF (A4/A3). You can also save quick screenshots in the \"Capture Gallery\".",
+                manual_p8: "<b>🖨️ Impresión Avanzada:</b> Utiliza el botón \"Modo Impresión Avanzado\" para convertir el mapa en un encuadre interactivo. Podrás mover el papel libremente, arrastrar la leyenda y la brújula a tu gusto, y exportar un PDF exacto (A4/A3).",
                 manual_p9: "<b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú \"Sistema\", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).",
                 manual_p10: "<b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón \"🎯 Ir\". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).",
                 manual_p11: "<b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando el tiempo que lleva sin señal.",
@@ -3835,7 +3835,7 @@
                 modal_name_title: "Name item", modal_cancel: "Cancel", modal_accept: "Accept", modal_alert_title: "Notification", modal_cloud_title: "☁️ My Projects", modal_close: "Close", modal_drone_title: "🛰️ 3D TACTICAL DRONE SIGNAL", modal_drone_close: "✕ Disconnect", modal_ar_close: "✕ Close AR", modal_confirm_title: "⚠️ Confirmation", modal_confirm: "Confirm", edit_title: "✏️ Edit Item", edit_name: "Name", edit_faction: "Faction", edit_group: "Group", edit_notes: "📝 Notes / Comments", edit_color: "Color", edit_icon: "Military Icon", edit_show_name: "Show name", edit_radius: "⭕ Action Radius (m)", edit_show_cone: "🔦 Show Cone", edit_cone_color: "Color", edit_orientation: "Orientation", edit_spread: "Spread", edit_range: "Range (m)", edit_thickness: "Thickness", edit_route_mode: "Route Mode", modal_save: "Save", modal_rename_title: "✏️ Rename Folder", modal_rename_btn: "Rename", offgrid_title: "📡 Off-Grid Sync", offgrid_desc: "Share the map or send coordinates to your teammates when <b>there is no internet coverage</b>.", offgrid_btn_share: "📲 Send Map via Bluetooth", offgrid_lbl_export: "Export to Radio / SMS (Markers Only):", offgrid_btn_copy: "Copy", offgrid_lbl_import: "Receive Tactical code:", offgrid_ph_import: "Paste AM: code...", offgrid_btn_load: "Load", manual_title: "📖 User Manual", manual_understood: "Understood", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Red Faction", edit_fact_blue: "🔵 Blue Faction", edit_fact_org: "⚙️ Organization", edit_fact_neu: "⚪ Neutral / Civilian", edit_group_ph: "Ex: Alpha Squad", edit_notes_ph: "Instructions, details, tactical info...", opt_purple: "Purple", opt_dark: "Dark", opt_white: "White", icon_dot: "🔴 Normal dot", icon_base: "⛺ Base / Camp", icon_target: "🎯 Target", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defense", icon_heli: "🚁 Extraction", icon_medic: "🏥 Medic", icon_radio: "📡 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️ On foot", route_drive: "🚗 By car", route_bike: "🚲 By bike", btn_undo: "↩️ Undo", btn_finish: "✅ Finish", btn_cancel_action: "✕ Cancel", nav_target: "Destination", btn_stop_nav: "✕ Stop",
                 edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 update_title: "🚀 New version available", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
-                update_title: "🚀 New version available (v2.02)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+                update_title: "🚀 New version available (v2.03)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
                 manual_p1: "<b>📍 Markers, Areas and Notes:</b> Use editing tools to add points, routes, or zones. If you tap an existing element, press <b>\"✏️ Edit\"</b> to change its color, faction, add an action radius, a directional vision cone, or write tactical <b>Notes and Comments</b> that everyone can read.",
                 manual_p2: "<b>📐 Quick Ruler:</b> Tool to measure distances on the fly. Click on the map to draw a temporary line and see the exact distance step by step without cluttering your project.",
                 manual_p3: "<b>🗺️ Smart Route:</b> By selecting this tool, the map will automatically calculate the path through streets or forest trails. It will generate an elevation graph and the estimated time on foot or in a vehicle.",
@@ -4195,12 +4195,12 @@
     <!-- HISTORIAL DE VERSIONES MODAL -->
     <div id="history-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
         <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;position:relative;">
-            <button onclick="document.getElementById('history-modal').style.display='none'" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;">✕</button>
+            <button onclick="document.getElementById('history-modal').style.display='none'" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
             <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;">📜 Historial de Versiones</h2>
             <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
                 
                 <div style="margin-bottom:20px;">
-                    <h3 style="color:var(--success);margin-bottom:5px;">v2.02 - 16 de Agosto de 2026</h3>
+                    <h3 style="margin-bottom:5px;">v2.02 - 16 de Agosto de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🛠️ CORRECCIONES MENORES]:</b> Arreglado el problema visual de la barra de ruta inteligente en móviles (los botones ahora se envuelven correctamente en la pantalla sin desbordarse).</li>
                         <li><b>[🧭 ENRUTAMIENTO MEJORADO]:</b> Actualizado el servidor interno de GPS (OSRM a FOSSGIS OSM) para que diferencie de verdad entre rutas de coche (carreteras) y rutas peatonales (senderos de bosque y campo a través).</li>
@@ -4209,7 +4209,7 @@
                 </div>
                 
                 <div style="margin-bottom:20px;">
-                    <h3 style="color:var(--success);margin-bottom:5px;">v2.02 - 15 de Agosto de 2026</h3>
+                    <h3 style="margin-bottom:5px;">v2.02 - 15 de Agosto de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🔥 REDISEÑO HUD TÁCTICO]:</b> Actualización visual masiva estilo militar con colores oscuros, efecto cristal, botones preparados para uso con guantes y tipografía técnica.</li>
                         <li><b>[📱 NAVEGACIÓN BOTTOM BAR]:</b> Nuevo menú inferior flotante en móviles para usar el mapa con una sola mano y acceder más rápido al GPS y Capas.</li>
@@ -4275,13 +4275,13 @@
     <!-- PC Link Modal (Mobile Only) -->
     <div id="pc-link-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:99999;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;">
         <div style="background:var(--bg-sidebar);padding:25px;border-radius:12px;width:100%;max-width:350px;border:2px solid var(--ign-gold);box-shadow:var(--shadow);text-align:center;">
-            <h3 style="margin-top:0;color:var(--ign-gold);">💻 Vincular con PC</h3>
+            <h3 style="margin-top:0;">💻 Vincular con PC</h3>
             <p style="font-size:14px;color:white;line-height:1.5;">Entra en <b>www.airsoftmaps.es</b> desde el navegador de tu ordenador e introduce tu código de este mes para desbloquear la Sala de Comandancia grande:</p>
-            <div id="monthly-pin-display" style="background:#000;color:var(--success);font-size:32px;font-weight:bold;padding:15px;border-radius:8px;border:2px dashed var(--success);margin:20px 0;letter-spacing:2px;">
+            <div id="monthly-pin-display" style="background:#000;font-size:32px;font-weight:bold;padding:15px;border-radius:8px;border:2px dashed var(--success);margin:20px 0;letter-spacing:2px;">
                 Cargando...
             </div>
             <p style="font-size:12px;color:#cbd5e0;margin-bottom:20px;">* Este código cambia cada mes por seguridad.</p>
-            <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);width:100%;" onclick="document.getElementById('pc-link-modal').style.display='none'">Cerrar</button>
+            <button class="btn-outline" style="width:100%;" onclick="document.getElementById('pc-link-modal').style.display='none'">Cerrar</button>
         </div>
     </div>
 
@@ -4465,6 +4465,19 @@
         };
     </script>
 
+    <!-- Offline Composer Overlay -->
+    <div id="offline-composer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;">
+        <div id="offline-cutout" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); width:80%; height:60%; border: 3px dashed var(--success); box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); pointer-events:none; box-sizing: border-box;">
+        </div>
+        <div style="position:absolute; bottom:0; left:0; width:100%; background:#f8fafc; padding:15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); pointer-events:auto; display:flex; flex-direction:column; gap:10px; box-sizing:border-box; border-top:3px solid var(--success);">
+            <div style="text-align:center; font-size:12px;  font-weight:bold; margin-bottom:-5px;">Mueve el mapa para encuadrar la zona a descargar</div>
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button onclick="window.confirmOfflineSelection()" style="flex:1; background:var(--success); color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">?? Descargar Zona</button>
+                <button onclick="window.cancelOfflineSelection()" style="flex:1; background:var(--danger); color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:120px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">? Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Print Composer Overlay -->
     <div id="print-composer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;">
         <div id="print-cutout" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); border: 2px dashed #10b981; box-shadow: 0 0 0 9999px rgba(0,0,0,0.75); pointer-events:none; transition: width 0.3s, height 0.3s; overflow:hidden;">
@@ -4472,7 +4485,7 @@
         </div>
         
         <div id="print-toolbar" style="position:absolute; bottom:0; left:0; width:100%; background:#f8fafc; padding:15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); pointer-events:auto; display:flex; flex-direction:column; gap:10px; box-sizing:border-box; border-top:3px solid #10b981;">
-            <div style="text-align:center; font-size:12px; color:#64748b; font-weight:bold; margin-bottom:-5px;">Mueve el mapa para encuadrar. Arrastra la leyenda y brújula.</div>
+            <div style="text-align:center; font-size:12px;  font-weight:bold; margin-bottom:-5px;">Mueve el mapa para encuadrar. Arrastra la leyenda y brújula.</div>
             <div style="display:flex; justify-content:center; gap:10px; align-items:center; flex-wrap:wrap;">
                 <select id="print-format" onchange="window.updatePrintLayout()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none;">
                     <option value="A4">Formato A4</option>
@@ -4491,7 +4504,7 @@
         </div>
     </div>
     <script>
-        // Funciones Bottom Navigation Bar v2.02
+        // Funciones Bottom Navigation Bar v2.03
         window.closeAllPanels = function () {
             document.querySelectorAll('.sidebar').forEach(panel => {
                 panel.classList.add('oculto');
@@ -4562,4 +4575,16 @@
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
 
