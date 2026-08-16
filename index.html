@@ -1175,7 +1175,7 @@
                     <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                     <span
                         style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                        v2.03.9
+                        v2.03.10
                     </span>
                 </div>
                 <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
@@ -3353,68 +3353,6 @@
                 } else { window.customAlert("Error", "No se pudo obtener el clima."); }
             } catch (error) { window.customAlert("Error", "Fallo al conectar con el servidor meteorológico."); }
             finally { if (btn) { btn.innerHTML = originalText; btn.disabled = false; } }
-        };
-
-        const latlng = layer.getLatLng();
-        actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${newName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
-                } else {
-            actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button class="btn-outline btn-danger" onclick="window.removeLayerById(${id})" style="border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
-        }
-
-        if (isShape) {
-            const newColor = document.getElementById('edit-color-input').value; const newWeight = parseInt(document.getElementById('edit-weight-input').value);
-            const opInput = document.getElementById('edit-opacity-input'); const newOpacity = opInput ? parseFloat(opInput.value) : 0.6; layer.feature.properties.opacity = newOpacity;
-            layer.setStyle({ color: newColor, weight: newWeight, fillOpacity: layer.feature.properties.isFieldMap ? 0 : newOpacity }); layer.options.color = newColor; layer.options.weight = newWeight; layer.options.fillOpacity = layer.feature.properties.isFieldMap ? 0 : newOpacity; layer.feature.properties.color = newColor; layer.feature.properties.weight = newWeight;
-            if (layer.feature.properties.isFieldMap && window.fieldMapOverlays[id]) {
-                const rotInput = document.getElementById('edit-rotation-input');
-                const newRot = rotInput ? (parseInt(rotInput.value) || 0) : (layer.feature.properties.rotation || 0);
-                layer.feature.properties.rotation = newRot;
-                window.fieldMapOverlays[id].setOpacity(newOpacity);
-                if (window.fieldMapOverlays[id].getElement()) window.fieldMapOverlays[id].getElement().style.rotate = `${newRot}deg`;
-                if (newWeight === 0 && window.fieldMapAdjusters[id]) { window.toggleFieldMapAdjust(id); }
-            }
-            if (layer.endMarker) { layer.endMarker.setIcon(getMarkerIconObj(newColor, 'bandera')); }
-            if (layer.feature.properties.isAutoRoute) {
-                const newMode = document.getElementById('edit-route-mode').value; const oldMode = layer.feature.properties.routeMode || 'foot'; layer.feature.properties.routeMode = newMode;
-                const mIcon = newMode === 'driving' ? '🚗' : (newMode === 'bike' ? '🚲' : '🚶‍♂️');
-                if (newMode !== oldMode && layer.feature.properties.autoRouteOriginalPoints && layer.feature.properties.autoRouteOriginalPoints.length > 1) {
-                    routeModeChanged = true; const pts = layer.feature.properties.autoRouteOriginalPoints; const coordsStr = pts.map(p => `${p.lng},${p.lat}`).join(';');
-                    fetch(`https://routing.openstreetmap.de/routed-${newMode === 'driving' ? 'car' : newMode}/route/v1/driving/${coordsStr}?geometries=geojson&overview=full`).then(res => res.json()).then(async data => {
-                        if (data.code === 'Ok' && data.routes.length > 0) {
-                            const route = data.routes[0]; const newCoords = route.geometry.coordinates.map(c => [c[1], c[0]]); layer.setLatLngs(newCoords); layer.feature.properties.routeDuration = route.duration; if (layer.endMarker) layer.endMarker.setLatLng(newCoords[newCoords.length - 1]);
-                            let distance = route.distance; let samplePoints = layer.getLatLngs(); if (samplePoints.length > 90) { const step = Math.ceil(samplePoints.length / 90); samplePoints = samplePoints.filter((_, idx) => idx % step === 0); if (samplePoints[samplePoints.length - 1] !== layer.getLatLngs()[layer.getLatLngs().length - 1]) samplePoints.push(layer.getLatLngs()[layer.getLatLngs().length - 1]); }
-                            const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(','); const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
-                            try {
-                                const resEle = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`); const eleData = await resEle.json();
-                                if (eleData && eleData.elevation) {
-                                    let elevGain = 0, elevLoss = 0; const elevations = eleData.elevation; let distancesArray = [0], cumDist = 0; for (let i = 1; i < samplePoints.length; i++) { cumDist += samplePoints[i - 1].distanceTo(samplePoints[i]); distancesArray.push((cumDist / 1000).toFixed(2)); } layer.feature.properties.chartData = { labels: distancesArray, data: elevations }; for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i + 1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
-                                    let timeMinutes = 0; if (newMode === 'driving') timeMinutes = route.duration / 60; else if (newMode === 'bike' || newMode === 'bicycle') timeMinutes = distance * 0.004; else timeMinutes = (distance * 0.012) + (elevGain * 0.1);
-                                    let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`; const distText = distance > 1000 ? (distance / 1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
-                                    const newBaseText = `<div style="min-width:260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height:120px;width:100%;margin-top:8px;"><canvas id="chart-${id}"></canvas></div></div>`;
-                                    layer.feature.properties.baseText = newBaseText; layer.setPopupContent(newBaseText + actionBtns); if (layer.endMarker) layer.endMarker.setPopupContent(newBaseText + actionBtns); window.renderChart(layer, id);
-                                }
-                            } catch (e) { }
-                        }
-                    }).catch(err => { console.error(err); });
-                } else if (newMode !== oldMode && layer.feature.properties.chartData) {
-                    routeModeChanged = true; let distance = 0; const latlngs = layer.getLatLngs(); for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i + 1]); let elevGain = 0, elevLoss = 0; const elevations = layer.feature.properties.chartData.data; for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i + 1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
-                    let timeMinutes = 0; if (newMode === 'driving') timeMinutes = distance * 0.001; else if (newMode === 'bike' || newMode === 'bicycle') timeMinutes = distance * 0.004; else timeMinutes = (distance * 0.012) + (elevGain * 0.1); let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`; const distText = distance > 1000 ? (distance / 1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
-                    const newBaseText = `<div style="min-width:260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height:120px;width:100%;margin-top:8px;"><canvas id="chart-${id}"></canvas></div></div>`;
-                    layer.feature.properties.baseText = newBaseText; layer.setPopupContent(newBaseText + actionBtns); if (layer.endMarker) layer.endMarker.setPopupContent(newBaseText + actionBtns);
-                }
-            } else if (layer.feature.properties.chartData) {
-                let mIcon = '🚶‍♂️'; let distance = 0; const latlngs = layer.getLatLngs(); for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i + 1]); let elevGain = 0, elevLoss = 0; const elevations = layer.feature.properties.chartData.data; for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i + 1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); } let timeMinutes = (distance * 0.012) + (elevGain * 0.1); let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`; const distText = distance > 1000 ? (distance / 1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
-                const newBaseText = `<div style="min-width:260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height:120px;width:100%;margin-top:8px;"><canvas id="chart-${id}"></canvas></div></div>`;
-                layer.feature.properties.baseText = newBaseText;
-            }
-        } else if (isMarker) {
-            const newColor = document.getElementById('edit-color-input').value; const newIconType = document.getElementById('edit-icon-input').value; layer.setIcon(getMarkerIconObj(newColor, newIconType)); layer.feature.properties.color = newColor; layer.feature.properties.iconType = newIconType; layer.feature.properties.bufferRadius = parseFloat(document.getElementById('edit-buffer-input').value) || 0; layer.feature.properties.showLabel = document.getElementById('edit-show-label-input').checked; layer.feature.properties.coneEnabled = document.getElementById('edit-cone-enable').checked; layer.feature.properties.coneColor = document.getElementById('edit-cone-color-input').value; layer.feature.properties.coneAngle = parseFloat(document.getElementById('edit-cone-angle-range').value); layer.feature.properties.coneSpread = parseFloat(document.getElementById('edit-cone-spread-range').value); layer.feature.properties.coneDist = parseFloat(document.getElementById('edit-cone-dist').value) || 100;
-            updateMarkerBuffer(layer); updateMarkerLabel(layer); updateMarkerCone(layer);
-        }
-        if (!routeModeChanged) { layer.setPopupContent(layer.feature.properties.baseText + actionBtns); if (layer.feature.properties.chartData) window.renderChart(layer, id); }
-        updateLayerTree();
-            };
-        window.closeEditModal = () => modal.style.display = 'none';
         };
 
         window.previewReconImage = function () {
