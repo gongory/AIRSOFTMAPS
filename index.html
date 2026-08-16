@@ -1717,6 +1717,16 @@
         ⚠️ Estás en modo sin conexión
     </div>
 
+    <div id="pc-link-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
+        <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:400px;text-align:center;position:relative;">
+            <button onclick="document.getElementById('pc-link-modal').style.display='none'" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
+            <h3 style="margin-top:0;color:var(--ign-blue);">💻 Vincular PC</h3>
+            <p style="font-size:14px;color:#475569;">Introduce este código en la versión web de tu PC para sincronizar tus marcadores.</p>
+            <div id="pc-link-code" style="font-size:32px;font-weight:bold;letter-spacing:4px;margin:20px 0;color:var(--ign-gold);">---</div>
+            <button class="btn-outline" onclick="window.generatePin()" style="width:100%;justify-content:center;">🔄 Generar Nuevo PIN</button>
+        </div>
+    </div>
+
     <div id="update-modal"
         style="display:none;position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--ign-blue);color:white;padding:15px 20px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:9999;align-items:center;flex-direction:column;gap:10px;border:2px solid var(--ign-gold);">
         <div style="font-size:14px;font-weight:bold;text-align:center;" data-i18n="update_title">🚀 Nueva versión
@@ -4470,14 +4480,19 @@
             const compass = document.getElementById('compass-rose');
             const scale = document.querySelector('.leaflet-control-scale');
             
-            if (legend) { makePrintElementDraggable(legend); }
-            if (compass) { makePrintElementDraggable(compass); }
-            if (scale) { makePrintElementDraggable(scale); }
+            if (legend) { dragElement(legend); }
+            if (compass) { dragElement(compass); }
+            if (scale) { dragElement(scale); }
         };
 
         window.closePrintComposer = function() {
             printComposerActive = false;
             document.getElementById('print-composer').style.display = 'none';
+        };
+
+        window.generatePin = function() {
+            const code = Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('pc-link-code').innerText = code;
         };
 
         window.updatePrintLayout = function() {
