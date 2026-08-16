@@ -4140,47 +4140,63 @@
         };
 
         if ('serviceWorker' in navigator) {
+            if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').then(reg => {
-
-                    // Forzar comprobación de actualización al volver a primer plano (Ayuda especialmente a iOS)
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        if (installingWorker) {
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    if (typeof window.customAlert === 'function') {
+                                        window.customAlert("¡Nueva Versión!", "Se ha descargado una nueva actualización.\n\nPor favor, cierra la aplicación por completo (elimínala de aplicaciones recientes) y vuelve a abrirla para aplicar los cambios.");
+                                    }
+                                }
+                            };
+                        }
+                    };
+                    window.forceUpdate = function() {
+                        if (reg) {
+                            reg.update().then(() => {
+                                window.customAlert("Buscando Actualización", "Se ha ordenado al dispositivo buscar una nueva versión.\n\nSi no aparece el cartel de actualizar, significa que ya tienes la última versión instalada o que tu dispositivo (iOS) tiene bloqueada la caché.\n\nEn iOS: Cierra la app por completo deslizando hacia arriba en el selector de aplicaciones y vuelve a abrirla.");
+                            }).catch(() => {
+                                window.customAlert("Aviso", "No se pudo comprobar la actualización. Revisa tu conexión a internet.");
+                            });
+                        } else {
+                            window.customAlert("Aviso", "La app está en modo local o no hay Service Worker registrado.");
+                        }
+                    };
                     document.addEventListener('visibilitychange', () => {
                         if (document.visibilityState === 'visible') {
                             reg.update();
                         }
                     });
-
-                    reg.addEventListener('updatefound', () => {
-                        newWorker = reg.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            // Si hay un nuevo worker instalado y ya teníamos uno controlando la app, es una actualización
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                document.getElementById('update-modal').style.display = 'flex';
-                            }
-                        });
-                    });
-                }).catch(err => console.log('SW Registration Error:', err));
-
-                let refreshing = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (!refreshing) { refreshing = true; window.location.reload(); }
-                });
+                }).catch(e => { console.error("SW error", e); });
             });
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) { refreshing = true; window.location.reload(); }
+            });
+        } else {
+            window.forceUpdate = function() {
+                window.customAlert("Aviso", "Tu navegador no soporta actualizaciones PWA o estás ejecutando el archivo localmente.");
+            };
         }
 
         // --- DETECCIÓN DE CONEXIÓN A INTERNET ---
         function updateOnlineStatus() {
             const offlineBanner = document.getElementById('offline-banner');
-            if (navigator.onLine) {
-                offlineBanner.style.display = 'none';
-            } else {
-                offlineBanner.style.display = 'flex';
+            if (offlineBanner) {
+                if (navigator.onLine) {
+                    offlineBanner.style.display = 'none';
+                } else {
+                    offlineBanner.style.display = 'flex';
+                }
             }
         }
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
-        updateOnlineStatus(); // Comprobación inicial al cargar la página
-
+        updateOnlineStatus();
         window.addEventListener('load', () => {
             if (localStorage.getItem('am_offline_warning_disabled') !== 'true') {
                 setTimeout(() => {
@@ -4190,8 +4206,6 @@
                             "Si vas a usar AirsoftMaps en una partida de Airsoft (MilSim) o ruta por la montaña donde podrías perder la cobertura, recuerda:\n\n1. Inicia sesión con tu cuenta AHORA que tienes internet.\n2. Ve a 'Mezclador de Mapas' -> 'Modo Offline' y dibuja un recuadro para descargar tu zona de juego.\n\n¡Así tendrás el mapa por satélite 100% funcional aunque te quedes sin señal en el bosque!"
                         );
                     }
-                }, 1500);
-            }
                 }, 1500);
             }
         });
@@ -4561,6 +4575,9 @@
 </body>
 
 </html>
+
+
+
 
 
 
