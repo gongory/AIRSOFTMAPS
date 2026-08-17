@@ -1,85 +1,4562 @@
-const CACHE_NAME = "airsoftmaps-cache-v2.03.10";
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./home-mobile.png",
-  "./home-wide.png",
-  "./AirsoftMaps.ico"
-];
+<!DOCTYPE html>
+<html lang="es">
 
-// Instalar y cachear
-self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
-    })
-  );
-});
+<head>
+    <link rel="manifest" href="./manifest.json?v=6">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AirsoftMaps - Edición y Personalización</title>
+    <link rel="icon" type="image/x-icon" href="AirsoftMaps.ico">
+    <link rel="apple-touch-icon" href="AirsoftMaps.ico">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AirsoftMaps">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#003366">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ESTÉTICA ATAK / TÁCTICA HUD v2.01 */
+        :root {
+            --ign-blue: #0f140f; /* Dark Olive / Almost Black */
+            --ign-gold: #ff7300; /* Tactical Orange */
+            --neon-green: #00ff41; /* HUD Green */
+            --danger: #ef4444;
+            --success: #22c55e;
+            --info: #3b82f6;
+            --shadow: 0 0 15px rgba(0, 255, 65, 0.15); /* HUD Glow */
+            --bg-sidebar: rgba(15, 20, 15, 0.95); /* Opaque Tactical Base */
+            --light-gray: rgba(25, 30, 25, 0.95);
+            --border-color: rgba(0, 255, 65, 0.4); /* Stronger Neon Borders */
+            --text-main: #e2e8f0;
+            --bottom-nav-height: 65px;
+        }
 
-// Activar y limpiar caches viejos
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME && key !== "airsoftmaps-offline")
-          .map(key => caches.delete(key))
-      );
-    })
-  );
-  // Asegura que el SW tome el control inmediatamente sin tener que recargar la página
-  self.clients.claim();
-});
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            background: #000;
+            color: var(--text-main);
+        }
 
-// Interceptar peticiones (Estrategia mixta: actualizaciones automáticas invisibles)
-self.addEventListener("fetch", event => {
-  // Ignorar peticiones externas (APIs, Firebase, Leaflet, etc.)
-  if (!event.request.url.startsWith(self.location.origin)) return;
+        #map-container {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 100vh;
+            width: 100%;
+        }
 
-  // 1. NETWORK FIRST para la página (HTML). Asegura tener SIEMPRE la última versión si hay internet.
-  if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => {
-          // Si estamos offline, devuelve la versión en caché
-          return caches.match(event.request).then(cached => cached || caches.match("./index.html"));
-        })
-    );
-    return;
-  }
+        #map {
+            flex: 1;
+            width: 100%;
+            background: #111;
+        }
 
-  // 2. STALE-WHILE-REVALIDATE para recursos estáticos (imágenes, iconos). Carga ultra-rápida.
-  event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      const fetchPromise = fetch(event.request)
-        .then(networkResponse => {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          return networkResponse;
-        })
-        .catch(() => { /* Ignorar errores en modo offline */ });
-      
-      // Devuelve la caché instantáneamente (si existe), mientras actualiza en segundo plano
-      return cachedResponse || fetchPromise;
-    })
-  );
-});
+        /* Leaflet UI Overrides para integrar con la estética oscura */
+        .leaflet-bar a {
+            background-color: rgba(15, 23, 42, 0.8) !important;
+            color: white !important;
+            border-color: var(--border-color) !important;
+            backdrop-filter: blur(4px);
+        }
 
-// Escuchar el mensaje del botón "Actualizar" de la app
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.action === 'skipWaiting') {
-    self.skipWaiting();
-  }
-});
+        .leaflet-bar a:hover {
+            background-color: rgba(30, 41, 59, 0.9) !important;
+        }
 
+        .leaflet-control-zoom {
+            border: none !important;
+            box-shadow: var(--shadow) !important;
+            margin-left: 15px !important;
+            margin-top: 25px !important;
+        }
 
+        /* Paneles Laterales - Estilo HUD transparente */
+        .sidebar {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1001;
+            width: 340px;
+            max-width: calc(100vw - 30px);
+            background: var(--bg-sidebar);
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.03) 2px, rgba(0,255,65,0.03) 4px);
+            border-radius: 0;
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 30px);
+            transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-color);
+        }
+
+        .sidebar.oculto {
+            transform: translateX(120%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--neon-green);
+            padding: 14px 16px;
+            border-radius: 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(0,255,65,0.4);
+        }
+
+        .content {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+            scroll-behavior: smooth;
+        }
+
+        .content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--ign-gold);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 6px;
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+
+        /* Botones estilo táctico v2.01 */
+        .btn-outline {
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--neon-green);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            padding: 14px 10px; /* Taller for gloves */
+            border-radius: 0; /* Sharper corners */
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            cursor: pointer;
+            font-weight: 700; /* Bolder font */
+            margin-bottom: 10px;
+            font-size: 13px; /* Slightly larger text */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+            backdrop-filter: blur(4px);
+            text-transform: uppercase;
+            min-height: 48px; /* Touch target minimum size */
+            letter-spacing: 1px;
+        }
+
+        .btn-outline:hover,
+        .btn-outline.active {
+            background: rgba(255, 115, 0, 0.1);
+            color: var(--ign-gold);
+            border-color: var(--ign-gold);
+            box-shadow: 0 0 10px rgba(255, 115, 0, 0.3);
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 12px 10px;
+            border-radius: 4px; /* Sharper */
+            border: 1px solid var(--border-color);
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            min-height: 48px; /* Touch target size */
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--neon-green);
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+        }
+
+        .mtn-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--ign-gold);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        /* Coordenadas HUD */
+        .coord-display {
+            position: absolute;
+            bottom: 25px;
+            left: 15px;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            pointer-events: auto;
+            cursor: grab;
+            user-select: none;
+            min-width: auto;
+            text-align: left;
+            backdrop-filter: blur(4px);
+        }
+
+        /* BARRA DE HERRAMIENTAS ATAK (Botones circulares arriba a la derecha en fila) */
+        .fab-menu {
+            position: absolute;
+            z-index: 1000;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            width: 46px;
+            height: 46px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+
+        .fab-menu:hover {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: var(--ign-gold);
+            color: var(--ign-gold);
+            transform: scale(1.05);
+        }
+
+        #fabBtn {
+            top: 15px;
+            right: 15px;
+        }
+
+        #fabLiveBtn {
+            top: 15px;
+            right: 75px;
+        }
+
+        /* Recolocados lado a lado, como en la foto */
+
+        .grid-label {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            border: 1px solid currentColor;
+            white-space: nowrap;
+            pointer-events: none;
+            color: white !important;
+        }
+
+        .gallery-item {
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            display: block;
+            border-radius: 4px;
+        }
+
+        .hide-controls .leaflet-top,
+        .hide-controls .leaflet-control-attribution,
+        .hide-controls .fab-menu,
+        .hide-controls .coord-display,
+        .hide-controls .sidebar,
+        .hide-controls #drawing-actions {
+            visibility: hidden !important;
+        }
+
+        /* Control de Escala (esquina inferior izquierda) */
+        .leaflet-control-scale-line {
+            border: 2px solid white !important;
+            background-color: rgba(0, 0, 0, 0.6) !important;
+            color: white !important;
+            font-weight: 900 !important;
+            font-size: 11px !important;
+            text-align: center !important;
+            line-height: 1.2 !important;
+            padding: 4px 5px !important;
+            box-shadow: var(--shadow) !important;
+            border-top: none !important;
+            backdrop-filter: blur(2px);
+            font-family: 'Courier New', monospace;
+        }
+
+        .layer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+        }
+
+        .faction-header {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--ign-gold);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Leyenda del Mapa */
+        .map-legend {
+            position: absolute;
+            bottom: 25px;
+            right: 20px;
+            z-index: 998;
+            background: rgba(15, 23, 42, 0.85);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            min-width: 150px;
+            display: none;
+            pointer-events: auto;
+            cursor: grab;
+            backdrop-filter: blur(4px);
+            color: white;
+        }
+
+        @keyframes radioPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+                transform: translateX(-50%) scale(1.1);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+                transform: translateX(-50%) scale(1);
+            }
+        }
+
+        .radio-pulse {
+            animation: radioPulse 1.5s infinite;
+            border-color: var(--danger) !important;
+            color: var(--danger) !important;
+            z-index: 1000 !important;
+        }
+
+        /* Adaptación para Pantallas de Móvil */
+        body.mobile-mode .sidebar {
+            top: auto !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 85vh !important;
+            max-height: 85vh !important;
+            border-radius: 0 !important;
+            clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%, 0 15px) !important;
+            border-bottom: none !important;
+            border-top: 2px solid var(--border-color) !important;
+        }
+        }
+
+        body.mobile-mode .sidebar.oculto {
+            transform: translateY(120%) !important;
+        }
+
+        body.mobile-mode .sidebar:not(.oculto) {
+            transform: translateY(0) !important;
+        }
+
+        body.mobile-mode .fab-menu {
+            display: none !important;
+        }
+
+        body.mobile-mode .bottom-nav-bar {
+            display: flex !important;
+        }
+
+        .bottom-nav-bar {
+            display: none; /* Desktop hidden */
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--bottom-nav-height);
+            background: var(--bg-sidebar);
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.03) 2px, rgba(0,255,65,0.03) 4px);
+            z-index: 2000;
+            border-top: 2px solid var(--border-color);
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0,255,65,0.1);
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .bottom-nav-btn {
+            background: none;
+            border: none;
+            border-right: 1px solid rgba(0,255,65,0.2);
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 25%;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .bottom-nav-btn:last-child {
+            border-right: none;
+        }
+
+        .bottom-nav-btn.active, .bottom-nav-btn:active {
+            color: var(--neon-green);
+            background: rgba(0,255,65,0.05);
+            box-shadow: inset 0 -3px 0 var(--neon-green);
+        }
+
+        .bottom-nav-btn span.icon {
+            font-size: 22px;
+            margin-bottom: 2px;
+            transition: transform 0.2s;
+        }
+
+        .bottom-nav-btn.active span.icon {
+            transform: scale(1.15);
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
+        }
+
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            margin: -5px auto 10px auto;
+        }
+
+        body.mobile-mode .sidebar {
+            bottom: var(--bottom-nav-height) !important;
+            height: calc(85vh - var(--bottom-nav-height)) !important;
+            max-height: calc(85vh - var(--bottom-nav-height)) !important;
+        }
+
+        body.mobile-mode .leaflet-control-zoom {
+            display: none !important;
+        }
+
+        body.mobile-mode .coord-display {
+            bottom: 30px;
+            right: 80px;
+            left: auto;
+            max-width: 60%;
+            font-size: 10px;
+        }
+
+        /* ANULACIONES GLOBALES (Fuerza la estética en el HTML que tenías programado con color blanco) */
+        [style*="background:#f1f5f9"],
+        [style*="background: #f1f5f9"],
+        [style*="background:#f8fafc"] {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-main) !important;
+        }
+
+        [style*="background:#fff"],
+        [style*="background: #fff"],
+        [style*="background:white"],
+        [style*="background: white"] {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-main) !important;
+        }
+
+        [style*="background:rgba(255,255,255,0.95)"] {
+            background: rgba(15, 23, 42, 0.95) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-main) !important;
+        }
+
+        [style*="color:#64748b"],
+        [style*="color:#475569"] {
+            color: #94a3b8 !important;
+        }
+
+        [style*="color:var(--ign-blue)"] {
+            color: var(--ign-gold) !important;
+        }
+
+        [style*="border-radius:8px"],
+        [style*="border-radius:12px"],
+        [style*="border-radius:6px"],
+        [style*="border-radius:30px"] {
+            border-radius: 6px !important;
+        }
+
+        [style*="border:1px solid #cbd5e0"],
+        [style*="border-bottom:1px dashed #cbd5e0"],
+        [style*="border-top:1px dashed #cbd5e0"],
+        [style*="border:2px solid #9b59b6"] {
+            border-color: var(--border-color) !important;
+        }
+
+        /* Popups y Modales */
+        #custom-modal>div,
+        #alert-modal>div,
+        #cloud-modal>div,
+        #confirm-modal>div,
+        #edit-modal>div,
+        #rename-folder-modal>div,
+        #offgrid-modal>div,
+        #manual-modal>div {
+            background: var(--bg-sidebar) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+            color: white !important;
+            backdrop-filter: blur(10px);
+        }
+
+        h2,
+        h3 {
+            color: white !important;
+            border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background: rgba(15, 23, 42, 0.95) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 6px !important;
+        }
+
+        #chat-box,
+        #active-members-list {
+            background: rgba(0, 0, 0, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* NVG / MODO VISIÓN NOCTURNA (Rojo táctico) */
+        body.dark-mode {
+            --bg-sidebar: rgba(10, 0, 0, 0.9);
+            --ign-gold: #ff3b30;
+            --success: #ff3b30;
+            --info: #ff3b30;
+            --border-color: rgba(255, 59, 48, 0.3);
+            --text-main: #ff8888;
+            background: #000;
+        }
+
+        body.dark-mode .leaflet-tile-pane {
+            filter: sepia(100%) hue-rotate(-50deg) saturate(600%) brightness(0.6) contrast(1.5) invert(100%);
+        }
+
+        body.dark-mode .coord-display,
+        body.dark-mode .grid-label,
+        body.dark-mode .leaflet-control-scale-line {
+            color: #ff3b30 !important;
+            border-color: #ff3b30 !important;
+        }
+
+        body.dark-mode .btn-outline:hover {
+            box-shadow: 0 0 10px rgba(255, 59, 48, 0.4);
+        }
+
+        body.dark-mode .fab-menu:hover {
+            border-color: #ff3b30;
+            color: #ff3b30;
+            box-shadow: 0 0 10px rgba(255, 59, 48, 0.4);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('admin') === 'gongory') {
+                localStorage.setItem('vip_access', 'true');
+                // Clean url optionally, but simple logic is fine
+            }
+            
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            const isTWA = document.referrer.includes('android-app://');
+            const isVIP = localStorage.getItem('vip_access') === 'true';
+            
+            if (!isStandalone && !isTWA && !isVIP) {
+                document.documentElement.style.display = 'none'; // Hide initially
+                window.addEventListener('DOMContentLoaded', () => {
+                    document.documentElement.style.display = '';
+                    document.body.innerHTML = `
+                        <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:url('captura_limpia.jpg') center/cover no-repeat;z-index:999999;display:flex;justify-content:center;align-items:center;flex-direction:column;font-family:'Rajdhani', sans-serif;">
+                            <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:1;"></div>
+                            <div style="position:relative;z-index:2;background:rgba(15,23,42,0.9);padding:40px;border-radius:0;clip-path:polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);border:1px solid #00ff41;max-width:500px;width:90%;text-align:center;box-shadow:0 0 20px rgba(0,255,65,0.2);">
+                                <img src="AirsoftMaps.ico" style="width:80px;height:80px;margin-bottom:20px;filter:drop-shadow(0 0 10px #00ff41);">
+                                <h1 style="color:#00ff41;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:2px;font-size:28px;">ACCESO RESTRINGIDO</h1>
+                                <p style="color:#e2e8f0;font-size:18px;margin-bottom:30px;line-height:1.5;">AirsoftMaps ahora es una <b>Aplicaci&oacute;n Premium</b>. Para utilizar el GPS en vivo, planificador t&aacute;ctico y el resto de herramientas de la plataforma, descarga la App oficial de Android.</p>
+                                <a href="https://play.google.com/store/apps/details?id=com.airsoftmaps.app" style="display:inline-block;background:rgba(0,255,65,0.2);color:#00ff41;text-decoration:none;padding:15px 30px;font-size:20px;font-weight:bold;text-transform:uppercase;border:1px solid #00ff41;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);transition:all 0.3s;box-shadow:inset 0 0 10px rgba(0,255,65,0.2);">🚀 DESCARGAR EN GOOGLE PLAY</a>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        })();
+    </script>
+</head>
+
+<body>
+    <!-- PC Lock Screen -->
+    <div id="pc-lock-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--ign-blue); z-index:999999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:'Roboto', sans-serif;">
+        <h1 style="font-size:24px; color:var(--ign-gold); text-align:center; padding: 0 20px;">🛡️ Versión de PC Bloqueada</h1>
+        <p style="text-align:center; padding:0 20px; max-width:400px; line-height:1.5;">Para usar la Sala de Comandancia en tu ordenador, necesitas vincularlo con tu aplicación móvil. Abre AirsoftMaps en tu teléfono, ve a "Vincular PC" e introduce tu código mensual:</p>
+        <input type="text" id="pc-pin-input" placeholder="Ej: AM-0826" style="padding:15px; font-size:20px; font-weight:bold; text-align:center; border-radius:8px; border:2px solid var(--ign-gold); outline:none; color:#000; width:200px; margin: 20px 0; text-transform: uppercase;">
+        <button onclick="window.unlockPC()" style="padding:15px 30px; font-size:16px; font-weight:bold; border-radius:8px; border:none; background:var(--success); color:white; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.5);">Desbloquear PC</button>
+        <p id="pc-lock-error" style="color:var(--danger); margin-top:15px; font-weight:bold; display:none;">❌ Código incorrecto o caducado.</p>
+    </div>
+
+    <div id="map-container">
+        <div id="map"></div>
+        <div class="map-legend" id="map-legend">
+            <div class="legend-title"
+                style="font-weight:800;color:var(--ign-blue);margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;font-size:13px;">
+                📋 Leyenda Táctica</div>
+            <div id="legend-content">No hay elementos</div>
+        </div>
+        <div id="compass-rose"
+            style="display:none;position:absolute;top:40px;left:40px;z-index:998;cursor:grab;pointer-events:auto;">
+            <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(50,50)">
+                    <g transform="rotate(0)">
+                        <polygon points="0,-48 10,-10 0,0 -10,-10" fill="#e74c3c" />
+                    </g>
+                    <circle cx="0" cy="0" r="4" fill="#1e293b" /><text x="0" y="-31" font-family="sans-serif"
+                        font-weight="900" font-size="14" fill="#fff" text-anchor="middle">N</text>
+                </g>
+            </svg>
+        </div>
+        <div id="numeric-scale-widget"
+            style="position:absolute;bottom:25px;left:200px;z-index:998;cursor:grab;background:rgba(255,255,255,0.95);padding:6px 12px;border-radius:6px;border:2px solid #222;font-weight:900;color:#000;font-size:13px;pointer-events:auto;">
+            Escala <span id="numeric-scale-val">1:0</span></div>
+    </div>
+
+    <div id="drawing-actions"
+        style="position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:2000;display:none;flex-direction:column;align-items:center;gap:10px;width:95%;max-width:400px;">
+        <div id="auto-route-info"
+            style="display:none;background:rgba(0,0,0,0.8);padding:8px 16px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:800;color:var(--neon-green);font-size:13px;border:1px solid var(--border-color);text-transform:uppercase;">
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;">
+            <select id="route-mode-select" onchange="window.recalculateAutoRoute()"
+                style="display:none;padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;border:1px solid var(--border-color);background:rgba(0,0,0,0.7);color:var(--neon-green);cursor:pointer;flex:1;min-width:110px;text-transform:uppercase;">
+                <option value="foot" data-i18n="route_foot">🚶 A pie</option>
+                <option value="driving" data-i18n="route_drive">🚗 En coche</option>
+                <option value="bike" data-i18n="route_bike">🚲 En bici</option>
+            </select>
+            <button id="undo-point-btn" onclick="window.undoLastPoint()"
+                style="background:rgba(255,115,0,0.2);color:var(--ign-gold);border:1px solid var(--ign-gold);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;"
+                data-i18n="btn_undo">↺ Deshacer</button>
+            <button id="finish-route-btn" onclick="window.finishAutoRoute()"
+                style="background:rgba(34,197,94,0.2);color:var(--success);border:1px solid var(--success);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;"
+                data-i18n="btn_finish">✔ Finalizar</button>
+            <button id="undo-whiteboard-btn" onclick="window.undoWhiteboardStroke()"
+                style="background:rgba(255,115,0,0.2);color:var(--ign-gold);border:1px solid var(--ign-gold);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;">↺
+                Deshacer Trazo</button>
+            <button id="finish-whiteboard-btn" onclick="window.stopWhiteboard()"
+                style="background:rgba(34,197,94,0.2);color:var(--success);border:1px solid var(--success);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;display:none;flex:1;min-width:110px;text-transform:uppercase;">✔
+                Terminar Dibujo</button>
+            <button id="cancel-crop-btn" onclick="window.stopDrawing()"
+                style="background:rgba(239,68,68,0.2);color:var(--danger);border:1px solid var(--danger);padding:12px 10px;border-radius:0;clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);font-weight:700;cursor:pointer;flex:1;min-width:110px;text-transform:uppercase;"
+                data-i18n="btn_cancel_action">✖ Cancelar</button>
+        </div>
+    </div>
+    <button id="finish-adjust-btn"
+        onclick="if(window.currentAdjustId) window.toggleFieldMapAdjust(window.currentAdjustId)"
+        style="display:none; position:absolute; top:20px; left:50%; transform:translateX(-50%); z-index:3000; background:var(--success); color:white; padding:12px 28px; border-radius:50px; font-size:16px; font-weight:800; border:none; box-shadow:var(--shadow); cursor:pointer;">✅
+        Terminar Ajuste</button>
+
+    <div id="nav-panel"
+        style="display:none;position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:2500;background:var(--bg-sidebar);border:2px solid #9b59b6;border-radius:12px;padding:10px 20px;box-shadow:var(--shadow);text-align:center;pointer-events:auto;min-width:200px;">
+        <div style="font-size:11px;font-weight:bold;color:#64748b;margin-bottom:5px;" id="nav-target-name"
+            data-i18n="nav_target">Destino</div>
+        <div style="display:flex;align-items:center;gap:15px;justify-content:center;">
+            <div id="nav-arrow"
+                style="font-size:32px;transform-origin:center;transition:transform 0.2s;line-height:1;margin-bottom:5px;">
+                ⬆️</div>
+            <div id="nav-dist" style="font-size:24px;font-weight:900;color:var(--ign-blue);">-- m</div>
+        </div>
+        <button onclick="window.stopNavigation()"
+            style="background:var(--danger);color:white;border:none;padding:6px 15px;border-radius:20px;font-size:12px;font-weight:bold;cursor:pointer;width:100%;"
+            data-i18n="btn_stop_nav">✕ Detener</button>
+    </div>
+
+    <div class="coord-display" id="liveCoords">Cargando visor...</div>
+    <button class="fab-menu" id="fabBtn" onclick="window.toggleMenu()" title="Herramientas">🛠️</button>
+    <button class="fab-menu" id="fabLiveBtn" onclick="window.toggleLiveMenu()" title="Operaciones y GPS">
+        📡
+        <span id="chat-badge"
+            style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:white;font-size:10px;font-weight:bold;border-radius:50%;width:18px;height:18px;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.3);">0</span>
+    </button>
+    <!-- Botón flotante para recuperar la barra inferior -->
+    <button id="show-bottom-nav-btn" onclick="window.toggleBottomNav(true)" style="display:none; position:absolute; bottom:15px; left:50%; transform:translateX(-50%); z-index:2001; background:rgba(20,24,20,0.85); border:1px solid var(--border-color); color:var(--ign-gold); width:40px; height:40px; border-radius:20px; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; font-size:20px;">
+        ▲
+    </button>
+
+    <nav class="bottom-nav-bar" id="main-bottom-nav" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+        <button class="bottom-nav-btn active" onclick="window.closeAllPanels()">
+            <span class="icon">🧭</span>
+            <span data-i18n="nav_map">Mapa</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="window.openTacticalMenu()">
+            <span class="icon">🎯</span>
+            <span data-i18n="nav_tactical">Táctica</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="window.openEditMenu()">
+            <span class="icon">🛠️</span>
+            <span data-i18n="nav_edit">Edición</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="window.toggleBottomNav(false)">
+            <span class="icon">👁️‍🗨️</span>
+            <span data-i18n="nav_hide">Ocultar</span>
+        </button>
+    </nav>
+
+    <div class="sidebar oculto" id="panelLateral">
+        <div class="bottom-sheet-handle"></div>
+        <div class="header">
+            <span id="app-title" style="font-weight: 600; font-size: 16px;">AirsoftMaps</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <select id="langSelect" onchange="window.changeLanguage(this.value)"
+                    style="background:rgba(255,255,255,0.2);border:none;color:white;cursor:pointer;font-size:14px;border-radius:6px;padding: 4px 6px;font-weight:bold;">
+                    <option value="es" style="color:black;">ES</option>
+                    <option value="en" style="color:black;">EN</option>
+                    <option value="fr" style="color:black;">FR</option>
+                    <option value="pt" style="color:black;">PT</option>
+                    <option value="it" style="color:black;">IT</option>
+                    <option value="de" style="color:black;">DE</option>
+                    <option value="ca" style="color:black;">CA</option>
+                </select>
+                <button id="modeToggleBtn"
+                    style="background:rgba(255,255,255,0.2);border:none;color:white;cursor:pointer;font-size:18px;border-radius:50%;width:32px;height:32px;"
+                    onclick="window.toggleMobileMode()">📱</button>
+                <button id="themeToggleBtn"
+                    style="background:rgba(255,255,255,0.2);border:none;color:white;cursor:pointer;font-size:18px;border-radius:50%;width:32px;height:32px;"
+                    onclick="window.toggleTheme()">🌙</button>
+                <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;"
+                    onclick="window.toggleMenu()">✕</button>
+            </div>
+        </div>
+        <div class="content">
+            <button class="btn-outline" style="border-color:var(--success);color:var(--success);margin-bottom:10px;"
+                onclick="window.openManual()" data-i18n="manual_btn">📖 Manual de Usuario</button>
+            <div class="section-title" style="margin-top:0;" data-i18n="search_title">🔍 Buscador</div>
+            <div style="display:flex;gap:5px;margin-bottom:12px;">
+                <input type="text" id="searchInput" class="form-input" style="margin-bottom:0;"
+                    placeholder="Ciudad o coordenadas..." onkeypress="if(event.key==='Enter') window.buscarLugar()"
+                    data-i18n-placeholder="search_placeholder">
+                <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 15px;"
+                    onclick="window.buscarLugar()" data-i18n="search_go">Ir</button>
+            </div>
+
+            <button class="btn-outline" onclick="window.toggleGroup('project-group-container')"
+                style="margin-bottom:15px;justify-content:space-between;"><span data-i18n="proj_menu">📁 Gestión de
+                    Proyecto</span><span>▼</span></button>
+            <div id="project-group-container"
+                style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
+                <div style="border-bottom:1px dashed #cbd5e0;margin-bottom:15px;padding-bottom:10px;text-align:center;">
+                    <button id="btn-login-google" class="btn-outline"
+                        style="border-color:#4285F4;color:#4285F4;margin-bottom:0;"
+                        onclick="window.iniciarSesionGoogle()"><span style="font-weight:bold;font-size:16px;">G</span>
+                        <span data-i18n="login_btn">Guardar cuenta</span></button>
+                    <button id="btn-logout" class="btn-outline"
+                        style="border-color:#64748b;color:#64748b;margin-bottom:0;display:none;"
+                        onclick="window.cerrarSesion()" data-i18n="logout_btn">Cerrar sesión</button>
+                    <p id="login-status-text" style="font-size:11px;color:#64748b;margin:5px 0 0 0;"><b>👤 Modo
+                            Anónimo</b></p>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline"
+                        style="border-color:var(--danger);color:var(--danger);margin-bottom:0;padding:10px 5px;"
+                        onclick="window.nuevoProyecto()" data-i18n="new_proj">📄 Nuevo</button><button
+                        class="btn-outline" style="margin-bottom:0;padding:10px 5px;"
+                        onclick="window.renombrarProyecto()" data-i18n="rename_proj">✏️ Renombrar</button></div>
+                <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline"
+                        style="margin-bottom:0;" onclick="window.guardarEnNube(this)" data-i18n="cloud_save">☁️ Guardar
+                        Nube</button><button class="btn-outline" style="margin-bottom:0;" onclick="window.abrirNube()"
+                        data-i18n="cloud_load">☁️ Cargar Nube</button></div>
+                <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn-outline"
+                        style="margin-bottom:0;" onclick="window.guardarProyecto()" data-i18n="local_save">💾 Guardar
+                        Local</button><label class="btn-outline" for="file-loader"
+                        style="margin-bottom:0;cursor:pointer;" data-i18n="local_load">📂 Cargar Local</label><input
+                        type="file" id="file-loader" style="position:absolute;width:0;height:0;opacity:0;z-index:-1;"
+                        onchange="window.cargarProyecto(event)"></div>
+                <div style="border-top:1px dashed #cbd5e0;margin-top:15px;padding-top:10px;">
+                    <label style="font-size:11px;font-weight:bold;color:#475569;display:block;margin-bottom:8px;"
+                        data-i18n="import_export_lbl">Importar / Exportar (KML/GPX)</label>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><button
+                            class="btn-outline" style="margin-bottom:0;font-size:11px;" onclick="window.exportKML()"
+                            data-i18n="export_kml_btn">⬇️ Exportar KML</button><button class="btn-outline"
+                            style="margin-bottom:0;font-size:11px;" onclick="window.exportGPX()"
+                            data-i18n="export_gpx_btn">⬇️ Exportar GPX</button></div>
+                    <label class="btn-outline" for="kml-gpx-loader"
+                        style="margin-bottom:0;font-size:11px;cursor:pointer;" data-i18n="import_file_btn">⬆️ Importar
+                        Archivo</label><input type="file" id="kml-gpx-loader"
+                        style="position:absolute;width:0;height:0;opacity:0;z-index:-1;"
+                        onchange="window.importKMLGPX(event)">
+                </div>
+                <div style="border-top:1px dashed #cbd5e0;margin-top:15px;padding-top:10px;">
+                    <label style="font-size:11px;font-weight:bold;color:var(--success);display:block;margin-bottom:8px;"
+                        data-i18n="sync_offgrid_lbl">📡 Sincronización Sin Internet</label>
+                    <button class="btn-outline"
+                        style="margin-bottom:0;border-color:var(--success);color:var(--success);"
+                        onclick="window.openOffGridModal()" data-i18n="share_offgrid_btn">Compartir Off-Grid</button>
+                </div>
+            </div>
+
+            <button class="btn-outline" onclick="window.toggleGroup('mtn-group-container')"
+                style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span data-i18n="mtn_menu">🗺️
+                    Información MTN</span><span>▼</span></button>
+            <div id="mtn-group-container"
+                style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
+                <div id="mtnInfo" class="mtn-card" style="margin-bottom:10px;margin-top:0;">
+                    <div class="mtn-title" data-i18n="identifying_leaf">Identificando hoja...</div>
+                </div>
+                <button id="mtnGridBtn" class="btn-outline" style="margin-bottom:10px;" onclick="window.toggleMtnGrid()"
+                    data-i18n="mtn_grid_btn">Ver Cuadrículas MTN</button>
+                <button class="btn-outline" style="margin-bottom:0;border-color:#3498db;color:#3498db;"
+                    onclick="window.getWeatherReport()" data-i18n="weather_btn">🌬️ Reporte Meteorológico</button>
+            </div>
+
+            <button class="btn-outline" onclick="window.toggleGroup('map-mixer-container')"
+                style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span
+                    data-i18n="mixer_menu">🌍 Mezclador de Mapas</span><span>▼</span></button>
+            <div id="map-mixer-container"
+                style="display:none;background:#f1f5f9;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;">
+                <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                    data-i18n="base_layer_lbl">Capa Principal (Fondo)</label>
+                <select id="baseLayer" class="form-select" style="margin-bottom:8px;" onchange="window.changeLayer()">
+                    <option value="mtn" data-i18n="opt_mtn">Mapa Topográfico (MTN España)</option>
+                    <option value="pnoa" data-i18n="opt_pnoa">Satélite (PNOA España)</option>
+                    <option value="base" data-i18n="opt_base">Callejero IGN</option>
+                    <option value="osm" data-i18n="opt_osm">OpenStreetMap</option>
+                    <option value="sombreado" data-i18n="opt_relieve">Sombreado 3D (Relieve España)</option>
+                    <option value="esri" data-i18n="opt_esri">Satélite Global (ESRI)</option>
+                    <option value="opentopo" data-i18n="opt_opentopo">Topográfico Global (OpenTopoMap)</option>
+                </select>
+                <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                    data-i18n="overlay_layer_lbl">Capa Secundaria</label>
+                <select id="overlayLayer" class="form-select" style="margin-bottom:8px;"
+                    onchange="window.changeLayer()">
+                    <option value="none" data-i18n="opt_none">Ninguna</option>
+                    <option value="mtn" data-i18n="opt_mtn">Mapa Topográfico (MTN España)</option>
+                    <option value="pnoa" selected data-i18n="opt_pnoa">Satélite (PNOA España)</option>
+                    <option value="base" data-i18n="opt_base">Callejero IGN</option>
+                    <option value="osm" data-i18n="opt_osm">OpenStreetMap</option>
+                    <option value="sombreado" data-i18n="opt_relieve">Sombreado 3D (Relieve España)</option>
+                    <option value="esri" data-i18n="opt_esri">Satélite Global (ESRI)</option>
+                    <option value="opentopo" data-i18n="opt_opentopo">Topográfico Global (OpenTopoMap)</option>
+                </select>
+                <label style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                    data-i18n="overlay_opacity_lbl">Opacidad Secundaria</label>
+                <input type="range" id="overlayOpacity" min="0" max="1" step="0.05" value="0.4"
+                    style="width:100%;margin-bottom:0;" oninput="window.changeLayer()">
+                <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
+                    <label style="font-size:10px;font-weight:bold;color:var(--success);display:block;margin-bottom:4px;"
+                        data-i18n="offline_mode_lbl">Modo Offline</label>
+                    <div style="display:flex; gap:5px; margin-bottom:5px;">
+                        <button class="btn-outline" id="btn-offline"
+                            style="margin-bottom:0;border-color:var(--success);color:var(--success);padding:8px 5px;font-size:11px;"
+                            onclick="window.downloadOfflineMap()" data-i18n="offline_current_btn">⬇️ Visión
+                            Actual</button>
+                        <button class="btn-outline"
+                            style="margin-bottom:0;border-color:var(--success);color:var(--success);padding:8px 5px;font-size:11px;"
+                            onclick="window.startOfflineSelection()" data-i18n="offline_zone_btn">🔲 Marcar
+                            Zona</button>
+                    </div>
+                    <div id="offline-progress"
+                        style="display:none;font-size:11px;font-weight:bold;color:#475569;text-align:center;width:100%;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-bottom:10px;">
+                        <div id="offline-bar"
+                            style="width:0%;background:var(--success);color:white;padding:2px 0;transition:width 0.3s;">
+                            0%</div>
+                    </div>
+                    <div id="offline-zones-list"
+                        style="max-height:150px;overflow-y:auto;background:#fff;border:1px solid #cbd5e0;border-radius:8px;padding:5px;margin-top:5px;">
+                        <div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay zonas
+                            descargadas</div>
+                    </div>
+                </div>
+                <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
+                    <label style="font-size:10px;font-weight:bold;color:var(--info);display:block;margin-bottom:4px;"
+                        data-i18n="tools_3d_lbl">Inteligencia y Satélite</label>
+                    <button class="btn-outline"
+                        style="margin-bottom:0;width:100%;border-color:#34a853;color:#34a853;padding:8px 5px;font-size:11px;"
+                        onclick="window.openGoogleEarth()">🛰️ Abrir en Google Earth 3D</button>
+                </div>
+            </div>
+
+            <button class="btn-outline" onclick="window.toggleGroup('grid-group-container')"
+                style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span data-i18n="grid_menu">📍
+                    Sistema y Cuadrícula</span><span>▼</span></button>
+            <div id="grid-group-container"
+                style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:12px;border:1px solid #cbd5e0;">
+                <select id="gridType" class="form-select" onchange="window.onGridTypeChange()"
+                    style="margin-bottom:12px;">
+                    <option value="decimal" data-i18n="opt_dd">Grados Decimales (DD)</option>
+                    <option value="dms" data-i18n="opt_dms">G. M. S. (DMS)</option>
+                    <option value="utm" data-i18n="opt_utm">UTM (Métricas)</option>
+                    <option value="alpha" data-i18n="opt_alpha">Táctica Alfanumérica (A1)</option>
+                </select>
+                <div class="grid-config-group">
+                    <div><label style="font-size:10px;font-weight:bold;color:#475569;"
+                            data-i18n="thickness_lbl">Grosor</label><select id="gridWeight" class="form-select"
+                            style="margin-bottom:0;font-size:12px;" onchange="window.updateGrid()">
+                            <option value="1" data-i18n="opt_low">Baja</option>
+                            <option value="2.5" selected data-i18n="opt_med">Media</option>
+                            <option value="5" data-i18n="opt_high">Gruesa</option>
+                        </select></div>
+                    <div><label style="font-size:10px;font-weight:bold;color:#475569;"
+                            data-i18n="color_lbl">Color</label><select id="gridColor" class="form-select"
+                            style="margin-bottom:0;font-size:12px;" onchange="window.updateGrid()">
+                            <option value="red" selected data-i18n="opt_red">Rojo</option>
+                            <option value="blue" data-i18n="opt_blue">Azul</option>
+                            <option value="green" data-i18n="opt_green">Verde</option>
+                            <option value="black" data-i18n="opt_black">Negro</option>
+                            <option value="yellow" data-i18n="opt_yellow">Amarillo</option>
+                        </select></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                    <div><select id="gridScale" class="form-select" style="font-size:12px;margin-bottom:0;"
+                            onchange="window.updateGridByScale()">
+                            <option value="auto" selected data-i18n="opt_free_scale">Escala Libre</option>
+                            <option value="2000">1:2.000</option>
+                            <option value="5000">1:5.000</option>
+                            <option value="10000">1:10.000</option>
+                            <option value="25000">1:25.000</option>
+                            <option value="50000">1:50.000</option>
+                        </select></div>
+                    <div style="display:flex;align-items:flex-end;"><button id="lockZoomBtn" class="btn-outline"
+                            style="margin-bottom:0;font-size:11px;" onclick="window.toggleZoomLock()"
+                            data-i18n="lock_zoom_btn">🔓 Bloquear Zoom</button></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button id="gridToggleBtn"
+                        class="btn-outline" style="margin-bottom:0;" onclick="window.toggleGrid()"
+                        data-i18n="grid_toggle_btn">Activar Cuadrícula</button><button id="scaleToggleBtn"
+                        class="btn-outline" style="margin-bottom:0;" onclick="window.toggleScale()"
+                        data-i18n="scale_toggle_btn">Mostrar Escala</button><button id="numScaleToggleBtn"
+                        class="btn-outline" style="margin-bottom:0;grid-column:span 2;"
+                        onclick="window.toggleNumScale()" data-i18n="numscale_toggle_btn">Ocultar Numérica</button>
+                </div>
+            </div>
+
+            <button class="btn-outline" onclick="window.toggleGroup('edit-group-container')"
+                style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span data-i18n="edit_menu">✏️
+                    Edición de Mapa</span><span>▼</span></button>
+            <div id="edit-group-container"
+                style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:10px;border:1px solid #cbd5e0;">
+                <div class="grid-config-group" style="margin-bottom:10px;">
+                    <div><label style="font-size:10px;font-weight:bold;color:#475569;"
+                            data-i18n="line_thickness_lbl">Grosor Línea</label><select id="drawWeight"
+                            class="form-select" style="margin-bottom:0;font-size:12px;">
+                            <option value="2" data-i18n="opt_thin">Fina</option>
+                            <option value="4" selected data-i18n="opt_normal">Normal</option>
+                            <option value="6" data-i18n="opt_thick">Gruesa</option>
+                        </select></div>
+                    <div><label style="font-size:10px;font-weight:bold;color:#475569;" data-i18n="line_color_lbl">Color
+                            Línea</label><select id="drawColor" class="form-select"
+                            style="margin-bottom:0;font-size:12px;">
+                            <option value="#2ecc71" selected data-i18n="opt_green">Verde</option>
+                            <option value="#e74c3c" data-i18n="opt_red">Rojo</option>
+                            <option value="#3498db" data-i18n="opt_blue">Azul</option>
+                            <option value="#f1c40f" data-i18n="opt_yellow">Amarillo</option>
+                        </select></div>
+                    <div style="grid-column:span 2;"><label style="font-size:10px;font-weight:bold;color:#475569;"
+                            data-i18n="marker_color_lbl">Color Marcador</label><select id="markerColor"
+                            class="form-select" style="margin-bottom:0;font-size:12px;">
+                            <option value="#2ecc71" data-i18n="opt_green">Verde</option>
+                            <option value="#e74c3c" selected data-i18n="opt_red">Rojo</option>
+                            <option value="#3498db" data-i18n="opt_blue">Azul</option>
+                            <option value="#f1c40f" data-i18n="opt_yellow">Amarillo</option>
+                        </select></div>
+                    <div style="grid-column:span 2;"><label
+                            style="font-size:10px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                            data-i18n="compass_style_lbl">Estilo Brújula</label>
+                        <div style="display:flex; gap:5px; align-items:center;"><select id="compassStyle"
+                                class="form-select" style="margin-bottom:0;font-size:12px;flex:1;"
+                                onchange="window.updateCompassStyle()">
+                                <option value="modern" selected data-i18n="opt_modern">Moderna</option>
+                                <option value="classic" data-i18n="opt_classic">Clásica</option>
+                                <option value="military" data-i18n="opt_military">Militar</option>
+                                <option value="minimal" data-i18n="opt_minimal">Minimalista</option>
+                            </select><label
+                                style="font-size:10px;font-weight:bold;color:#475569;display:flex;align-items:center;gap:4px;cursor:pointer;background:rgba(255,255,255,0.5);padding:8px;border-radius:6px;border:1px solid var(--border-color);"><input
+                                    type="checkbox" id="compass-auto-rotate" onchange="window.toggleCompassRotation()"
+                                    style="margin:0;"> <span data-i18n="dynamic_lbl">🔄 Dinámica</span></label></div>
+                    </div>
+                </div>
+                <div class="edit-tools-grid" style="margin-bottom:0;">
+                    <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('marker')"
+                        data-i18n="marker_tool">📍 Marcador</button>
+                    <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polyline')"
+                        data-i18n="path_tool">📏 Ruta Manual</button>
+                    <button class="btn-outline"
+                        style="margin-bottom:0;grid-column:span 2;border-color:#9b59b6;color:#9b59b6;"
+                        onclick="window.enableTool('whiteboard')">🖍️ Pizarra Táctica</button>
+                    <button class="btn-outline" style="margin-bottom:0;grid-column:span 2;"
+                        onclick="window.enableTool('measure')" data-i18n="ruler_tool">📐 Regla Rápida</button>
+                    <button class="btn-outline"
+                        style="margin-bottom:0;grid-column:span 2;border-color:var(--info);color:var(--info);"
+                        onclick="window.enableTool('auto-route')" data-i18n="smart_route_tool">🗺️ Ruta
+                        Inteligente</button>
+                    <button class="btn-outline" style="margin-bottom:0;" onclick="window.enableTool('polygon')"
+                        data-i18n="area_tool">🔲 Área</button><button class="btn-outline" style="margin-bottom:0;"
+                        id="btn-compass" onclick="window.toggleCompass()" data-i18n="compass_tool">🧭 Brújula</button>
+                    <label class="btn-outline"
+                        style="margin-bottom:0;grid-column:span 2;border-color:var(--ign-gold);color:var(--ign-gold);cursor:pointer;"
+                        for="field-map-loader" data-i18n="field_map_tool">🗺️ Solapar Mapa Campo</label>
+                    <input type="file" id="field-map-loader" accept="image/*" style="display:none;"
+                        onchange="window.processFieldMap(event)">
+                    <button class="btn-outline" id="toggleLegendBtn"
+                        style="margin-bottom:0;border-style:dashed;grid-column:span 2;"
+                        onclick="window.toggleMapLegend()" data-i18n="legend_tool">📋 Leyenda</button>
+                </div>
+            </div>
+
+            <button class="btn-outline" onclick="window.toggleGroup('layer-manager-container')"
+                style="margin-top:15px;margin-bottom:10px;justify-content:space-between;"><span
+                    data-i18n="layer_menu">🗂️ Gestor de Capas</span><span>▼</span></button>
+            <div id="layer-manager-container"
+                style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
+                <div id="layer-list"
+                    style="max-height:250px;overflow-y:auto;background:#fff;border:1px solid #cbd5e0;border-radius:8px;">
+                    <div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay elementos</div>
+                </div>
+            </div>
+
+            <button class="btn-outline" onclick="window.startPrintComposer()"
+                style="margin-bottom:10px;justify-content:center;border-color:#10b981;color:#10b981;font-weight:bold;">🖨️ Modo Impresión Avanzado</button>
+
+            <button class="btn-outline" onclick="window.toggleGroup('gallery-container')"
+                style="margin-bottom:10px;justify-content:space-between;"><span data-i18n="gallery_menu">📸 Galería
+                    Capturas</span><span>▼</span></button>
+            <div id="gallery-container"
+                style="display:none;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;">
+                <button class="btn-outline" style="margin-bottom:10px;border-width:2px;" onclick="window.captureMap()"
+                    data-i18n="take_screenshot_btn">📸 Tomar Captura</button>
+                <div id="gallery"></div>
+            </div>
+
+            <button class="btn-outline" onclick="document.getElementById('pc-link-modal').style.display='flex'"
+                style="margin-bottom:10px;justify-content:space-between;border-color:var(--ign-gold);color:var(--ign-gold);"><span>💻 Vincular PC (Mensual)</span><span>▶</span></button>
+
+            <button class="btn-outline" onclick="window.toggleGroup('info-app-container')"
+                style="margin-bottom:10px;justify-content:space-between;"><span data-i18n="about_menu">ℹ️ Acerca de la
+                    App</span><span>▼</span></button>
+            <div id="info-app-container"
+                style="display:none;padding:15px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;font-size:12px;color:#475569;line-height:1.5;">
+                <div style="text-align:center;margin-bottom:10px;">
+                    <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
+                    <span
+                        style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
+                        v2.01
+                    </span>
+                </div>
+                <p style="margin:5px 0;"><b>👨‍💻 Autor:</b> gongorycorp.</p>
+                <p style="margin:5px 0;"><b>📅 Fecha:</b> Actualizado 16 de Agosto de 2026</p>
+                <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;">
+                    <b style="color:var(--ign-blue);" data-i18n="latest_changes">Últimos cambios:</b>
+                    <ul style="margin:5px 0;padding-left:20px;">
+                        <li>NUEVO: Integración de Google Earth 3D externo.</li>
+                        <li>OPTIMIZACIÓN: Reducción del 80% en consumo de batería y datos GPS para MilSims.</li>
+                        <li>NUEVO: Recordatorio inicial para mapas offline y ventana de Historial.</li>
+                    </ul>
+                </div>
+                <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;text-align:center;">
+                    <button class="btn-outline" style="border-color:#9b59b6;color:#9b59b6;margin-bottom:10px;width:100%;"
+                        onclick="document.getElementById('history-modal').style.display='flex'">📜 Historial de Versiones</button>
+                    <button class="btn-outline" style="border-color:var(--info);color:var(--info);margin-bottom:0;"
+                        onclick="window.manualUpdateCheck()">🔄 Buscar actualizaciones</button>
+                </div>
+            </div>
+
+            <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);margin-bottom:0;"
+                onclick="window.enableTool('delete')" data-i18n="delete_btn">🗑️ Borrar Individual</button>
+        </div>
+    </div>
+
+    <div class="sidebar oculto" id="panelLive">
+        <div class="bottom-sheet-handle"></div>
+        <div class="header" style="background:#9b59b6;">
+            <span style="font-weight: 600; font-size: 16px;" data-i18n="live_title">Operaciones & GPS</span>
+            <button style="background:none; border:none; color:white; cursor:pointer; font-size: 20px;"
+                onclick="window.toggleLiveMenu()">✕</button>
+        </div>
+        <div class="content">
+            <button class="btn-outline"
+                style="border-color:var(--success);color:var(--success);font-size:16px;padding:12px;margin-bottom:20px;font-weight:bold;"
+                onclick="window.toggleLocation()" title="Mi Ubicación" data-i18n="live_gps">🎯 Activar Seguimiento
+                GPS</button>
+            <button class="btn-outline"
+                style="border-color:#3498db;color:#3498db;font-size:16px;padding:12px;margin-bottom:20px;font-weight:bold;display:none;"
+                id="ar-view-btn" onclick="window.toggleARView()" title="Visor de Realidad Aumentada"
+                data-i18n="live_ar">👁️ Visor AR</button>
+
+            <div class="section-title"
+                style="margin-top:0;color:#9b59b6;border-bottom-color:#9b59b6; display:flex; justify-content:space-between; align-items:center;"
+                data-i18n="live_menu">
+                <span>📡 Sala de Operaciones</span>
+                <span id="active-room-name"
+                    style="font-weight:bold; color:var(--success); display:none; font-size:12px; text-transform:none;"></span>
+            </div>
+            <div id="live-group-container"
+                style="padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:15px;border:1px solid #cbd5e0;border-left:4px solid #9b59b6;">
+                <div id="room-setup-ui">
+                    <div id="recent-rooms-container"
+                        style="display:none; flex-direction:row; gap:8px; margin-bottom:8px;">
+                        <select id="recent-rooms-select" class="form-select" style="margin-bottom:0; flex:1;"
+                            onchange="window.selectRecentRoom()">
+                            <option value="">🕒 Salas Recientes...</option>
+                        </select>
+                        <button class="btn-outline" id="btn-delete-recent-room"
+                            style="margin-bottom:0; width:auto; padding:0 15px; border-color:var(--danger); color:var(--danger);"
+                            onclick="window.deleteRecentRoom()" title="Eliminar sala de recientes">🗑️</button>
+                    </div>
+                    <input type="text" id="room-id" class="form-input" placeholder="Nombre de la Sala"
+                        style="margin-bottom:8px;" data-i18n-placeholder="room_name_ph">
+                    <input type="password" id="room-pass" class="form-input" placeholder="Contraseña de la Sala"
+                        style="margin-bottom:8px;" data-i18n-placeholder="room_pass_ph">
+                    <input type="text" id="live-alias" class="form-input"
+                        placeholder="Tu indicativo (Ej. Escuadra Alfa)" style="margin-bottom:8px;"
+                        data-i18n-placeholder="user_alias_ph">
+                    <select id="live-faction" class="form-select" style="margin-bottom:10px;">
+                        <option value="#3498db" data-i18n="opt_blue_side">🔵 Bando Azul</option>
+                        <option value="#e74c3c" data-i18n="opt_red_side">🔴 Bando Rojo</option>
+                        <option value="#2ecc71" data-i18n="opt_green_side">🟢 Bando Verde</option>
+                        <option value="#f1c40f" data-i18n="opt_yellow_side">🟡 Bando Amarillo</option>
+                        <option value="#1e293b" data-i18n="opt_pmc">⚫ PMC / Mercenarios</option>
+                        <option value="#8b4513" data-i18n="opt_marine">💀 Marine Raider bcn</option>
+                    </select>
+                    <select id="live-role" class="form-select" style="margin-bottom:10px;">
+                        <option value="asalto" data-i18n="opt_assault">🔫 Asalto</option>
+                        <option value="sniper" data-i18n="opt_sniper">🔭 Francotirador</option>
+                        <option value="medico" data-i18n="opt_medic">🏥 Médico</option>
+                        <option value="apoyo" data-i18n="opt_support">🛡️ Apoyo</option>
+                        <option value="lider" data-i18n="opt_leader">⭐ Líder</option>
+                        <option value="navegante" data-i18n="opt_nav">🧭 Navegante</option>
+                        <option value="radio" data-i18n="opt_radio">📻 Radio Operador</option>
+                    </select>
+                    <button class="btn-outline" id="btn-room-toggle"
+                        style="margin-bottom:0;border-color:#9b59b6;color:#9b59b6;width:100%;"
+                        onclick="window.toggleRoom()" data-i18n="enter_room_btn">🚪 Entrar / Crear Sala</button>
+                </div>
+                <div id="room-active-ui" style="display:none; margin-top:5px;">
+                    <div style="display:flex;gap:5px;margin-bottom:10px;">
+                        <button class="btn-outline" id="btn-sync-map"
+                            style="margin-bottom:0;border-color:#3498db;color:#3498db;flex:1;font-size:11px;padding:8px;"
+                            onclick="window.syncDrawingsToRoom()" data-i18n="share_map_btn">🔄 Compartir Mapa</button>
+                        <button class="btn-outline" id="btn-delete-room"
+                            style="margin-bottom:0;border-color:var(--danger);color:white;background:var(--danger);flex:1;font-size:11px;padding:8px;display:none;"
+                            onclick="window.deleteRoom()" data-i18n="delete_room_btn">🗑️ Eliminar Sala</button>
+                    </div>
+                    <div id="active-members-list"
+                        style="margin-bottom:10px; font-size:11px; background:#fff; border:1px solid #cbd5e0; border-radius:6px; padding:5px; max-height:85px; overflow-y:auto;">
+                        <div
+                            style="color:#64748b; font-weight:bold; margin-bottom:4px; border-bottom:1px dashed #cbd5e0; padding-bottom:4px;">
+                            <span data-i18n="room_members">👥 Miembros en sala:</span> <span id="members-count"
+                                style="color:var(--ign-blue);">0</span>
+                        </div>
+                        <div id="members-container" style="display:flex; flex-direction:column; gap:2px;"></div>
+                    </div>
+                    <div id="radio-msgs-container" style="display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap;">
+                        <button class="btn-outline"
+                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--danger); color:var(--danger);"
+                            onclick="window.sendRadioMessage('⚠️ Enemigo', this)" data-i18n="msg_enemy">⚠️
+                            Enemigo</button>
+                        <button class="btn-outline"
+                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--success); color:var(--success);"
+                            onclick="window.sendRadioMessage('🏥 Médico', this)" data-i18n="msg_medic">🏥
+                            Médico</button>
+                        <button class="btn-outline"
+                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--info); color:var(--info);"
+                            onclick="window.sendRadioMessage('🛡️ Defendiendo', this)" data-i18n="msg_defend">🛡️
+                            Defensa</button>
+                        <button class="btn-outline"
+                            style="margin-bottom:0; padding:6px; font-size:10px; flex:1 1 45%; border-color:var(--ign-gold); color:var(--ign-gold);"
+                            onclick="window.sendRadioMessage('🏃 Avanzando', this)" data-i18n="msg_move">🏃
+                            Avanzando</button>
+                        <button class="btn-outline"
+                            style="margin-bottom:0; padding:8px; font-size:11px; flex:1 1 100%; border-color:#475569; background:#475569; color:white; font-weight:800;"
+                            onclick="window.sendRadioMessage('✋ ¡BAJA!', this)" data-i18n="msg_down">💀 ESTOY
+                            ELIMINADO</button>
+                    </div>
+                    <div id="chat-box"
+                        style="height:120px; overflow-y:auto; background:#fff; border:1px solid #cbd5e0; border-radius:6px; padding:5px; font-size:11px; margin-bottom:5px; display:flex; flex-direction:column; gap:4px;">
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="chat-input" class="form-input" placeholder="Mensaje..."
+                            style="margin-bottom:0; padding:6px; font-size:11px;"
+                            onkeypress="if(event.key==='Enter') window.sendChatMsg()" data-i18n-placeholder="chat_ph">
+                        <button class="btn-outline"
+                            style="margin-bottom:0; width:auto; padding:0 12px; background:var(--ign-blue); color:white; border:none;"
+                            onclick="window.sendChatMsg()">➤</button>
+                    </div>
+                    <button class="btn-outline"
+                        style="margin-top:10px;margin-bottom:0;border-color:var(--danger);color:var(--danger);width:100%;"
+                        onclick="window.toggleRoom()" data-i18n="exit_room_btn">🚪 Salir de la Sala</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
+        <div
+            style="background:white;padding:20px;border-radius:12px;width:300px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+            <h3 id="modal-title" style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:16px;"
+                data-i18n="modal_name_title">Nombrar elemento</h3><input type="text" id="modal-input"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:flex-end;gap:10px;"><button
+                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;"
+                    onclick="window.closeModal()" data-i18n="modal_cancel">Cancelar</button><button
+                    style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;"
+                    onclick="window.confirmModal()" data-i18n="modal_accept">Aceptar</button></div>
+        </div>
+    </div>
+
+    <div id="alert-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:4000;align-items:center;justify-content:center;">
+        <div style="background:white;padding:20px;border-radius:12px;width:300px;text-align:center;">
+            <h3 id="alert-modal-title" style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:18px;"
+                data-i18n="modal_alert_title">Notificación</h3>
+            <p id="alert-modal-msg"
+                style="font-size:13px;color:#475569;margin-bottom:20px;line-height:1.4;white-space:pre-wrap;"></p>
+            <button
+                style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;"
+                onclick="document.getElementById('alert-modal').style.display='none'"
+                data-i18n="modal_accept">Aceptar</button>
+        </div>
+    </div>
+
+    <div id="cloud-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
+        <div
+            style="background:white;padding:20px;border-radius:12px;width:320px;max-height:80vh;display:flex;flex-direction:column;">
+            <h3 style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:16px;text-align:center;"
+                data-i18n="modal_cloud_title">☁️ Mis Proyectos</h3>
+            <div id="cloud-project-list"
+                style="flex:1;overflow-y:auto;margin-bottom:15px;border:1px solid #cbd5e0;border-radius:8px;padding:5px;min-height:100px;">
+            </div><button
+                style="padding:8px 15px;border-radius:6px;border:1px solid #cbd5e0;background:white;color:#475569;cursor:pointer;width:100%;"
+                onclick="document.getElementById('cloud-modal').style.display='none'"
+                data-i18n="modal_close">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="iframe-3d-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:4500;align-items:center;justify-content:center;flex-direction:column;">
+        <div
+            style="width:95%;height:90%;background:#000;border:2px solid var(--ign-gold);border-radius:8px;position:relative;display:flex;flex-direction:column;box-shadow:0 0 30px rgba(251,191,36,0.2);">
+            <div
+                style="background:var(--bg-sidebar);padding:10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--ign-gold);border-radius:8px 8px 0 0;">
+                <span style="color:var(--ign-gold);font-weight:bold;font-family:'Courier New', monospace;">🛰️ SEÑAL DE
+                    DRON TÁCTICO 3D</span>
+                <button
+                    onclick="document.getElementById('iframe-3d-modal').style.display='none'; document.getElementById('iframe-3d-viewer').src='';"
+                    style="background:var(--danger);color:white;border:1px solid var(--danger);padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:bold;text-transform:uppercase;font-size:11px;">✕
+                    Desconectar</button>
+            </div>
+            <iframe id="iframe-3d-viewer" src=""
+                style="width:100%;flex:1;border:none;border-radius:0 0 8px 8px;background:#000;"></iframe>
+        </div>
+    </div>
+
+    <div id="ar-view-container"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:3500;background:black;">
+        <video id="ar-video" autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+        <div id="ar-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
+        <div
+            style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:3501;display:flex;gap:10px;">
+            <button onclick="window.toggleARView()"
+                style="background:var(--danger);color:white;border:none;padding:12px 24px;border-radius:30px;font-weight:bold;font-size:14px;box-shadow:0 4px 10px rgba(0,0,0,0.5);pointer-events:auto;">✕
+                Cerrar AR</button>
+        </div>
+    </div>
+
+    <div id="confirm-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
+        <div style="background:white;padding:20px;border-radius:12px;width:300px;text-align:center;">
+            <h3 style="margin-top:0;margin-bottom:15px;color:var(--danger);font-size:18px;">⚠️ Confirmación</h3>
+            <p style="font-size:14px;color:#475569;margin-bottom:20px;"></p>
+            <div style="display:flex;justify-content:center;gap:10px;"><button
+                    style="padding:8px 15px;border-radius:6px;border:1px solid #cbd5e0;background:white;color:#475569;cursor:pointer;"
+                    onclick="window.closeConfirmModal()">Cancelar</button><button
+                    style="padding:8px 15px;border-radius:6px;border:none;background:var(--danger);color:white;cursor:pointer;"
+                    onclick="window.acceptConfirmModal()">Confirmar</button></div>
+        </div>
+    </div>
+
+    <div id="edit-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
+        <div style="background:white;padding:20px;border-radius:12px;width:340px;max-height:90vh;overflow-y:auto;">
+            <h3 style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:16px;">✏️ Editar Elemento</h3>
+            <label
+                style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Nombre</label><input
+                type="text" id="edit-name-input"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;">
+            <label
+                style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Bando</label><select
+                id="edit-faction-input"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;">
+                <option value="General">🏳️ General</option>
+                <option value="Rojo">🔴 Bando Rojo</option>
+                <option value="Azul">🔵 Bando Azul</option>
+                <option value="Organizacion">⚙️ Organización</option>
+                <option value="Neutral">⚪ Neutral / Civil</option>
+                <option value="Marine Raider bcn">💀 Marine Raider bcn</option>
+            </select>
+            <label
+                style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Grupo</label><input
+                type="text" id="edit-group-input"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;"
+                placeholder="Ej: Escuadra Alfa">
+            <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">📝 Notas /
+                Comentarios</label><textarea id="edit-notes-input" rows="2"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;font-family:inherit;font-size:12px;resize:vertical;"
+                placeholder="Instrucciones, detalles, información táctica..."></textarea>
+            <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;"
+                data-i18n="edit_recon_photo">📸 Foto Reconocimiento</label>
+            <div style="display:flex;gap:5px;margin-bottom:5px;">
+                <input type="text" id="edit-image-input" class="form-input" style="margin-bottom:0;flex:1;"
+                    placeholder="URL o subir..." data-i18n-placeholder="edit_recon_ph"
+                    oninput="if(typeof window.previewReconImage==='function') window.previewReconImage()">
+                <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 10px;"
+                    onclick="document.getElementById('edit-image-camera').click()" title="Cámara">📸</button>
+                <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 10px;"
+                    onclick="document.getElementById('edit-image-file').click()" data-i18n="edit_recon_upload">📷
+                    Cargar</button>
+                <button class="btn-outline"
+                    style="width:auto;margin-bottom:0;padding:0 10px;color:var(--danger);border-color:var(--danger);"
+                    onclick="if(typeof window.clearReconImage==='function') window.clearReconImage()"
+                    title="Borrar foto">🗑️</button>
+                <input type="file" id="edit-image-camera" accept="image/*" capture="environment" style="display:none;"
+                    onchange="if(typeof window.processReconImage==='function') window.processReconImage(event)">
+                <input type="file" id="edit-image-file" accept="image/*" style="display:none;"
+                    onchange="if(typeof window.processReconImage==='function') window.processReconImage(event)">
+            </div>
+            <img id="edit-image-preview"
+                style="display:none;width:100%;max-height:150px;object-fit:cover;border-radius:6px;margin-bottom:10px;border:1px solid #cbd5e0;cursor:zoom-in;"
+                onclick="window.openImageModal(this.src)">
+            <div id="edit-style-options" style="display:none;">
+                <label
+                    style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Color</label><select
+                    id="edit-color-input"
+                    style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;">
+                    <option value="#2ecc71">Verde</option>
+                    <option value="#e74c3c">Rojo</option>
+                    <option value="#3498db">Azul</option>
+                    <option value="#f1c40f">Amarillo</option>
+                    <option value="#9b59b6">Morado</option>
+                    <option value="#34495e">Oscuro</option>
+                </select>
+                <div id="edit-marker-specifics" style="display:none;">
+                    <label style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Icono
+                        Militar</label><select id="edit-icon-input"
+                        style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;">
+                        <option value="punto">🔴 Punto normal</option>
+                        <option value="base">⛺ Base / Campamento</option>
+                        <option value="objetivo">🎯 Objetivo</option>
+                        <option value="bandera">🚩 Respawn</option>
+                        <option value="combate">⚔️ Combate</option>
+                        <option value="defensa">🛡️ Defensa</option>
+                        <option value="vehiculo">🚁 Extracción</option>
+                        <option value="medico">🏥 Médico</option>
+                        <option value="radio">📡 Comunicaciones</option>
+                        <option value="raider">💀 Logo Raider</option>
+                    </select>
+                    <label
+                        style="font-size:12px;font-weight:bold;color:#475569;display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;"><input
+                            type="checkbox" id="edit-show-label-input" style="width:16px;height:16px;"> Mostrar
+                        nombre</label>
+                    <label
+                        style="font-size:12px;font-weight:bold;color:var(--ign-gold);display:block;margin-bottom:4px;">⭕
+                        Radio de Acción (m)</label><input type="number" id="edit-buffer-input" min="0" step="1"
+                        style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:10px;box-sizing:border-box;">
+                    <div style="margin-top:15px;padding-top:10px;border-top:1px dashed #cbd5e0;">
+                        <label
+                            style="font-size:12px;font-weight:bold;color:#475569;display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;"><input
+                                type="checkbox" id="edit-cone-enable" style="width:16px;height:16px;"
+                                onchange="document.getElementById('edit-cone-options').style.display=this.checked?'block':'none';">
+                            🔦 Mostrar Cono</label>
+                        <div id="edit-cone-options" style="display:none;margin-left:24px;">
+                            <label
+                                style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">Color</label><select
+                                id="edit-cone-color-input"
+                                style="width:100%;padding:8px;border-radius:6px;border:1px solid #cbd5e0;margin-bottom:8px;box-sizing:border-box;">
+                                <option value="#f1c40f">Amarillo</option>
+                                <option value="#e74c3c">Rojo</option>
+                                <option value="#3498db">Azul</option>
+                                <option value="#2ecc71">Verde</option>
+                                <option value="#9b59b6">Morado</option>
+                                <option value="#ffffff">Blanco</option>
+                                <option value="#34495e">Oscuro</option>
+                            </select>
+                            <label
+                                style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">Orientación</label>
+                            <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><input type="range"
+                                    id="edit-cone-angle-range" min="0" max="360" value="0" style="flex:1;"
+                                    oninput="document.getElementById('edit-cone-angle-val').innerText=this.value+'°'"><span
+                                    id="edit-cone-angle-val"
+                                    style="font-size:11px;width:30px;font-weight:bold;color:var(--ign-blue);">0°</span>
+                            </div>
+                            <label
+                                style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">Apertura</label>
+                            <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><input type="range"
+                                    id="edit-cone-spread-range" min="10" max="180" value="60" style="flex:1;"
+                                    oninput="document.getElementById('edit-cone-spread-val').innerText=this.value+'°'"><span
+                                    id="edit-cone-spread-val"
+                                    style="font-size:11px;width:30px;font-weight:bold;color:var(--ign-blue);">60°</span>
+                            </div>
+                            <label
+                                style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">Alcance
+                                (m)</label><input type="number" id="edit-cone-dist" min="10" step="10" value="100"
+                                style="width:100%;padding:8px;border-radius:6px;border:1px solid #cbd5e0;box-sizing:border-box;">
+                        </div>
+                    </div>
+                </div>
+                <div id="edit-shape-specifics" style="display:none;"><label
+                        style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Grosor</label><select
+                        id="edit-weight-input"
+                        style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;box-sizing:border-box;">
+                        <option value="2">Fina</option>
+                        <option value="4">Normal</option>
+                        <option value="6">Gruesa</option>
+                    </select></div>
+                <div id="edit-autoroute-options" style="display:none;"><label
+                        style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Modo de
+                        Ruta</label><select id="edit-route-mode"
+                        style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;box-sizing:border-box;">
+                        <option value="foot">🚶‍♂️ A pie</option>
+                        <option value="driving">🚗 En coche</option>
+                        <option value="bike">🚲 En bici</option>
+                    </select></div>
+                <div id="edit-fieldmap-specifics" style="display:none;">
+                    <label
+                        style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Opacidad
+                        del Mapa</label>
+                    <input type="range" id="edit-opacity-input" min="0" max="1" step="0.1" value="0.6"
+                        style="width:100%;margin-bottom:10px;">
+                    <label
+                        style="font-size:12px;font-weight:bold;color:#475569;display:block;margin-bottom:4px;">Rotación
+                        (Grados)</label>
+                    <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;"><input type="range"
+                            id="edit-rotation-input" min="-180" max="180" step="1" value="0" style="flex:1;"
+                            oninput="document.getElementById('edit-rotation-val').innerText=this.value+'°'"><span
+                            id="edit-rotation-val"
+                            style="font-size:12px;font-weight:bold;color:var(--ign-blue);width:40px;">0°</span></div>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:15px;"><button
+                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;"
+                    onclick="window.closeEditModal()">Cancelar</button><button
+                    style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;"
+                    onclick="window.confirmEditModal()">Guardar</button></div>
+        </div>
+    </div>
+
+    <div id="rename-folder-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
+        <div style="background:white;padding:20px;border-radius:12px;width:300px;">
+            <h3 style="margin-top:0;margin-bottom:15px;color:var(--ign-blue);font-size:16px;">✏️ Renombrar Carpeta</h3>
+            <select id="rename-folder-select"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;"
+                onchange="document.getElementById('rename-folder-input').value=this.value"></select><input type="text"
+                id="rename-folder-input"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid #cbd5e0;margin-bottom:15px;">
+            <div style="display:flex;justify-content:flex-end;gap:10px;"><button
+                    style="padding:8px 15px;border-radius:6px;border:1px solid var(--danger);background:white;color:var(--danger);cursor:pointer;"
+                    onclick="window.closeRenameFolderModal()">Cancelar</button><button
+                    style="padding:8px 15px;border-radius:6px;border:none;background:var(--ign-blue);color:white;cursor:pointer;"
+                    onclick="window.confirmRenameFolderModal()">Renombrar</button></div>
+        </div>
+    </div>
+
+    <div id="image-modal" onclick="window.closeImageModal()"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(5px);cursor:zoom-out;">
+        <div
+            style="position:relative;max-width:95vw;max-height:90vh;display:flex;justify-content:center;align-items:center;">
+            <button onclick="window.closeImageModal()"
+                style="position:absolute;top:-40px;right:0;background:none;border:none;color:white;font-size:32px;cursor:pointer;text-shadow:0 2px 5px rgba(0,0,0,0.8);"
+                title="Cerrar">✕</button>
+            <img id="image-modal-content" src=""
+                style="max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.8);">
+        </div>
+    </div>
+
+    <div id="offgrid-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
+        <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:350px;position:relative;">
+            <h3 style="margin-top:0;color:var(--success);font-size:18px;">📡 Sync Off-Grid</h3>
+            <p style="font-size:12px;color:#475569;margin-bottom:15px;line-height:1.4;">Comparte el mapa o envía
+                coordenadas a tus compañeros cuando <b>no hay cobertura de internet</b>.</p>
+            <button class="btn-outline" style="background:var(--success);color:white;border:none;margin-bottom:15px;"
+                onclick="window.shareOffGridFile()">📲 Enviar Mapa por Bluetooth</button>
+            <div style="border-top:1px dashed #cbd5e0; margin-bottom:15px; padding-top:15px;">
+                <label style="font-size:11px;font-weight:bold;color:#64748b;">Exportar a Radio / SMS (Solo
+                    Marcadores):</label>
+                <div style="display:flex;gap:5px;margin-bottom:15px;margin-top:5px;">
+                    <input type="text" id="offgrid-code-export" class="form-input"
+                        style="margin-bottom:0;font-family:monospace;font-size:10px;background:#f8fafc;" readonly>
+                    <button class="btn-outline" style="width:auto;margin-bottom:0;padding:0 12px;"
+                        onclick="window.copyOffGridCode()">Copiar</button>
+                </div>
+                <label style="font-size:11px;font-weight:bold;color:#64748b;">Recibir código Táctico:</label>
+                <div style="display:flex;gap:5px;margin-top:5px;margin-bottom:5px;">
+                    <input type="text" id="offgrid-code-import" class="form-input" placeholder="Pega el código AM:..."
+                        style="margin-bottom:0;font-family:monospace;font-size:10px;">
+                    <button class="btn-outline"
+                        style="width:auto;margin-bottom:0;padding:0 12px;background:var(--ign-blue);color:white;border:none;"
+                        onclick="window.importOffGridCode()">Cargar</button>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;"><button class="btn-outline"
+                    style="width:auto;border-color:var(--danger);color:var(--danger);margin-bottom:0;padding:8px 15px;"
+                    onclick="document.getElementById('offgrid-modal').style.display='none'">Cerrar</button></div>
+        </div>
+    </div>
+
+    <div id="manual-modal"
+        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
+        <div
+            style="background:white;padding:25px;border-radius:12px;width:90%;max-width:650px;max-height:85vh;overflow-y:auto;position:relative;">
+            <button onclick="window.closeManual()"
+                style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;">✕</button>
+            <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;"
+                data-i18n="manual_title">📖 Manual de Usuario</h2>
+            <div
+                style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
+                <p data-i18n="manual_p1"><b>📍 Marcadores, Áreas y Notas:</b> Usa las herramientas de edición para
+                    añadir puntos, rutas o zonas. Si tocas un elemento ya creado en el mapa, pulsa <b>"✏️ Editar"</b>
+                    para cambiar su color, bando, añadir un radio de acción, un cono de visión direccional, o escribir
+                    <b>Notas y Comentarios</b> tácticos que todos podrán leer.
+                </p>
+                <p data-i18n="manual_p2"><b>📐 Regla Rápida:</b> Herramienta para medir distancias al vuelo. Haz clics
+                    en el mapa para trazar una línea temporal y ver la distancia exacta paso a paso sin ensuciar tu
+                    proyecto.</p>
+                <p data-i18n="manual_p3"><b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará
+                    automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el
+                    tiempo estimado a pie o en vehículo.</p>
+                <p data-i18n="manual_p4"><b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de
+                    Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu
+                    rumbo físico real basándose en hacia dónde apuntas el móvil.</p>
+                <p data-i18n="manual_p5"><b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú
+                    y tu equipo os veréis en el mapa. <i>(Nota: Para optimizar la batería y el consumo de datos, la posición GPS se actualiza cada 15 segundos, y solo si te estás moviendo).</i> Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋
+                    ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con
+                    calavera). Usa el botón <b>"🔄 Compartir Mapa"</b> para enviar al instante todos tus dibujos a las
+                    pantallas del resto de la escuadra.</p>
+                <p data-i18n="manual_p6"><b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña
+                    "Mezclador", pulsa <b>"🔲 Marcar Zona"</b>, dibuja un recuadro y el mapa se guardará directamente en
+                    la memoria caché de tu dispositivo para funcionar sin internet.</p>
+                <p data-i18n="manual_p7"><b>📡 Sync Off-Grid:</b> Si no tienes internet pero quieres pasarle tu mapa al
+                    compañero, ve a Gestión de Proyecto y usa <b>"Compartir Off-Grid"</b>. Podrás enviar el proyecto
+                    completo por Bluetooth, o generar un "código de texto táctico" súper ligero para copiar y pegar por
+                    SMS o redes de radio como Meshtastic.</p>
+                <p data-i18n="manual_p8"><b>🖨️ Impresión Avanzada:</b> Usa el botón "Modo Impresión Avanzado" en el menú para convertir el mapa en un encuadre dinámico. Podrás mover el papel libremente sobre el mapa, arrastrar la leyenda y exportar un PDF topográfico exacto (A4/A3). Además, puedes guardar fotos rápidas en la "Galería de Capturas".</p>
+                <p data-i18n="manual_p9"><b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o
+                    coordenadas exactas. En el menú "Sistema", puedes activar la cuadrícula en formato Decimal, DMS, UTM
+                    o Táctica Alfanumérica (Ej: Cuadrante A1).</p>
+                <p data-i18n="manual_p10"><b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el
+                    botón "🎯 Ir". Se mostrará un panel superior con la distancia restante y una flecha que girará con
+                    tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).</p>
+                <p data-i18n="manual_p11"><b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista
+                    en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como
+                    baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando
+                    el tiempo que lleva sin señal.</p>
+                <p data-i18n="manual_p12"><b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la
+                    cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el
+                    entorno real flotando según tu orientación y distancia.</p>
+                <p data-i18n="manual_p13"><b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>"✏️ Editar"</b>
+                    de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La
+                    imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el
+                    objetivo.</p>
+                <p data-i18n="manual_p14"><b>🌬️ Clima Táctico:</b> En el menú de "Información MTN", pulsa en "Reporte
+                    Meteorológico" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de
+                    alba/ocaso de la zona que estás visualizando.</p>
+                <p data-i18n="manual_p15"><b>🗺️ Solapar Mapa de Campo:</b> En la pestaña "Edición de Mapa", usa esta
+                    herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores
+                    dorados que puedes arrastrar para ajustar tamaño y posición. Desde "✏️ Editar" puedes modificar su
+                    transparencia para cuadrarlo con el satélite.</p>
+                <p data-i18n="manual_p16"><b>🖍️ Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el
+                    menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones.</p>
+                <p data-i18n="manual_p17"><b>🕒 Historial de Salas:</b> Al entrar o crear una sala, se guardará
+                    automáticamente en un desplegable para que puedas volver a entrar rápidamente sin tener que escribir
+                    de nuevo la contraseña.</p>
+                <p data-i18n="manual_p18"><b>🌍 Mapas Globales (NUEVO):</b> Utiliza el Gestor de Capas para seleccionar mapas mundiales como el Satélite ESRI o OpenTopoMap si juegas fuera de España.</p>
+            </div>
+            <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button
+                    style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;"
+                    onclick="window.closeManual()" data-i18n="manual_understood">Entendido</button></div>
+        </div>
+    </div>
+
+    <div id="offline-banner"
+        style="display:none;position:fixed;top:15px;left:50%;transform:translateX(-50%);background:var(--danger);color:white;padding:8px 16px;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,0.6);z-index:9999;font-size:12px;font-weight:bold;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px);">
+        ⚠️ Estás en modo sin conexión
+    </div>
+
+    <div id="update-modal"
+        style="display:none;position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--ign-blue);color:white;padding:15px 20px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:9999;align-items:center;flex-direction:column;gap:10px;border:2px solid var(--ign-gold);">
+        <div style="font-size:14px;font-weight:bold;text-align:center;" data-i18n="update_title">🚀 Nueva versión
+            disponible</div>
+        <div style="font-size:11px;color:#cbd5e0;text-align:center;max-width:220px;" data-i18n="update_desc">⚠️ Tras
+            pulsar actualizar, cierra la app por completo y vuelve a entrar.</div>
+        <button onclick="window.applyAppUpdate()"
+            style="background:var(--success);color:white;border:none;padding:8px 25px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:14px;margin-top:5px;"
+            data-i18n="update_btn">Actualizar</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signInWithPopup, signOut, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const miConfiguracionFirebase = { apiKey: "AIzaSyDIy8yd_3z85TUYADDVRI6lDo9-jJvYsVo", authDomain: "airsoftmaps-3bc14.firebaseapp.com", projectId: "airsoftmaps-3bc14", storageBucket: "airsoftmaps-3bc14.firebasestorage.app", messagingSenderId: "198929323056", appId: "1:198929323056:web:96653efbc97f6f919249f5" };
+        const firebaseConfig = Object.keys(miConfiguracionFirebase).length > 0 ? miConfiguracionFirebase : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {});
+        const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app); const appId = typeof __app_id !== 'undefined' ? __app_id : 'airsoftmaps-app';
+        window.db = db; window.auth = auth;
+        let currentUser = null; let unsubscribeProjects = null; let cloudProjects = [];
+
+        window.updateAuthUI = function (user) { const statusText = document.getElementById('login-status-text'); const btnLogin = document.getElementById('btn-login-google'); const btnLogout = document.getElementById('btn-logout'); if (statusText) { if (user && !user.isAnonymous) { statusText.innerHTML = `<b>🟢 Sesión iniciada:</b><br>${user.email || 'Cuenta de Google'}`; if (btnLogin) btnLogin.style.display = 'none'; if (btnLogout) btnLogout.style.display = 'flex'; } else { statusText.innerHTML = "<b>👤 Modo Anónimo</b>"; if (btnLogin) btnLogin.style.display = 'flex'; if (btnLogout) btnLogout.style.display = 'none'; } } };
+        const initAuth = async () => { try { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { try { await signInWithCustomToken(auth, __initial_auth_token); } catch (e) { await signInAnonymously(auth); } } else { await signInAnonymously(auth); } } catch (e) { } };
+        initAuth();
+        onAuthStateChanged(auth, (user) => { currentUser = user; if (user) { listenToProjects(); if (typeof window.updateAuthUI === 'function') window.updateAuthUI(user); } else { if (unsubscribeProjects) { unsubscribeProjects(); unsubscribeProjects = null; } } });
+
+        function listenToProjects() { if (!currentUser) return; const projectsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'projects'); unsubscribeProjects = onSnapshot(projectsRef, (snapshot) => { cloudProjects = []; snapshot.forEach(doc => { cloudProjects.push({ id: doc.id, ...doc.data() }); }); renderCloudProjects(); }); }
+
+        function renderCloudProjects() {
+            const list = document.getElementById('cloud-project-list'); if (!list) return;
+            if (!cloudProjects || cloudProjects.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay proyectos en la nube</div>'; return; }
+            let html = ''; cloudProjects.forEach(p => { const date = new Date(p.updatedAt || Date.now()).toLocaleString('es-ES'); html += `<div style="padding:10px; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:8px;"><div style="font-size:13px; font-weight:bold; color:var(--ign-blue); word-break:break-all;">${p.name}</div><div style="font-size:10px; color:#64748b;">Actualizado: ${date}</div><div style="display:flex; gap:5px;"><button style="flex:1; padding:6px; background:var(--ign-blue); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.cargarProyectoNube('${p.id}')">⬇️ Cargar</button><button style="padding:6px; background:var(--danger); color:white; border:none; border-radius:4px; font-size:11px; cursor:pointer;" onclick="window.eliminarProyectoNube('${p.id}')">🗑️</button></div></div>`; });
+            list.innerHTML = html;
+        }
+        window.renderCloudProjects = renderCloudProjects;
+
+        window.abrirNube = function () {
+            if (!currentUser) return window.customAlert("Error", "No conectado.");
+            document.getElementById('cloud-modal').style.display = 'flex';
+            renderCloudProjects();
+        };
+
+        window.cargarProyectoNube = async function (id) {
+            if (!currentUser) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = JSON.parse(docSnap.data().data);
+                    window.procesarDatosCargados(data, docSnap.data().name);
+                    document.getElementById('cloud-modal').style.display = 'none';
+                    window.customAlert("Éxito", "Proyecto cargado desde la nube.");
+                } else {
+                    window.customAlert("Error", "El proyecto no existe.");
+                }
+            } catch (e) { window.customAlert("Error", "No se pudo cargar el proyecto: " + e.message); }
+        };
+
+        window.eliminarProyectoNube = async function (id) {
+            if (!currentUser) return;
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('h3').innerText = "🗑️ Eliminar Proyecto";
+            modal.querySelector('p').innerText = "¿Seguro que deseas eliminar este proyecto de la nube?";
+            modal.style.display = 'flex';
+            window.acceptConfirmModal = async function () {
+                modal.style.display = 'none';
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', id));
+                    window.customAlert("Éxito", "Proyecto eliminado.");
+                } catch (e) { window.customAlert("Error", "No se pudo eliminar: " + e.message); }
+            };
+            window.closeConfirmModal = function () { modal.style.display = 'none'; };
+        };
+
+        window.guardarEnNube = function (btn) {
+            if (!currentUser) return window.customAlert("Error", "No conectado.");
+            const modal = document.getElementById('custom-modal'); const input = document.getElementById('modal-input'); document.getElementById('modal-title').innerText = "Guardar en nube como:"; input.value = window.projectName; modal.style.display = 'flex'; setTimeout(() => input.select(), 100);
+            window.confirmModal = async () => {
+                modal.style.display = 'none'; window.projectName = input.value.trim() || window.projectName; document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
+                const originalText = btn.innerText; btn.innerText = "⏳..."; btn.disabled = true;
+                const geojsonData = window.drawnItems.toGeoJSON();
+                geojsonData.features.forEach((feature, index) => { if (feature && feature.properties) { feature.id = "am_" + Date.now() + "_" + index; feature.properties.name = feature.properties.layerName || 'Elemento'; feature.properties.title = feature.properties.layerName || 'Elemento'; feature.properties['marker-color'] = feature.properties.color || '#e74c3c'; feature.properties['stroke'] = feature.properties.color || '#2ecc71'; } });
+                geojsonData.view = { center: window.map.getCenter(), zoom: window.map.getZoom() };
+                try { await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'projects', window.projectName.replace(/[^a-z0-9_-]/gi, '_')), { name: window.projectName, data: JSON.stringify(geojsonData), updatedAt: Date.now() }); window.customAlert("Éxito", "Guardado en Nube."); } catch (e) { window.customAlert("Error", e.message); } finally { btn.innerText = originalText; btn.disabled = false; }
+            }; window.closeModal = () => { modal.style.display = 'none'; };
+        };
+
+        window.guardarProyecto = function () { const data = window.drawnItems.toGeoJSON(); data.view = { center: window.map.getCenter(), zoom: window.map.getZoom() }; const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".json"; a.click(); URL.revokeObjectURL(url); };
+        window.cargarProyecto = function (e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (evt) { try { const data = JSON.parse(evt.target.result); window.procesarDatosCargados(data, file.name.replace('.json', '')); } catch (err) { window.customAlert("Error", "Archivo inválido."); } }; reader.readAsText(file); e.target.value = ''; };
+        window.exportKML = function () { const data = window.drawnItems.toGeoJSON(); let kml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + window.projectName + '</name>\n'; data.features.forEach(f => { const p = f.properties || {}; const n = p.layerName || 'Elemento'; const d = p.notes || ''; const c = f.geometry.coordinates; const t = f.geometry.type; kml += `<Placemark><name>${n}</name><description>${d}</description>`; if (t === 'Point') { kml += `<Point><coordinates>${c[0]},${c[1]},0</coordinates></Point>`; } else if (t === 'LineString') { kml += `<LineString><coordinates>${c.map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LineString>`; } else if (t === 'Polygon') { kml += `<Polygon><outerBoundaryIs><LinearRing><coordinates>${c[0].map(cc => `${cc[0]},${cc[1]},0`).join(' ')}</coordinates></LinearRing></outerBoundaryIs></Polygon>`; } kml += `</Placemark>\n`; }); kml += '</Document></kml>'; const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".kml"; a.click(); URL.revokeObjectURL(url); };
+        window.exportGPX = function () { const data = window.drawnItems.toGeoJSON(); let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AirsoftMaps" xmlns="http://www.topografix.com/GPX/1/1">\n'; data.features.forEach(f => { const p = f.properties || {}; const n = p.layerName || 'Elemento'; const d = p.notes || ''; const c = f.geometry.coordinates; const t = f.geometry.type; if (t === 'Point') { gpx += `<wpt lat="${c[1]}" lon="${c[0]}"><name>${n}</name><desc>${d}</desc></wpt>\n`; } else if (t === 'LineString') { gpx += `<trk><name>${n}</name><desc>${d}</desc><trkseg>`; c.forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); gpx += `</trkseg></trk>\n`; } else if (t === 'Polygon') { gpx += `<trk><name>${n} (Area)</name><desc>${d}</desc><trkseg>`; c[0].forEach(cc => { gpx += `<trkpt lat="${cc[1]}" lon="${cc[0]}"></trkpt>`; }); gpx += `</trkseg></trk>\n`; } }); gpx += '</gpx>'; const blob = new Blob([gpx], { type: "application/gpx+xml" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = window.projectName + ".gpx"; a.click(); URL.revokeObjectURL(url); };
+        window.importKMLGPX = function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            const extension = file.name.split('.').pop().toLowerCase();
+
+            reader.onload = function (evt) {
+                try {
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(evt.target.result, "text/xml");
+                    if (xml.getElementsByTagName("parsererror").length > 0) {
+                        throw new Error("Error de parseo XML");
+                    }
+
+                    let geojson;
+                    if (extension === 'kml') {
+                        geojson = toGeoJSON.kml(xml);
+                    } else if (extension === 'gpx') {
+                        geojson = toGeoJSON.gpx(xml);
+                    } else {
+                        return window.customAlert("Error", "Formato no compatible. Usa .kml o .gpx");
+                    }
+
+                    if (geojson && geojson.features && geojson.features.length > 0) {
+                        // Normalizar propiedades para que sean compatibles con el editor
+                        geojson.features.forEach(f => {
+                            f.properties = f.properties || {};
+                            f.properties.layerName = f.properties.name || f.properties.title || 'Importado';
+                            f.properties.faction = window.projectName;
+                        });
+                        window.procesarDatosCargados(geojson, file.name.split('.')[0]);
+                        window.customAlert("Éxito", `Se han importado ${geojson.features.length} elementos correctamente.`);
+                    } else {
+                        window.customAlert("Aviso", "El archivo no contiene elementos geográficos válidos.");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    window.customAlert("Error", "No se pudo procesar el archivo. Asegúrate de que es un KML o GPX válido y no está corrupto.");
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        };
+
+        window.openOffGridModal = function () {
+            document.getElementById('offgrid-modal').style.display = 'flex';
+            const simplified = [];
+            window.drawnItems.eachLayer(l => {
+                if (l instanceof L.Marker && l.feature && l.feature.properties && !l.feature.properties.isAutoRoute) {
+                    simplified.push({
+                        n: (l.feature.properties.layerName || '').substring(0, 12),
+                        l: parseFloat(l.getLatLng().lat.toFixed(5)),
+                        g: parseFloat(l.getLatLng().lng.toFixed(5)),
+                        c: l.feature.properties.color || '#e74c3c',
+                        i: l.feature.properties.iconType || 'punto'
+                    });
+                }
+            });
+            const code = "AM:" + btoa(encodeURIComponent(JSON.stringify(simplified)));
+            document.getElementById('offgrid-code-export').value = code;
+        };
+
+        window.copyOffGridCode = function () {
+            const input = document.getElementById('offgrid-code-export');
+            input.select();
+            document.execCommand('copy');
+            window.customAlert('Copiado', 'Código táctico copiado al portapapeles. Pégalo en tu app de SMS o Meshtastic y envíalo a tus compañeros.');
+        };
+
+        window.shareOffGridFile = async function () {
+            const data = window.drawnItems.toGeoJSON();
+            data.view = { center: window.map.getCenter(), zoom: window.map.getZoom() };
+            const jsonStr = JSON.stringify(data);
+            const file = new File([jsonStr], window.projectName + ".json", { type: 'application/json' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: 'Mapa Táctico - ' + window.projectName,
+                        text: 'Sincronización Off-Grid de AirsoftMaps',
+                        files: [file]
+                    });
+                } catch (err) {
+                    console.log(err);
+                }
+            } else {
+                window.customAlert("Aviso", "Tu dispositivo o navegador no soporta el envío directo (Web Share API). Usa 'Guardar Local' en Gestión de Proyecto y envía el archivo manualmente por Bluetooth.");
+            }
+        };
+
+        window.importOffGridCode = function () {
+            const code = document.getElementById('offgrid-code-import').value.trim();
+            if (!code.startsWith("AM:")) return window.customAlert("Error", "Código no válido. Debe empezar por AM:");
+            try {
+                const json = JSON.parse(decodeURIComponent(atob(code.substring(3))));
+                let count = 0;
+                json.forEach(m => {
+                    const color = m.c || '#e74c3c';
+                    const iconType = m.i || 'punto';
+                    const newMarker = L.marker([m.l, m.g], { icon: getMarkerIconObj(color, iconType) });
+                    const id = L.stamp(newMarker);
+
+                    newMarker.feature = { type: 'Feature', properties: {} };
+                    newMarker.feature.properties.layerName = m.n || 'Recepción Off-Grid';
+                    newMarker.feature.properties.faction = window.projectName;
+                    newMarker.feature.properties.color = color;
+                    newMarker.feature.properties.iconType = iconType;
+                    newMarker.feature.properties.bufferRadius = 0;
+                    newMarker.feature.properties.coneEnabled = false;
+                    newMarker.feature.properties.showLabel = false;
+                    newMarker.isHidden = false;
+
+                    const lat = m.l; const lng = m.g;
+                    let coordText = `Lat: ${lat}<br>Lon: ${lng}`;
+                    let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lng}, '${m.n.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
+                    let baseText = `<div><b>📍 ${m.n}</b><br>${coordText}</div>`;
+                    newMarker.bindPopup(baseText + actionBtns);
+                    newMarker.feature.properties.baseText = baseText;
+
+                    window.drawnItems.addLayer(newMarker);
+                    count++;
+                });
+                window.updateLayerTree();
+                document.getElementById('offgrid-modal').style.display = 'none';
+                document.getElementById('offgrid-code-import').value = '';
+                window.customAlert("Éxito", `Se han importado ${count} marcadores correctamente.`);
+                if (window.drawnItems.getLayers().length > 0) window.map.fitBounds(window.drawnItems.getBounds());
+            } catch (e) {
+                window.customAlert("Error", "El código está corrupto o mal copiado.");
+            }
+        };
+
+        let currentRoom = null; let roomUnsubs = []; let transmitInterval = null, allyMarkers = {}; let currentRadioMsg = "", currentRadioMsgTime = 0; window.lastLocalSyncTime = 0; let unreadMsgCount = 0; let lastProcessedMsgTime = 0;
+        window.saveRecentRoom = function (id, pass) {
+            let recents = [];
+            try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch (e) { }
+            recents = recents.filter(r => r.id !== id);
+            recents.unshift({ id: id, pass: pass });
+            if (recents.length > 5) recents = recents.slice(0, 5);
+            localStorage.setItem('am_recent_rooms', JSON.stringify(recents));
+            window.loadRecentRooms();
+        };
+        window.loadRecentRooms = function () {
+            let recents = [];
+            try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch (e) { }
+            const sel = document.getElementById('recent-rooms-select');
+            const container = document.getElementById('recent-rooms-container');
+            if (!sel) return;
+            if (recents.length === 0) {
+                if (container) container.style.display = 'none';
+                else sel.style.display = 'none';
+                return;
+            }
+            if (container) container.style.display = 'flex';
+            else sel.style.display = 'block';
+            sel.innerHTML = '<option value="">🕒 Salas Recientes...</option>';
+            recents.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id; opt.innerText = r.id;
+                sel.appendChild(opt);
+            });
+        };
+
+        window.deleteRecentRoom = function () {
+            const sel = document.getElementById('recent-rooms-select');
+            if (!sel || !sel.value) return window.customAlert("Aviso", "Selecciona una sala reciente primero.");
+            const idToDelete = sel.value;
+            let recents = [];
+            try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch (e) { }
+            recents = recents.filter(r => r.id !== idToDelete);
+            localStorage.setItem('am_recent_rooms', JSON.stringify(recents));
+            window.loadRecentRooms();
+            document.getElementById('room-id').value = '';
+            document.getElementById('room-pass').value = '';
+            if (window.customAlert) window.customAlert("Eliminada", "La sala ha sido eliminada del historial local.");
+        };
+        window.selectRecentRoom = function () {
+            const sel = document.getElementById('recent-rooms-select');
+            if (!sel || !sel.value) return;
+            let recents = [];
+            try { recents = JSON.parse(localStorage.getItem('am_recent_rooms')) || []; } catch (e) { }
+            const room = recents.find(r => r.id === sel.value);
+            if (room) {
+                document.getElementById('room-id').value = room.id;
+                document.getElementById('room-pass').value = room.pass;
+            }
+        };
+        window.loadRecentRooms();
+
+        window.toggleRoom = async function () {
+            if (!auth.currentUser) return window.customAlert("Error", "Conectando al servidor...");
+            if (currentRoom) { leaveRoom(); return; }
+            const roomId = document.getElementById('room-id').value.trim(); const pass = document.getElementById('room-pass').value; const alias = document.getElementById('live-alias').value.trim();
+            if (!roomId || !pass || !alias) return window.customAlert("Aviso", "Rellena el nombre de sala, contraseña y tu indicativo.");
+            const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "⏳ Entrando..."; btn.disabled = true;
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId); const roomSnap = await getDoc(roomRef);
+                if (roomSnap.exists()) { const data = roomSnap.data(); if (data.password !== pass) { window.customAlert("Error", "Contraseña incorrecta para esta sala."); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false; return; } enterRoom(roomId, alias, data.creatorUid === auth.currentUser.uid); }
+                else { await setDoc(roomRef, { password: pass, creatorUid: auth.currentUser.uid, createdAt: Date.now(), geojson: "" }); enterRoom(roomId, alias, true); }
+            } catch (e) { window.customAlert("Error", "Error de red."); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false; }
+        };
+
+        function enterRoom(roomId, alias, isAdmin) {
+            window.saveRecentRoom(roomId, document.getElementById('room-pass').value);
+            currentRoom = roomId; const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false;
+            document.getElementById('room-setup-ui').style.display = 'none'; document.getElementById('room-active-ui').style.display = 'block';
+            document.getElementById('active-room-name').innerText = "📍 " + roomId; document.getElementById('active-room-name').style.display = 'inline-block';
+            if (isAdmin) document.getElementById('btn-delete-room').style.display = 'inline-block'; else document.getElementById('btn-delete-room').style.display = 'none';
+            startLiveTracking(roomId, alias);
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+            const unsubRoom = onSnapshot(roomRef, (docSnap) => {
+                if (!docSnap.exists()) { window.customAlert("Sala Cerrada", "La sala ha sido eliminada por el administrador."); leaveRoom(); return; }
+                const data = docSnap.data(); if (data.geojson && data.lastUpdateUid !== auth.currentUser.uid && data.lastUpdateTime !== window.lastLocalSyncTime) { window.lastLocalSyncTime = data.lastUpdateTime; try { const parsed = JSON.parse(data.geojson); window.procesarDatosCargados(parsed, "Sala: " + roomId, true); window.customAlert("Mapa Actualizado", "Un compañero ha actualizado los mapas."); } catch (e) { } }
+            }); roomUnsubs.push(unsubRoom);
+            const chatCol = collection(db, 'artifacts', appId, 'public', 'data', 'chat_' + roomId);
+            const unsubChat = onSnapshot(chatCol, (snap) => { let messages = []; snap.forEach(d => messages.push(d.data())); messages.sort((a, b) => a.timestamp - b.timestamp); renderChat(messages); }); roomUnsubs.push(unsubChat);
+        }
+
+        function leaveRoom() {
+            if (!currentRoom) return;
+            if (auth.currentUser) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + currentRoom, auth.currentUser.uid)).catch(() => { });
+            roomUnsubs.forEach(u => u()); roomUnsubs = [];
+            if (transmitInterval) { clearInterval(transmitInterval); transmitInterval = null; }
+            window.alliesLayer.clearLayers(); allyMarkers = {}; currentRoom = null; currentRadioMsg = "";
+            if (window.drawnItems) window.drawnItems.clearLayers();
+
+            const radioBtns = document.getElementById('radio-msgs-container').querySelectorAll('button');
+            radioBtns.forEach(b => {
+                b.style.boxShadow = 'none';
+                b.style.transform = 'scale(1)';
+                if (b.dataset.origBg !== undefined) b.style.backgroundColor = b.dataset.origBg;
+            });
+
+            document.getElementById('room-setup-ui').style.display = 'block';
+            document.getElementById('room-active-ui').style.display = 'none';
+            document.getElementById('active-room-name').style.display = 'none';
+            document.getElementById('chat-box').innerHTML = '';
+            const memContainer = document.getElementById('members-container');
+            if (memContainer) memContainer.innerHTML = '';
+            const memCount = document.getElementById('members-count');
+            if (memCount) memCount.innerText = '0';
+            lastProcessedMsgTime = 0; unreadMsgCount = 0;
+            const badge = document.getElementById('chat-badge');
+            if (badge) badge.style.display = 'none';
+        }
+
+        window.deleteRoom = async function () { if (!currentRoom) return; const modal = document.getElementById('confirm-modal'); modal.querySelector('h3').innerText = "🗑️ Eliminar Sala"; modal.querySelector('p').innerText = "¿Eliminar esta sala, chat y mapas compartidos?"; modal.style.display = 'flex'; window.acceptConfirmModal = async function () { modal.style.display = 'none'; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoom)); } catch (e) { } }; window.closeConfirmModal = function () { modal.style.display = 'none'; }; };
+        window.syncDrawingsToRoom = async function () {
+            if (!currentRoom || !auth.currentUser) return; const btn = document.getElementById('btn-sync-map'); const oldTxt = btn.innerText; btn.innerText = "⏳ Subiendo..."; btn.disabled = true;
+            const geojsonData = window.drawnItems.toGeoJSON(); geojsonData.features.forEach((feature, index) => { if (feature && feature.properties) { feature.id = "am_" + Date.now() + "_" + index; feature.properties.name = feature.properties.layerName || 'Elemento'; feature.properties.title = feature.properties.layerName || 'Elemento'; feature.properties['marker-color'] = feature.properties.color || '#e74c3c'; feature.properties['stroke'] = feature.properties.color || '#2ecc71'; } });
+            try { const nowTime = Date.now(); await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoom), { geojson: JSON.stringify(geojsonData), lastUpdateUid: auth.currentUser.uid, lastUpdateTime: nowTime }); window.lastLocalSyncTime = nowTime; window.customAlert("Éxito", "Mapa compartido con la sala."); } catch (e) { window.customAlert("Error", "No se pudo sincronizar el mapa."); } btn.innerText = oldTxt; btn.disabled = false;
+        };
+        window.sendChatMsg = async function () { const input = document.getElementById('chat-input'); const txt = input.value.trim(); if (!txt || !currentRoom || !auth.currentUser) return; input.value = ''; const alias = document.getElementById('live-alias').value.trim() || 'Desconocido'; try { await setDoc(doc(collection(db, 'artifacts', appId, 'public', 'data', 'chat_' + currentRoom)), { sender: alias, text: txt, timestamp: Date.now(), uid: auth.currentUser.uid }); } catch (e) { } };
+
+        function renderChat(messages) {
+            const box = document.getElementById('chat-box'); if (!box) return;
+            let html = ''; const panel = document.getElementById('panelLive'); const badge = document.getElementById('chat-badge');
+            messages.forEach(m => {
+                const isMe = auth.currentUser ? m.uid === auth.currentUser.uid : false;
+                const align = isMe ? 'right' : 'left'; const bg = isMe ? '#e2e8f0' : '#f1f5f9'; const color = isMe ? 'var(--ign-blue)' : '#475569';
+                const safeTxt = (m.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const safeSender = (m.sender || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                html += `<div style="text-align:${align}; margin-bottom:4px;"><span style="background:${bg}; color:${color}; padding:4px 8px; border-radius:8px; display:inline-block; max-width:85%; word-wrap:break-word;"><b>${safeSender}:</b> ${safeTxt}</span></div>`;
+                if (m.timestamp > lastProcessedMsgTime) { lastProcessedMsgTime = m.timestamp; if (!isMe && panel && panel.classList.contains('oculto')) { unreadMsgCount++; } }
+            });
+            box.innerHTML = html; box.scrollTop = box.scrollHeight;
+            if (badge) {
+                if (unreadMsgCount > 0 && panel && panel.classList.contains('oculto')) { badge.innerText = unreadMsgCount > 99 ? '99+' : unreadMsgCount; badge.style.display = 'flex'; }
+                else if (!panel.classList.contains('oculto')) { unreadMsgCount = 0; badge.style.display = 'none'; }
+            }
+        }
+
+        function startLiveTracking(roomId, alias) {
+            const factionColor = document.getElementById('live-faction').value; if (!window.userLocMarker) window.customAlert("Aviso GPS", "Enciende el GPS (🎯) para que tus compañeros te vean.");
+            const roleIcons = { 'asalto': '🔫', 'sniper': '🔭', 'medico': '🏥', 'apoyo': '🛡️', 'lider': '⭐', 'navegante': '🧭', 'radio': '📻' };
+            window.lastSentLat = 0; window.lastSentLng = 0; window.lastForceSend = 0;
+            transmitInterval = setInterval(async () => { 
+                if (window.userLocMarker && auth.currentUser) { 
+                    const ll = window.userLocMarker.getLatLng(); 
+                    const dist = (window.lastSentLat === 0) ? 999 : (window.map ? window.map.distance([window.lastSentLat, window.lastSentLng], [ll.lat, ll.lng]) : 999);
+                    const timeSinceRadio = Date.now() - currentRadioMsgTime;
+                    const timeSinceForce = Date.now() - window.lastForceSend;
+                    if (dist > 2 || timeSinceRadio < 15000 || timeSinceForce > 60000) {
+                        const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto'; 
+                        try { 
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId, auth.currentUser.uid), { alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }); 
+                            window.lastSentLat = ll.lat; window.lastSentLng = ll.lng; window.lastForceSend = Date.now();
+                        } catch (e) { } 
+                    }
+                } 
+            }, 15000);
+
+            let liveMembersData = [];
+            const renderLiveMembers = () => {
+                const now = Date.now();
+                const activeIds = liveMembersData.map(d => d.id);
+
+                let membersHtml = '';
+                let activeCount = 0;
+                liveMembersData.forEach(data => {
+                    const id = data.id;
+                    const diff = now - data.timestamp;
+                    if (diff > 7200000) { if (id !== (auth.currentUser ? auth.currentUser.uid : null) && allyMarkers[id]) { window.alliesLayer.removeLayer(allyMarkers[id]); delete allyMarkers[id]; } return; }
+
+                    activeCount++;
+                    const isMe = auth.currentUser && id === auth.currentUser.uid;
+                    const isEliminatedList = data.msg === '✋ ¡BAJA!';
+                    const rIconList = isEliminatedList ? '💀' : (roleIcons[data.role] || '🔫');
+
+                    let offlineText = '';
+                    let isOffline = false;
+                    if (diff > 15000 && !isMe) {
+                        isOffline = true;
+                        const diffSec = Math.floor(diff / 1000); const diffMin = Math.floor(diffSec / 60); const diffHour = Math.floor(diffMin / 60);
+                        if (diffHour > 0) offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffHour}h)</span>`;
+                        else if (diffMin > 0) offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffMin}m)</span>`;
+                        else offlineText = ` <span style="color:var(--danger);font-size:9px;">(⏳ ${diffSec}s)</span>`;
+                    }
+
+                    membersHtml += `<div style="display:flex; align-items:center; gap:5px; padding:3px; font-size:11px; background:${isMe ? '#f1f5f9' : 'transparent'}; border-radius:4px;"><span style="color:${data.color}; font-size:14px; line-height:1; ${isOffline ? 'opacity:0.3;' : ''}">●</span> <span style="font-size:12px; ${isOffline ? 'opacity:0.3;' : ''}">${rIconList}</span> <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${isEliminatedList ? 'text-decoration:line-through;color:#94a3b8;' : 'color:#475569;'} ${isOffline ? 'opacity:0.5;' : ''}">${isMe ? `<b>${data.alias} (Tú)</b>` : data.alias}${offlineText}</span></div>`;
+
+                    if (!auth.currentUser || id === auth.currentUser.uid) return;
+
+                    let distText = "--"; if (window.userLocMarker) { const dist = window.userLocMarker.getLatLng().distanceTo(L.latLng(data.lat, data.lng)); distText = dist > 1000 ? (dist / 1000).toFixed(2) + " km" : Math.round(dist) + " m"; }
+
+                    const isEliminated = data.msg === '✋ ¡BAJA!';
+                    let displayAlias = data.alias; let extraClass = "";
+                    if (data.msg && data.msg !== "") { displayAlias = `<b>${data.msg}</b><br><span style="font-size:9px">${data.alias}</span>`; if (!isEliminated) extraClass = "radio-pulse"; }
+
+                    let offlinePopupText = '';
+                    if (isOffline) {
+                        const diffSec = Math.floor(diff / 1000); const diffMin = Math.floor(diffSec / 60); const timeStr = diffMin > 59 ? Math.floor(diffMin / 60) + 'h' : (diffMin > 0 ? diffMin + 'm' : diffSec + 's');
+                        displayAlias += `<br><span style="font-size:9px;color:var(--danger);background:rgba(255,255,255,0.8);padding:1px 3px;border-radius:2px;display:inline-block;margin-top:2px;">⏳ Sin señal (${timeStr})</span>`;
+                        offlinePopupText = `<br><span style="color:var(--danger);font-size:10px;">⏳ Desconectado hace ${timeStr}</span>`;
+                    }
+
+                    const roleIcon = isEliminated ? '💀' : (roleIcons[data.role] || '🔫');
+                    const filterStyle = isEliminated ? 'filter: grayscale(100%) opacity(0.6);' : (isOffline ? 'filter: grayscale(50%) opacity(0.7);' : '');
+
+                    const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b>${offlinePopupText}</div>`;
+                    let bgStyle = `background-color:${data.color};`; let txtStyle = `color:#333;text-shadow:0 1px 2px rgba(0,0,0,0.5);`;
+                    if (data.color === '#8b4513' && !isEliminated) { bgStyle += 'background-image:url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png");background-size:cover;background-position:center;'; txtStyle = `color:white;text-shadow:0 1px 2px rgba(0,0,0,0.8);`; }
+                    const newIcon = L.divIcon({ className: 'custom-ally', html: `<div class="ally-container" style="position:relative;width:24px;height:24px;${filterStyle}"><div class="ally-circle" style="position:absolute;width:100%;height:100%;${bgStyle}border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;display:flex;align-items:center;justify-content:center;font-size:12px;${txtStyle}">${roleIcon}</div><div class="ally-arrow" style="position:absolute;top:50%;left:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid rgba(255,255,255,0.8);transform-origin:50% 100%;margin-left:-5px;margin-top:-14px;transform:rotate(${data.heading}deg);z-index:1;"></div><div class="ally-label grid-label ${extraClass}" style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);border-color:${data.color};color:#333;z-index:3;text-align:center;">${displayAlias}</div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+
+                    if (allyMarkers[id]) {
+                        allyMarkers[id].setLatLng([data.lat, data.lng]);
+                        allyMarkers[id].setIcon(newIcon);
+                        if (allyMarkers[id].getPopup()) allyMarkers[id].setPopupContent(popupHtml);
+                    } else {
+                        allyMarkers[id] = L.marker([data.lat, data.lng], { icon: newIcon, zIndexOffset: 900 }).bindPopup(popupHtml).addTo(window.alliesLayer);
+                    }
+                });
+
+                // Limpiar marcadores huérfanos que ya no están en Firebase
+                Object.keys(allyMarkers).forEach(id => {
+                    if (!activeIds.includes(id)) {
+                        window.alliesLayer.removeLayer(allyMarkers[id]);
+                        delete allyMarkers[id];
+                    }
+                });
+
+                const memContainer = document.getElementById('members-container');
+                const memCount = document.getElementById('members-count');
+                if (memContainer) memContainer.innerHTML = membersHtml;
+                if (memCount) memCount.innerText = activeCount;
+            };
+
+            const unsubLive = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'live_' + roomId), (snapshot) => {
+                let rawData = [];
+                snapshot.forEach(docSnap => { rawData.push({ id: docSnap.id, ...docSnap.data() }); });
+
+                // Deduplicar por alias: Si entran dos personas con el mismo nombre, o si alguien reconecta con un UID nuevo, prevalece el más reciente
+                const aliasMap = {};
+                rawData.forEach(data => {
+                    const aliasKey = data.alias ? data.alias.trim().toLowerCase() : data.id;
+                    if (!aliasMap[aliasKey] || aliasMap[aliasKey].timestamp < data.timestamp) {
+                        aliasMap[aliasKey] = data;
+                    }
+                });
+                liveMembersData = Object.values(aliasMap);
+
+                renderLiveMembers();
+            }); roomUnsubs.push(unsubLive);
+
+            const localRefreshInterval = setInterval(renderLiveMembers, 5000);
+            roomUnsubs.push(() => clearInterval(localRefreshInterval));
+        }
+
+        window.sendRadioMessage = function (msg, btn) {
+            if (!currentRoom || !window.userLocMarker) return window.customAlert("Aviso", "Debes estar dentro de una Sala y con el GPS (🎯) activo.");
+
+            const radioBtns = document.getElementById('radio-msgs-container').querySelectorAll('button');
+            radioBtns.forEach(b => {
+                b.style.boxShadow = 'none';
+                b.style.transform = 'scale(1)';
+                if (b.dataset.origBg !== undefined) b.style.backgroundColor = b.dataset.origBg;
+            });
+
+            if (currentRadioMsg === msg) {
+                currentRadioMsg = ""; window.customAlert("Comando", "Mensaje cancelado.");
+            } else {
+                currentRadioMsg = msg;
+                if (btn) {
+                    if (btn.dataset.origBg === undefined) btn.dataset.origBg = btn.style.backgroundColor || 'transparent';
+                    btn.style.boxShadow = '0 0 12px ' + (btn.style.borderColor || 'white');
+                    btn.style.transform = 'scale(1.05)';
+                    btn.style.backgroundColor = msg === '✋ ¡BAJA!' ? '#ef4444' : 'rgba(255,255,255,0.25)';
+                }
+                if (msg === '✋ ¡BAJA!') {
+                    window.customAlert("Eliminado", "Has sido marcado como BAJA. Tus compañeros te verán en gris con una calavera en el mapa.");
+                } else {
+                    window.customAlert("Comando", `Mensaje fijado:\n"${msg}"\n(Pulsa de nuevo para quitarlo)`);
+                }
+            }
+            currentRadioMsgTime = Date.now();
+            if (auth.currentUser) {
+                const alias = document.getElementById('live-alias').value.trim();
+                const factionColor = document.getElementById('live-faction').value;
+                const currentRole = document.getElementById('live-role') ? document.getElementById('live-role').value : 'asalto';
+                const ll = window.userLocMarker.getLatLng();
+                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + currentRoom, auth.currentUser.uid), { alias: alias, color: factionColor, role: currentRole, lat: ll.lat, lng: ll.lng, heading: window.currentDeviceHeading || 0, timestamp: Date.now(), msg: currentRadioMsg, msgTime: currentRadioMsgTime }).catch(() => { });
+            }
+        };
+
+        window.addEventListener('beforeunload', () => { if (currentRoom && auth.currentUser) { deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'live_' + currentRoom, auth.currentUser.uid)).catch(() => { }); } });
+
+        let forceSignInMode = false;
+        window.iniciarSesionGoogle = async function () {
+            const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt: 'select_account' });
+            try {
+                if (auth.currentUser && auth.currentUser.isAnonymous && !forceSignInMode) { const result = await linkWithPopup(auth.currentUser, provider); if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user); window.customAlert("Éxito", "Sesión iniciada."); } else { const result = await signInWithPopup(auth, provider); if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user); forceSignInMode = false; window.customAlert("Bienvenido", "Sesión iniciada."); }
+            } catch (error) {
+                if (error.code === 'auth/credential-already-in-use') { try { const credential = GoogleAuthProvider.credentialFromError(error); if (credential) { const result = await signInWithCredential(auth, credential); if (typeof window.updateAuthUI === 'function') window.updateAuthUI(result.user); } else { await signInWithPopup(auth, provider); } } catch (err) { } }
+            }
+        };
+        window.cerrarSesion = async function () { try { await signOut(auth); if (window.drawnItems) window.drawnItems.clearLayers(); window.projectName = "Proyecto_AirsoftMaps"; document.getElementById('app-title').innerText = "AirsoftMaps"; if (typeof window.updateLayerTree === 'function') window.updateLayerTree(); await signInAnonymously(auth); } catch (e) { } };
+    </script>
+
+    <script>
+        window.projectName = "Proyecto_AirsoftMaps";
+        L.ImageOverlay.Rotated = L.ImageOverlay.extend({
+            initialize: function (image, topleft, topright, bottomleft, options) {
+                if (typeof (image) === 'string') { this._url = image; } else { this._rawImage = image; }
+                this._topLeft = L.latLng(topleft); this._topRight = L.latLng(topright); this._bottomLeft = L.latLng(bottomleft);
+                L.setOptions(this, options);
+            },
+            onAdd: function (map) {
+                if (!this._image) { this._initImage(); if (this.options.opacity < 1) { this._updateOpacity(); } }
+                if (this.options.interactive) { L.DomUtil.addClass(this._rawImage, 'leaflet-interactive'); this.addInteractiveTarget(this._rawImage); }
+                map.on('zoomend resetview', this._reset, this); this.getPane().appendChild(this._image); this._reset();
+            },
+            onRemove: function (map) { map.off('zoomend resetview', this._reset, this); L.ImageOverlay.prototype.onRemove.call(this, map); },
+            _initImage: function () {
+                var img = this._rawImage;
+                if (this._url) { img = L.DomUtil.create('img'); img.style.display = 'none'; if (this.options.crossOrigin) { img.crossOrigin = ''; } img.src = this._url; this._rawImage = img; }
+                L.DomUtil.addClass(img, 'leaflet-image-layer');
+                var div = this._image = L.DomUtil.create('div', 'leaflet-image-layer ' + (this._zoomAnimated ? 'leaflet-zoom-animated' : ''));
+                this._updateZIndex(); div.appendChild(img); div.onselectstart = L.Util.falseFn; div.onmousemove = L.Util.falseFn;
+                img.onload = function () { this._reset(); img.style.display = 'block'; this.fire('load'); }.bind(this);
+                img.alt = this.options.alt;
+            },
+            _reset: function () {
+                var div = this._image; if (!this._map) { return; }
+                var pxTopLeft = this._map.latLngToLayerPoint(this._topLeft);
+                var pxTopRight = this._map.latLngToLayerPoint(this._topRight);
+                var pxBottomLeft = this._map.latLngToLayerPoint(this._bottomLeft);
+                var pxBottomRight = pxTopRight.subtract(pxTopLeft).add(pxBottomLeft);
+                var pxBounds = L.bounds([pxTopLeft, pxTopRight, pxBottomLeft, pxBottomRight]);
+                var size = pxBounds.getSize(); var pxTopLeftInDiv = pxTopLeft.subtract(pxBounds.min);
+                var vectorX = pxTopRight.subtract(pxTopLeft); var vectorY = pxBottomLeft.subtract(pxTopLeft);
+                var skewX = Math.atan2(vectorX.y, vectorX.x); var skewY = Math.atan2(vectorY.x, vectorY.y);
+                this._bounds = L.latLngBounds(this._map.layerPointToLatLng(pxBounds.min), this._map.layerPointToLatLng(pxBounds.max));
+                L.DomUtil.setPosition(div, pxBounds.min); div.style.width = size.x + 'px'; div.style.height = size.y + 'px';
+                var imgW = this._rawImage.width; var imgH = this._rawImage.height; if (!imgW || !imgH) { return; }
+                var scaleX = pxTopLeft.distanceTo(pxTopRight) / imgW * Math.cos(skewX); var scaleY = pxTopLeft.distanceTo(pxBottomLeft) / imgH * Math.cos(skewY);
+                this._rawImage.style.transformOrigin = '0 0';
+                this._rawImage.style.transform = 'translate(' + pxTopLeftInDiv.x + 'px, ' + pxTopLeftInDiv.y + 'px)' + 'skew(' + skewY + 'rad, ' + skewX + 'rad) ' + 'scale(' + scaleX + ', ' + scaleY + ') ';
+            },
+            reposition: function (topleft, topright, bottomleft) {
+                this._topLeft = L.latLng(topleft); this._topRight = L.latLng(topright); this._bottomLeft = L.latLng(bottomleft); this._reset();
+            },
+            setUrl: function (url) { this._url = url; if (this._rawImage) { this._rawImage.src = url; } return this; }
+        });
+        L.imageOverlay.rotated = function (imgSrc, topleft, topright, bottomleft, options) { return new L.ImageOverlay.Rotated(imgSrc, topleft, topright, bottomleft, options); };
+        window.customAlert = function (title, msg) { if (msg && String(msg).includes('updateAuthUI')) return; document.getElementById('alert-modal-title').innerText = title; document.getElementById('alert-modal-msg').innerText = msg; document.getElementById('alert-modal').style.display = 'flex'; };
+
+        window.nuevoProyecto = function () {
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('h3').innerText = "📄 Nuevo Proyecto";
+            modal.querySelector('p').innerText = "¿Seguro que deseas crear un proyecto nuevo? Se perderán los datos actuales no guardados.";
+            modal.style.display = 'flex';
+            window.acceptConfirmModal = function () {
+                modal.style.display = 'none';
+                window.drawnItems.clearLayers();
+                window.projectName = "Proyecto_AirsoftMaps";
+                document.getElementById('app-title').innerText = "AirsoftMaps";
+                if (typeof window.updateLayerTree === 'function') window.updateLayerTree();
+                window.customAlert("Éxito", "Se ha creado un proyecto en blanco.");
+            };
+            window.closeConfirmModal = function () { modal.style.display = 'none'; };
+        };
+
+        window.renombrarProyecto = async function () {
+            const newName = await askName("Renombrar Proyecto:", window.projectName);
+            if (newName && newName.trim() !== '' && newName !== window.projectName) {
+                window.projectName = newName.trim();
+                document.getElementById('app-title').innerText = "AirsoftMaps - " + window.projectName;
+                window.customAlert("Éxito", "Proyecto renombrado correctamente.");
+            }
+        };
+
+        if (L.Draw && L.Draw.Polyline) L.Draw.Polyline.prototype._onTouch = function () { };
+        L.TileLayer.prototype.createTile = function (coords, done) {
+            const tile = document.createElement('img');
+            L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile));
+            L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile));
+            if (this.options.crossOrigin || this.options.crossOrigin === '') tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin;
+            tile.alt = '';
+            tile.setAttribute('role', 'presentation');
+            const url = this.getTileUrl(coords);
+            if ('caches' in window) {
+                caches.match(url).then(response => {
+                    if (response && response.ok) {
+                        response.blob().then(blob => {
+                            if (blob.size > 0) {
+                                const objectUrl = URL.createObjectURL(blob);
+                                const cleanUp = () => URL.revokeObjectURL(objectUrl);
+                                tile.addEventListener('load', cleanUp, { once: true });
+                                tile.addEventListener('error', cleanUp, { once: true });
+                                tile.src = objectUrl;
+                            } else { tile.src = url; }
+                        }).catch(() => { tile.src = url; });
+                    } else { tile.src = url; }
+                }).catch(() => { tile.src = url; });
+            } else { tile.src = url; }
+            return tile;
+        };
+
+        window.procesarDatosCargados = function (geojsonData, nombreProyecto, isSala = false) {
+            if (!isSala) { window.drawnItems.clearLayers(); window.projectName = nombreProyecto; document.getElementById('app-title').innerText = "AirsoftMaps - " + nombreProyecto; }
+            else { window.drawnItems.clearLayers(); }
+            L.geoJSON(geojsonData, {
+                pointToLayer: function (feature, latlng) {
+                    const iconType = feature.properties.iconType || 'punto';
+                    const color = feature.properties.color || feature.properties['marker-color'] || '#e74c3c';
+                    return L.marker(latlng, { icon: getMarkerIconObj(color, iconType) });
+                },
+                style: function (feature) {
+                    return {
+                        color: feature.properties.color || feature.properties.stroke || '#3388ff',
+                        weight: feature.properties.weight || feature.properties['stroke-width'] || 4,
+                        fillOpacity: feature.properties.fillOpacity || feature.properties['fill-opacity'] || 0.2
+                    };
+                },
+                onEachFeature: function (feature, layer) {
+                    layer.feature = feature; layer.isHidden = false;
+                    const id = L.stamp(layer);
+                    const name = feature.properties.layerName || feature.properties.name || 'Elemento';
+                    let notesHtml = feature.properties.notes ? `<div style="margin-top:5px;padding:5px;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:4px;font-size:11px;color:#475569;max-height:80px;overflow-y:auto;word-wrap:break-word;"><i>${feature.properties.notes.replace(/\n/g, '<br>')}</i></div>` : '';
+                    let imageHtml = feature.properties.imageUrl ? `<img src="${feature.properties.imageUrl}" style="width:100%;max-height:140px;object-fit:cover;border-radius:4px;margin-top:5px;border:1px solid #cbd5e0;cursor:zoom-in;" onclick="window.openImageModal(this.src)">` : '';
+                    let extrasHtml = imageHtml + notesHtml;
+                    let actionBtns = extrasHtml;
+                    if (layer instanceof L.Marker) {
+                        const latlng = layer.getLatLng();
+                        actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                    } else {
+                        actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+                    }
+                    if (!feature.properties.baseText) {
+                        if (layer instanceof L.Marker) {
+                            const ll = layer.getLatLng();
+                            feature.properties.baseText = `<div><b>📍 ${name}</b><br>Lat: ${ll.lat.toFixed(5)}, Lng: ${ll.lng.toFixed(5)}</div>`;
+                        } else {
+                            feature.properties.baseText = `<div><b>📍 ${name}</b></div>`;
+                        }
+                    }
+                    layer.bindPopup(feature.properties.baseText + actionBtns);
+                    window.drawnItems.addLayer(layer);
+                    if (feature.properties.isFieldMap && feature.properties.imageUrlData) {
+                        let corners = feature.properties.corners;
+                        if (!corners) {
+                            let uB = feature.properties.unrotatedBounds;
+                            let boundsToUse = uB ? L.latLngBounds(uB) : layer.getBounds();
+                            const rot = feature.properties.rotation || 0;
+                            const c = window.getMercatorCenter(window.map, boundsToUse);
+                            corners = {
+                                tl: window.getRotatedLatLng(window.map, boundsToUse.getNorthWest(), c, rot),
+                                tr: window.getRotatedLatLng(window.map, boundsToUse.getNorthEast(), c, rot),
+                                bl: window.getRotatedLatLng(window.map, boundsToUse.getSouthWest(), c, rot),
+                                br: window.getRotatedLatLng(window.map, boundsToUse.getSouthEast(), c, rot)
+                            };
+                            feature.properties.corners = corners;
+                        }
+                        const overlay = L.imageOverlay.rotated(feature.properties.imageUrlData, corners.tl, corners.tr, corners.bl, { opacity: feature.properties.opacity || 0.6, interactive: false }).addTo(window.map);
+                        window.fieldMapOverlays[id] = overlay;
+                        window.updateLayerPolygon(layer, corners.tl, corners.tr, corners.bl);
+                        window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, L.latLngBounds([corners.tl, corners.br]));
+                    }
+                    if (layer instanceof L.Marker) {
+                        if (typeof updateMarkerBuffer === 'function') updateMarkerBuffer(layer);
+                        if (typeof updateMarkerLabel === 'function') updateMarkerLabel(layer);
+                        if (typeof updateMarkerCone === 'function') updateMarkerCone(layer);
+                    } else if (layer instanceof L.Polyline && feature.properties.isAutoRoute && feature.properties.autoRouteOriginalPoints) {
+                        const pts = feature.properties.autoRouteOriginalPoints;
+                        layer.endMarker = L.marker(pts[pts.length - 1], { icon: getMarkerIconObj(feature.properties.color || '#2ecc71', 'bandera'), zIndexOffset: 1000 }).addTo(window.map);
+                        layer.endMarker.bindPopup((feature.properties.baseText || "") + actionBtns);
+                        layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) window.renderChart(layer, id); });
+                    }
+                }
+            });
+            window.updateLayerTree();
+            if (geojsonData.view && geojsonData.view.center) { window.map.setView([geojsonData.view.center.lat, geojsonData.view.center.lng], geojsonData.view.zoom); } else if (window.drawnItems.getLayers().length > 0) { window.map.fitBounds(window.drawnItems.getBounds()); }
+        };
+
+        window.renderOfflineZones = function () { const list = document.getElementById('offline-zones-list'); if (!list) return; let zones = []; try { zones = JSON.parse(localStorage.getItem('offlineZones')) || []; } catch (e) { } if (zones.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">No hay zonas descargadas</div>'; return; } let html = ''; zones.forEach(z => { html += `<div style="padding:8px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:12px;font-weight:bold;color:var(--ign-blue);text-overflow:ellipsis;overflow:hidden;white-space:nowrap;max-width:140px;" title="${z.name}">${z.name}</div><div style="display:flex;gap:5px;"><button style="padding:4px 8px;background:var(--ign-blue);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;" onclick="window.loadOfflineZone('${z.id}')">Ir</button><button style="padding:4px 8px;background:var(--danger);color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;" onclick="window.deleteOfflineZone('${z.id}')">🗑️</button></div></div>`; }); list.innerHTML = html; };
+        window.loadOfflineZone = function (id) { let zones = []; try { zones = JSON.parse(localStorage.getItem('offlineZones')) || []; } catch (e) { } const zone = zones.find(z => z.id === id); if (zone && zone.bounds) { map.fitBounds(zone.bounds); window.customAlert("Zona Cargada", `Viendo zona: ${zone.name}`); } };
+        window.deleteOfflineZone = function (id) { let zones = []; try { zones = JSON.parse(localStorage.getItem('offlineZones')) || []; } catch (e) { } zones = zones.filter(z => z.id !== id); localStorage.setItem('offlineZones', JSON.stringify(zones)); if (zones.length === 0 && 'caches' in window) { caches.delete('airsoftmaps-offline'); } window.renderOfflineZones(); };
+        window.downloadOfflineMap = async function (customBounds) {
+            if (!('caches' in window)) return window.customAlert("Error", "No soportado."); const zoneName = await askName("Nombre zona offline:", "Zona " + new Date().toLocaleDateString()); if (!zoneName || zoneName.trim() === '') return;
+            const btn = document.getElementById('btn-offline'); const prog = document.getElementById('offline-progress'); const bar = document.getElementById('offline-bar');
+            if (btn) btn.disabled = true; prog.style.display = 'block'; bar.style.width = '0%'; bar.innerText = 'Calculando...';
+            const bounds = customBounds && customBounds.isValid ? customBounds : window.map.getBounds(); const zMax = Math.min(window.map.getZoom() + 2, 18);
+            let urls = []; const layers = []; window.map.eachLayer(l => { if (l instanceof L.TileLayer) layers.push(l); });
+            for (let z = window.map.getZoom(); z <= zMax; z++) { const nw = window.map.project(bounds.getNorthWest(), z).divideBy(256).floor(); const se = window.map.project(bounds.getSouthEast(), z).divideBy(256).floor(); for (let x = nw.x; x <= se.x; x++) for (let y = nw.y; y <= se.y; y++) layers.forEach(l => urls.push(l.getTileUrl({ x, y, z }))); }
+            if (urls.length > 2500) { if (btn) btn.disabled = false; prog.style.display = 'none'; return window.customAlert("Error", "Area muy grande, haz zoom."); }
+            try { const cache = await caches.open('airsoftmaps-offline'); let done = 0; for (let i = 0; i < urls.length; i += 15) { const batch = urls.slice(i, i + 15); await Promise.all(batch.map(async u => { try { if (!await cache.match(u)) { const r = await fetch(u); if (r.ok) await cache.put(u, r); } } catch (e) { } })); done += batch.length; const pct = Math.round((done / urls.length) * 100); bar.style.width = pct + '%'; bar.innerText = pct + '%'; } let zones = []; try { zones = JSON.parse(localStorage.getItem('offlineZones')) || []; } catch (e) { } zones.push({ id: 'zone_' + Date.now(), name: zoneName, bounds: [[bounds.getSouth(), bounds.getWest()], [bounds.getNorth(), bounds.getEast()]], timestamp: Date.now() }); localStorage.setItem('offlineZones', JSON.stringify(zones)); window.renderOfflineZones(); window.customAlert("Exito", `Zona guardada.`); } catch (e) { window.customAlert("Error", "Fallo en descarga."); } finally { if (btn) btn.disabled = false; setTimeout(() => prog.style.display = 'none', 3000); }
+        };
+        setTimeout(() => { window.renderOfflineZones(); }, 500);
+
+        const tacticalIcons = { 'base': '⛺', 'objetivo': '🎯', 'bandera': '🚩', 'combate': '⚔️', 'defensa': '🛡️', 'vehiculo': '🚁', 'medico': '🏥', 'radio': '📡', 'hq': '🌟', 'suministros': '📦', 'sniper': '🔭', 'peligro': '⚠️', 'encuentro': '🤝', 'obstaculo': '🧱', 'agua': '💧', 'raider': '<img src="image_ef21e1.png" style="width:14px;height:14px;border-radius:50%;" onerror="this.src=\'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png\'">' };
+        const compassStyles = { modern: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,50)"><g transform="rotate(45)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(135)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(225)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(315)"><polygon points="0,-35 8,-8 0,0 -8,-8" fill="#f8fafc"/><polygon points="0,-35 0,0 -8,-8" fill="#cbd5e0"/></g><g transform="rotate(0)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#e74c3c"/><polygon points="0,-48 0,0 -10,-10" fill="#c0392b"/></g><g transform="rotate(90)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><g transform="rotate(180)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><g transform="rotate(270)"><polygon points="0,-48 10,-10 0,0 -10,-10" fill="#f8fafc"/><polygon points="0,-48 0,0 -10,-10" fill="#cbd5e0"/></g><circle cx="0" cy="0" r="4" fill="#1e293b"/><circle cx="0" cy="0" r="1.5" fill="#fff"/><text x="0" y="-31" font-family="sans-serif" font-weight="900" font-size="14" fill="#fff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">N</text></g></svg>`, classic: `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><g transform="translate(60,60)"><circle cx="0" cy="0" r="45" fill="#fef9e7" stroke="#8b5a2b" stroke-width="2"/><circle cx="0" cy="0" r="40" fill="none" stroke="#8b5a2b" stroke-width="1" stroke-dasharray="2 2"/><g transform="rotate(45)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(135)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(225)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(315)"><polygon points="0,-30 6,-6 0,0 -6,-6" fill="#d4c0a1"/><polygon points="0,-30 0,0 -6,-6" fill="#b89e7a"/></g><g transform="rotate(0)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#8b0000"/><polygon points="0,-40 0,0 -8,-8" fill="#5c0000"/></g><g transform="rotate(90)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><g transform="rotate(180)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><g transform="rotate(270)"><polygon points="0,-40 8,-8 0,0 -8,-8" fill="#2c3e50"/><polygon points="0,-40 0,0 -8,-8" fill="#1a252f"/></g><circle cx="0" cy="0" r="5" fill="#8b5a2b"/><circle cx="0" cy="0" r="2" fill="#fef9e7"/><text x="0" y="-48" font-family="serif" font-weight="bold" font-size="14" fill="#8b0000" text-anchor="middle">N</text></g></svg>`, military: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,50)"><circle cx="0" cy="0" r="42" fill="rgba(75, 83, 32, 0.1)" stroke="#4b5320" stroke-width="3" stroke-dasharray="6 4"/><circle cx="0" cy="0" r="34" fill="none" stroke="#4b5320" stroke-width="1"/><line x1="0" y1="-46" x2="0" y2="46" stroke="#4b5320" stroke-width="2"/><line x1="-46" y1="0" x2="46" y2="0" stroke="#4b5320" stroke-width="2"/><polygon points="0,-46 6,-25 -6,-25" fill="#ff4500"/><circle cx="0" cy="0" r="10" fill="none" stroke="#4b5320" stroke-width="2"/><circle cx="0" cy="0" r="2" fill="#ff4500"/><text x="14" y="-28" font-family="monospace" font-weight="bold" font-size="12" fill="#4b5320" style="text-shadow: 1px 1px 0px rgba(255,255,255,0.7);">000</text></g></svg>`, minimal: `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><g transform="translate(40,40)"><circle cx="0" cy="0" r="30" fill="rgba(255,255,255,0.8)" stroke="#333" stroke-width="2"/><path d="M0,-25 L8,10 L0,2 L-8,10 Z" fill="#e74c3c"/><path d="M0,-25 L0,2 L-8,10 Z" fill="#c0392b"/><circle cx="0" cy="0" r="3" fill="#333"/><text x="0" y="-32" font-family="sans-serif" font-weight="900" font-size="14" fill="#333" text-anchor="middle">N</text></g></svg>` };
+
+        window.updateCompassStyle = function () {
+            document.getElementById('compass-rose').innerHTML = compassStyles[document.getElementById('compassStyle').value];
+            const cb = document.getElementById('compass-auto-rotate');
+            if (cb && cb.checked && window.currentDeviceHeading !== undefined) {
+                const svg = document.getElementById('compass-rose').querySelector('svg');
+                if (svg) {
+                    svg.style.transition = 'transform 0.1s ease-out';
+                    svg.style.transform = `rotate(${-window.currentDeviceHeading}deg)`;
+                }
+            }
+        };
+
+        window.toggleCompassRotation = function () {
+            const cb = document.getElementById('compass-auto-rotate');
+            if (cb && cb.checked) {
+                if (!orientationHandlerActive) {
+                    try {
+                        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                            DeviceOrientationEvent.requestPermission().then(permissionState => {
+                                if (permissionState === 'granted') {
+                                    window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                                    orientationHandlerActive = true;
+                                } else {
+                                    cb.checked = false;
+                                    window.customAlert("Aviso", "Se requieren permisos de sensores para la rotación dinámica.");
+                                }
+                            }).catch(err => {
+                                window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                                orientationHandlerActive = true;
+                            });
+                        } else {
+                            window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+                            window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                            orientationHandlerActive = true;
+                        }
+                    } catch (e) { }
+                } else if (window.currentDeviceHeading !== undefined) {
+                    const svg = document.getElementById('compass-rose').querySelector('svg');
+                    if (svg) { svg.style.transition = 'transform 0.1s ease-out'; svg.style.transform = `rotate(${-window.currentDeviceHeading}deg)`; }
+                }
+            } else {
+                const compassRose = document.getElementById('compass-rose');
+                if (compassRose) {
+                    const svg = compassRose.querySelector('svg');
+                    if (svg) svg.style.transform = `rotate(0deg)`;
+                }
+            }
+        };
+
+        const transparentTile = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        const baseLayers = { mtn: L.tileLayer('https://www.ign.es/wmts/mapa-raster?layer=MTN&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), pnoa: L.tileLayer('https://www.ign.es/wmts/pnoa-ma?layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), base: L.tileLayer('https://www.ign.es/wmts/ign-base?layer=IGNBaseTodo&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22, maxNativeZoom: 19, errorTileUrl: transparentTile, attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors' }), sombreado: L.tileLayer('https://servicios.ign.es/wmts/mdt?layer=Sombreado&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 15, errorTileUrl: transparentTile, attribution: '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>' }), esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 18, errorTileUrl: transparentTile, attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' }), opentopo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { crossOrigin: 'anonymous', maxZoom: 22, maxNativeZoom: 17, errorTileUrl: transparentTile, attribution: 'Map data: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: © <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)' }) };
+        let currentBase = baseLayers.mtn; let currentOverlay = baseLayers.pnoa; currentOverlay.setOpacity(0.4);
+        const map = L.map('map', { preferCanvas: true, center: [40.4167, -3.7037], zoom: 6, maxZoom: 22, layers: [currentBase, currentOverlay], zoomControl: false });
+        window.map = map; L.control.zoom({ position: 'topleft' }).addTo(map);
+        window.fieldMapOverlays = {}; window.fieldMapAdjusters = {}; window.fieldMapCenterPins = {};
+        window.createFieldMapCenter = function (id, bounds) {
+            const centerMarker = L.marker(bounds.getNorthWest(), {
+                icon: L.divIcon({
+                    className: 'field-map-pin',
+                    html: '<div style="background:var(--ign-blue);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ign-gold);font-size:16px;box-shadow:var(--shadow);cursor:pointer;" title="Opciones de Mapa">⚙️</div>',
+                    iconSize: [32, 32],
+                    iconAnchor: [42, 42]
+                }),
+                interactive: true,
+                zIndexOffset: 2000
+            }).addTo(window.map);
+            centerMarker.on('click', () => { const layer = window.drawnItems.getLayer(id); if (layer) layer.openPopup(); });
+            return centerMarker;
+        };
+        window.alliesLayer = L.featureGroup().addTo(map); const drawnItems = new L.FeatureGroup().addTo(map); window.drawnItems = drawnItems; window.updateLayerTree = updateLayerTree;
+        const drawOptions = { polyline: { shapeOptions: { color: '#2ecc71', weight: 4 } }, polygon: { shapeOptions: { color: '#3498db', fillOpacity: 0.3 } }, marker: {} };
+
+        let autoRoutePoints = [], autoRouteLayer = L.featureGroup(), currentAutoRouteLine = null, autoRouteCoordinates = [];
+        let measurePoints = [], measureLayer = L.featureGroup(), measureTempLine = null;
+        let activeHandler = null, isLegendVisible = false, isZoomLocked = false, scaleControlObj = null; window.searchMarker = null;
+
+        window.renderChart = function (layer, id) { setTimeout(() => { const ctx = document.getElementById(`chart-${id}`); if (ctx && layer.feature.properties.chartData && window.Chart) { let chartStatus = Chart.getChart(`chart-${id}`); if (chartStatus != undefined) chartStatus.destroy(); new Chart(ctx, { type: 'line', data: { labels: layer.feature.properties.chartData.labels, datasets: [{ label: 'Altitud (m)', data: layer.feature.properties.chartData.data, borderColor: '#e6b800', backgroundColor: 'rgba(230, 184, 0, 0.2)', borderWidth: 2, fill: true, pointRadius: 0, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 9 }, maxTicksLimit: 5 } }, y: { ticks: { font: { size: 9 } } } } } }); } }, 50); };
+        window.attachChartListener = function (layer, id) { layer.on('popupopen', function () { window.renderChart(layer, id); }); };
+        window.toggleMapLegend = function () { isLegendVisible = !isLegendVisible; document.getElementById('map-legend').style.display = isLegendVisible ? 'block' : 'none'; document.getElementById('toggleLegendBtn').innerText = isLegendVisible ? '📋 Ocultar Leyenda' : '📋 Leyenda'; document.getElementById('toggleLegendBtn').style.borderStyle = isLegendVisible ? 'solid' : 'dashed'; if (isLegendVisible) updateLegend(); };
+        window.toggleCompass = function () { const compass = document.getElementById('compass-rose'); const btn = document.getElementById('btn-compass'); if (compass.style.display === 'none') { compass.style.display = 'block'; btn.classList.add('active'); } else { compass.style.display = 'none'; btn.classList.remove('active'); } };
+        window.toggleNumScale = function () { const widget = document.getElementById('numeric-scale-widget'); const btn = document.getElementById('numScaleToggleBtn'); if (widget.style.display === 'none') { widget.style.display = 'block'; btn.innerText = "Ocultar Numérica"; } else { widget.style.display = 'none'; btn.innerText = "Mostrar Numérica"; } };
+        window.toggleScale = function () { const btn = document.getElementById('scaleToggleBtn'); if (scaleControlObj) { map.removeControl(scaleControlObj); scaleControlObj = null; btn.innerText = "Mostrar Escala"; } else { scaleControlObj = L.control.scale({ position: 'bottomleft', metric: true, imperial: false }).addTo(map); btn.innerText = "Ocultar Escala"; setTimeout(() => { const scaleEl = document.querySelector('.leaflet-control-scale'); if (scaleEl) { document.getElementById('map-container').appendChild(scaleEl); scaleEl.style.position = 'absolute'; scaleEl.style.bottom = '60px'; scaleEl.style.left = '20px'; scaleEl.style.zIndex = '998'; dragElement(scaleEl); } }, 50); } };
+        window.toggleZoomLock = function () { isZoomLocked = !isZoomLocked; const btn = document.getElementById('lockZoomBtn'); const zoomCtrl = document.querySelector('.leaflet-control-zoom'); if (isZoomLocked) { map.touchZoom.disable(); map.doubleClickZoom.disable(); map.scrollWheelZoom.disable(); map.boxZoom.disable(); map.keyboard.disable(); if (zoomCtrl) zoomCtrl.style.display = 'none'; btn.innerHTML = "🔒 Desbloquear Zoom"; btn.style.borderColor = "var(--danger)"; btn.style.color = "var(--danger)"; } else { map.touchZoom.enable(); map.doubleClickZoom.enable(); map.scrollWheelZoom.enable(); map.boxZoom.enable(); map.keyboard.enable(); if (zoomCtrl) zoomCtrl.style.display = 'block'; btn.innerHTML = "🔓 Bloquear Zoom"; btn.style.borderColor = "var(--ign-blue)"; btn.style.color = "var(--ign-blue)"; document.getElementById('gridScale').value = 'auto'; } updateNumericScaleDisplay(); };
+
+        function updateNumericScaleDisplay() { const scaleDropdown = document.getElementById('gridScale').value; if (isZoomLocked && scaleDropdown !== 'auto') { document.getElementById('numeric-scale-val').innerText = "1:" + parseInt(scaleDropdown).toLocaleString('es-ES'); return; } const lat = map.getCenter().lat; const zoom = map.getZoom(); const mpp = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom); let scale = mpp / 0.0002645833; const standardScales = [2000, 5000, 10000, 25000, 50000, 100000]; let snapped = false; for (let s of standardScales) { if (Math.abs(scale - s) / s < 0.03) { scale = s; snapped = true; break; } } if (!snapped) { if (scale > 1000000) scale = Math.round(scale / 10000) * 10000; else if (scale > 100000) scale = Math.round(scale / 1000) * 1000; else if (scale > 10000) scale = Math.round(scale / 500) * 500; else if (scale > 1000) scale = Math.round(scale / 100) * 100; else scale = Math.round(scale / 10) * 10; } document.getElementById('numeric-scale-val').innerText = "1:" + scale.toLocaleString('es-ES'); }
+        map.on('move', updateNumericScaleDisplay); map.on('zoomend', updateNumericScaleDisplay); updateNumericScaleDisplay();
+
+        function updateLegend() {
+            if (!isLegendVisible) return; const content = document.getElementById('legend-content'); const layers = drawnItems.getLayers();
+            if (layers.length === 0) { content.innerHTML = '<div style="color:#64748b; font-style:italic;">Mapa vacio</div>'; return; }
+            const uniqueTypes = new Map();
+            layers.forEach(layer => {
+                if (layer.isHidden) return; const props = layer.feature?.properties || {}; const color = props.color || (layer.options && layer.options.color) || '#e74c3c';
+                if (layer instanceof L.Marker) { const type = props.iconType || 'punto'; uniqueTypes.set(`marker_${type}_${color}`, { category: 'marker', color, type }); if (props.coneEnabled) { const coneColor = props.coneColor || color; uniqueTypes.set(`cone_${coneColor}`, { category: 'cone', color: coneColor }); } } else if (layer instanceof L.Polygon) { uniqueTypes.set(`polygon_${color}`, { category: 'polygon', color }); } else if (layer instanceof L.Polyline) { uniqueTypes.set(`polyline_${color}`, { category: 'polyline', color }); }
+            });
+            if (uniqueTypes.size === 0) { content.innerHTML = '<div style="color:#64748b; font-style:italic;">Sin elementos</div>'; return; }
+            let html = '';
+            uniqueTypes.forEach(info => { if (info.category === 'marker') { const icon = info.type === 'images_2' ? `<img src="images_2.jpg" style="width:14px;height:14px;border-radius:50%;">` : (tacticalIcons[info.type] || '📍'); html += `<div class="legend-item"><div style="background-color:${info.color};width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${info.type === 'punto' ? '' : icon}</div><span>${info.type}</span></div>`; } else if (info.category === 'cone') { html += `<div class="legend-item"><div style="font-size:12px;width:20px;text-align:center;">🔦</div><div style="width:14px;height:14px;background-color:${info.color};opacity:0.4;border:1px dashed #333;border-radius:50% 50% 0 0;transform:rotate(45deg);"></div><span>Cono Visión</span></div>`; } else if (info.category === 'polygon') { html += `<div class="legend-item"><div class="legend-color-box" style="background-color:${info.color};opacity:0.5;border-color:${info.color};"></div><span>Área</span></div>`; } else if (info.category === 'polyline') { html += `<div class="legend-item"><div style="width:18px;height:4px;background-color:${info.color};border-radius:2px;"></div><span>Ruta</span></div>`; } }); content.innerHTML = html;
+        }
+
+        function updateLayerTree() {
+            const list = document.getElementById('layer-list'); const layers = drawnItems.getLayers(); if (layers.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">Vacio</div>'; updateLegend(); return; }
+            const factions = {}; layers.forEach(layer => { const faction = layer.feature?.properties?.faction || window.projectName; if (!factions[faction]) factions[faction] = []; factions[faction].push(layer); });
+            let html = ''; const factionIcons = { 'General': '🏳️', 'Rojo': '🔴', 'Azul': '🔵', 'Organizacion': '⚙️', 'Neutral': '⚪', 'Marine Raider bcn': '<img src="image_ef21e1.png" style="width:14px;height:14px;display:inline-block;vertical-align:middle;border-radius:2px;" onerror="this.src=\'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png\'">' };
+            for (const [factionName, factionLayers] of Object.entries(factions)) {
+                const allHidden = factionLayers.every(l => l.isHidden); const eyeIcon = allHidden ? '👁️‍🗨️' : '👁️'; const eyeClass = allHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'; const fIcon = factionIcons[factionName] || '📁';
+                html += `<div class="faction-header" style="cursor:pointer;" onclick="const content=this.nextElementSibling;const icon=this.querySelector('.toggle-icon');if(content.style.display==='none'){content.style.display='block';icon.innerText='▼';}else{content.style.display='none';icon.innerText='▶';}"><div style="display:flex;align-items:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;margin-right:10px;" title="${factionName}"><span class="toggle-icon" style="margin-right:5px;font-size:10px;width:12px;display:inline-block;">▼</span><span style="margin-right:4px;">${fIcon}</span><span style="overflow:hidden;text-overflow:ellipsis;">${factionName}</span></div><button class="${eyeClass}" onclick="event.stopPropagation(); window.toggleFactionVisibility('${factionName}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0;">${eyeIcon}</button></div><div class="faction-content" style="display:block;">`;
+                factionLayers.forEach(layer => {
+                    const id = L.stamp(layer); const name = layer.feature?.properties?.layerName || 'Elemento'; const isHidden = layer.isHidden || false; const lEyeIcon = isHidden ? '👁️‍🗨️' : '👁️'; const lEyeClass = isHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'; let typeIcon = '📍'; let labelBtnHtml = '';
+                    if (layer instanceof L.Marker) { const hasLabel = layer.feature?.properties?.showLabel || false; labelBtnHtml = `<button style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 5px;opacity:${hasLabel ? '1' : '0.3'};" onclick="window.toggleMarkerLabel(${id})">🏷️</button>`; }
+                    if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) { typeIcon = layer.feature?.properties?.isAutoRoute ? '🗺️' : '📏'; } if (layer instanceof L.Polygon) typeIcon = '🔲';
+                    html += `<div class="layer-item"><span class="layer-name-text" title="${name}" onclick="window.zoomToLayer(${id})" style="cursor:pointer;flex:1;">${typeIcon} ${name}</span><div style="display:flex;align-items:center;gap:5px;">${labelBtnHtml}<button class="${lEyeClass}" onclick="window.toggleLayerVisibility(${id})">${lEyeIcon}</button><button style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:12px;padding:0 5px;" onclick="window.removeLayerById(${id})">🗑️</button></div></div>`;
+                    if (layer instanceof L.Marker && layer.feature?.properties?.bufferRadius > 0 && layer.bufferCircle) { const bHidden = layer.bufferCircle.isHidden || false; html += `<div class="layer-item" style="padding-left:20px;background:#f8fafc;border-top:none;"><span class="layer-name-text" style="font-size:11px;color:#64748b;">└ ⭕ Radio (${layer.feature.properties.bufferRadius}m)</span><div style="display:flex;align-items:center;gap:5px;"><button class="${bHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'}" onclick="window.toggleBufferVisibility(${id})">${bHidden ? '👁️‍🗨️' : '👁️'}</button></div></div>`; }
+                    if (layer instanceof L.Marker && layer.feature?.properties?.coneEnabled && layer.conePolygon) { const cHidden = layer.conePolygon.isHidden || false; html += `<div class="layer-item" style="padding-left:20px;background:#f8fafc;border-top:none;"><span class="layer-name-text" style="font-size:11px;color:#64748b;">└ 🔦 Visión (${layer.feature.properties.coneDist}m)</span><div style="display:flex;align-items:center;gap:5px;"><button class="${cHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'}" onclick="window.toggleConeVisibility(${id})">${cHidden ? '👁️‍🗨️' : '👁️'}</button><button style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:12px;padding:0 5px;" onclick="window.removeConeById(${id})">🗑️</button></div></div>`; }
+                });
+                html += `</div>`;
+            } list.innerHTML = html; updateLegend();
+        }
+
+        window.toggleLayerVisibility = function (id) {
+            const layer = drawnItems.getLayer(id); if (!layer) return; layer.isHidden = !layer.isHidden;
+            if (layer.isHidden) { if (layer instanceof L.Marker) { layer.setOpacity(0); if (layer.getTooltip()) layer.getTooltip().setOpacity(0); } else layer.setStyle({ opacity: 0, fillOpacity: 0 }); layer.closePopup(); } else { if (layer instanceof L.Marker) { layer.setOpacity(1); if (layer.getTooltip()) layer.getTooltip().setOpacity(1); } else layer.setStyle({ opacity: 1, fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) }); }
+            if (layer.conePolygon) { layer.conePolygon.isHidden = layer.isHidden; layer.conePolygon.setStyle({ opacity: layer.isHidden ? 0 : 1, fillOpacity: layer.isHidden ? 0 : 0.2 }); } if (layer.bufferCircle) { layer.bufferCircle.isHidden = layer.isHidden; layer.bufferCircle.setStyle({ opacity: layer.isHidden ? 0 : 1, fillOpacity: layer.isHidden ? 0 : 0.15 }); } if (layer.endMarker) { layer.endMarker.isHidden = layer.isHidden; layer.endMarker.setOpacity(layer.isHidden ? 0 : 1); }
+            if (window.fieldMapCenterPins && window.fieldMapCenterPins[id]) { window.fieldMapCenterPins[id].setOpacity(layer.isHidden ? 0 : 1); } updateLayerTree();
+        };
+
+        window.toggleMarkerLabel = function (id) { const layer = drawnItems.getLayer(id); if (!layer || !(layer instanceof L.Marker)) return; layer.feature.properties.showLabel = !layer.feature.properties.showLabel; updateMarkerLabel(layer); updateLayerTree(); };
+
+        window.toggleFactionVisibility = function (factionName) {
+            const layers = drawnItems.getLayers().filter(l => (l.feature?.properties?.faction || window.projectName) === factionName); if (layers.length === 0) return; const hideAll = !layers.every(l => l.isHidden);
+            layers.forEach(layer => {
+                layer.isHidden = hideAll; if (layer.isHidden) { if (layer instanceof L.Marker) { layer.setOpacity(0); if (layer.getTooltip()) layer.getTooltip().setOpacity(0); } else layer.setStyle({ opacity: 0, fillOpacity: 0 }); layer.closePopup(); } else { if (layer instanceof L.Marker) { layer.setOpacity(1); if (layer.getTooltip()) layer.getTooltip().setOpacity(1); } else layer.setStyle({ opacity: 1, fillOpacity: layer.feature.properties.fillOpacity || (layer instanceof L.Polygon ? 0.3 : 1) }); } if (layer.conePolygon) { layer.conePolygon.isHidden = layer.isHidden; layer.conePolygon.setStyle({ opacity: layer.isHidden ? 0 : 1, fillOpacity: layer.isHidden ? 0 : 0.2 }); } if (layer.bufferCircle) { layer.bufferCircle.isHidden = layer.isHidden; layer.bufferCircle.setStyle({ opacity: layer.isHidden ? 0 : 1, fillOpacity: layer.isHidden ? 0 : 0.15 }); } if (layer.endMarker) { layer.endMarker.isHidden = layer.isHidden; layer.endMarker.setOpacity(layer.isHidden ? 0 : 1); }
+                const id = L.stamp(layer); if (window.fieldMapCenterPins && window.fieldMapCenterPins[id]) { window.fieldMapCenterPins[id].setOpacity(layer.isHidden ? 0 : 1); }
+            }); updateLayerTree();
+        };
+
+        window.toggleBufferVisibility = function (id) { const layer = drawnItems.getLayer(id); if (!layer || !layer.bufferCircle) return; layer.bufferCircle.isHidden = !layer.bufferCircle.isHidden; layer.bufferCircle.setStyle({ opacity: layer.bufferCircle.isHidden ? 0 : 1, fillOpacity: layer.bufferCircle.isHidden ? 0 : 0.15 }); updateLayerTree(); };
+        window.toggleConeVisibility = function (id) { const layer = drawnItems.getLayer(id); if (!layer || !layer.conePolygon) return; layer.conePolygon.isHidden = !layer.conePolygon.isHidden; layer.conePolygon.setStyle({ opacity: layer.conePolygon.isHidden ? 0 : 1, fillOpacity: layer.conePolygon.isHidden ? 0 : 0.2 }); updateLayerTree(); };
+        window.removeConeById = function (id) { const layer = drawnItems.getLayer(id); if (layer && layer.conePolygon) { map.removeLayer(layer.conePolygon); layer.conePolygon = null; if (layer.feature && layer.feature.properties) layer.feature.properties.coneEnabled = false; updateLayerTree(); } };
+
+        function updateMarkerBuffer(layer) { if (!(layer instanceof L.Marker)) return; const radius = parseFloat(layer.feature?.properties?.bufferRadius) || 0; if (radius > 0) { if (layer.bufferCircle) { layer.bufferCircle.setLatLng(layer.getLatLng()); layer.bufferCircle.setRadius(radius); layer.bufferCircle.setStyle({ color: layer.feature.properties.color }); } else { layer.bufferCircle = L.circle(layer.getLatLng(), { radius: radius, color: layer.feature.properties.color, weight: 2, fillOpacity: 0.15, dashArray: '5, 5', interactive: false }).addTo(map); layer.bufferCircle.isHidden = layer.isHidden || false; } layer.bufferCircle.setStyle({ opacity: layer.bufferCircle.isHidden ? 0 : 1, fillOpacity: layer.bufferCircle.isHidden ? 0 : 0.15 }); } else if (layer.bufferCircle) { map.removeLayer(layer.bufferCircle); layer.bufferCircle = null; } }
+        function getDestination(latlng, heading, dist) { const R = 6378137, brng = heading * Math.PI / 180, lat1 = latlng.lat * Math.PI / 180, lon1 = latlng.lng * Math.PI / 180; const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist / R) + Math.cos(lat1) * Math.sin(dist / R) * Math.cos(brng)); const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist / R) * Math.cos(lat1), Math.cos(dist / R) - Math.sin(lat1) * Math.sin(lat2)); return L.latLng(lat2 * 180 / Math.PI, lon2 * 180 / Math.PI); }
+        function getConeLatLngs(latlng, radius, angle, spread) { const points = [latlng]; const startAngle = angle - spread / 2; const steps = Math.max(10, Math.floor(spread / 5)); for (let i = 0; i <= steps; i++) { points.push(getDestination(latlng, startAngle + (i / steps) * spread, radius)); } return points; }
+        function updateMarkerCone(layer) { if (!(layer instanceof L.Marker)) return; const props = layer.feature?.properties || {}; if (props.coneEnabled) { const radius = parseFloat(props.coneDist) || 100; const angle = parseFloat(props.coneAngle) || 0; const spread = parseFloat(props.coneSpread) || 60; const latlngs = getConeLatLngs(layer.getLatLng(), radius, angle, spread); const coneColor = props.coneColor || props.color || '#f1c40f'; if (layer.conePolygon) { layer.conePolygon.setLatLngs(latlngs); layer.conePolygon.setStyle({ color: coneColor }); } else { layer.conePolygon = L.polygon(latlngs, { color: coneColor, weight: 1, fillOpacity: 0.2, interactive: false, dashArray: '4, 4' }).addTo(map); layer.conePolygon.isHidden = layer.isHidden || false; } layer.conePolygon.setStyle({ opacity: layer.conePolygon.isHidden ? 0 : 1, fillOpacity: layer.conePolygon.isHidden ? 0 : 0.2 }); } else if (layer.conePolygon) { map.removeLayer(layer.conePolygon); layer.conePolygon = null; } }
+        function updateMarkerLabel(layer) { if (!(layer instanceof L.Marker)) return; const props = layer.feature?.properties || {}; if (props.showLabel) { const title = props.layerName || 'Marcador'; layer.bindTooltip(title, { permanent: true, direction: 'top', offset: [0, -10], className: 'grid-label' }).openTooltip(); if (layer.isHidden) layer.getTooltip().setOpacity(0); } else { layer.unbindTooltip(); } }
+
+        window.deleteClickHandler = function (e) { window.removeLayerById(L.stamp(e.target)); };
+
+        function getMarkerIconObj(color, type) {
+            if (type === 'images_2') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:28px;height:28px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="images_2.jpg" style="width:100%;height:100%;object-fit:cover;"></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
+            if (type === 'raider') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:black;width:28px;height:28px;border-radius:50%;border:2px solid ${color};box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="image_ef21e1.png" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png'" style="width:100%;height:100%;object-fit:cover;"></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
+            if (type === 'bandera') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;">🚩</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
+            if (!type || type === 'punto') return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);"></div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
+            return L.divIcon({ className: 'custom-colored-marker', html: `<div style="background-color:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;">${tacticalIcons[type] || '📍'}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
+        }
+
+        window.recalculateAutoRoute = async function () {
+            if (autoRoutePoints.length > 1) {
+                const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';'); const mode = document.getElementById('route-mode-select').value || 'foot';
+                try {
+                    const response = await fetch(`https://routing.openstreetmap.de/routed-${mode==='driving'?'car':mode}/route/v1/driving/${coordsStr}?geometries=geojson&overview=full`); const data = await response.json();
+                    if (data.code === 'Ok' && data.routes.length > 0) {
+                        const route = data.routes[0]; autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                        if (currentAutoRouteLine) autoRouteLayer.removeLayer(currentAutoRouteLine);
+                        const lineColor = document.getElementById('drawColor').value || '#2ecc71'; const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
+                        currentAutoRouteLine = L.polyline(autoRouteCoordinates, { color: lineColor, weight: lineWeight, dashArray: '5, 10' }).addTo(autoRouteLayer);
+                        const dist = route.distance; const distText = dist > 1000 ? (dist / 1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
+                        let timeMinutes = 0; if (mode === 'driving') timeMinutes = route.duration / 60; else if (mode === 'bike' || mode === 'bicycle') timeMinutes = dist * 0.004; else timeMinutes = dist * 0.012;
+                        const timeHours = Math.floor(timeMinutes / 60); const remMin = Math.round(timeMinutes % 60); const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                        const mIcon = mode === 'driving' ? '🚗' : ((mode === 'bike' || mode === 'bicycle') ? '🚲' : '🚶‍♂️'); const infoDiv = document.getElementById('auto-route-info');
+                        if (infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ${mIcon} Aprox: ${timeText}`; }
+                    } else { window.customAlert("Atención", "No se encontró camino conectable."); }
+                } catch (error) { window.customAlert("Error", "No se pudo calcular la ruta."); }
+            }
+        };
+
+        window.undoLastPoint = function () {
+            if (activeHandler && typeof activeHandler.deleteLastVertex === 'function') { activeHandler.deleteLastVertex(); }
+            else if (measurePoints && measurePoints.length > 0 && map.hasLayer(measureLayer)) {
+                measurePoints.pop(); measureLayer.clearLayers();
+                if (measureTempLine) { map.removeLayer(measureTempLine); measureTempLine = null; }
+                let totalDist = 0;
+                measurePoints.forEach((p, index) => {
+                    L.circleMarker(p, { radius: 4, color: '#e6b800', fillColor: '#fff', fillOpacity: 1, weight: 2 }).addTo(measureLayer);
+                    if (index > 0) {
+                        totalDist += measurePoints[index - 1].distanceTo(p);
+                        L.polyline([measurePoints[index - 1], p], { color: '#e6b800', weight: 4, dashArray: '5, 8' }).addTo(measureLayer);
+                        let distText = totalDist > 1000 ? (totalDist / 1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m';
+                        L.tooltip({ permanent: true, direction: 'auto', className: 'grid-label' }).setLatLng(p).setContent(`📐 ${distText}`).addTo(measureLayer);
+                    }
+                });
+                const infoDiv = document.getElementById('auto-route-info');
+                if (infoDiv) { infoDiv.innerHTML = measurePoints.length > 0 ? `📐 Distancia: <b>${(totalDist > 1000 ? (totalDist / 1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m')}</b>` : `📐 Modo Regla: Haz clic en el mapa para medir`; }
+            }
+            else if (autoRoutePoints && autoRoutePoints.length > 0) {
+                autoRoutePoints.pop(); autoRouteLayer.clearLayers(); autoRoutePoints.forEach(p => L.circleMarker(p, { radius: 5, color: '#2ecc71', fillColor: '#fff', fillOpacity: 1 }).addTo(autoRouteLayer));
+                if (autoRoutePoints.length > 1) {
+                    const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';'); const mode = document.getElementById('route-mode-select').value || 'foot';
+                    fetch(`https://routing.openstreetmap.de/routed-${mode==='driving'?'car':mode}/route/v1/driving/${coordsStr}?geometries=geojson&overview=full`).then(res => res.json()).then(data => {
+                        if (data.code === 'Ok' && data.routes.length > 0) {
+                            const route = data.routes[0]; autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                            const lineColor = document.getElementById('drawColor').value || '#2ecc71'; const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
+                            currentAutoRouteLine = L.polyline(autoRouteCoordinates, { color: lineColor, weight: lineWeight, dashArray: '5, 10' }).addTo(autoRouteLayer);
+                            const dist = route.distance; const distText = dist > 1000 ? (dist / 1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
+                            let timeMinutes = 0; if (mode === 'driving') timeMinutes = route.duration / 60; else if (mode === 'bike' || mode === 'bicycle') timeMinutes = dist * 0.004; else timeMinutes = dist * 0.012;
+                            const timeHours = Math.floor(timeMinutes / 60); const remMin = Math.round(timeMinutes % 60); const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                            const mIcon = mode === 'driving' ? '🚗' : ((mode === 'bike' || mode === 'bicycle') ? '🚲' : '🚶‍♂️'); const infoDiv = document.getElementById('auto-route-info');
+                            if (infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ${mIcon} Aprox: ${timeText}`; }
+                        }
+                    }).catch(err => console.error(err));
+                } else { autoRouteCoordinates = []; currentAutoRouteLine = null; const infoDiv = document.getElementById('auto-route-info'); if (infoDiv) infoDiv.style.display = 'none'; }
+            }
+        };
+
+        window.isWhiteboardMode = false;
+        window.currentWhiteboardLine = null;
+        window.whiteboardLines = [];
+        window.whiteboardIsDrawing = false;
+
+        window.startWhiteboard = function () {
+            window.isWhiteboardMode = true;
+            window.map.dragging.disable();
+            window.map.on('mousedown', handleWhiteboardDown);
+            window.map.on('mousemove', handleWhiteboardMove);
+            window.map.on('mouseup', handleWhiteboardUp);
+            document.getElementById('map-container').style.cursor = 'crosshair';
+            const infoDiv = document.getElementById('auto-route-info');
+            if (infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `🖍️ Pizarra Táctica: Dibuja arrastrando sobre el mapa`; }
+        };
+
+        window.stopWhiteboard = function () {
+            if (!window.isWhiteboardMode) return;
+            window.isWhiteboardMode = false;
+            window.whiteboardIsDrawing = false;
+            window.map.dragging.enable();
+            window.map.off('mousedown', handleWhiteboardDown);
+            window.map.off('mousemove', handleWhiteboardMove);
+            window.map.off('mouseup', handleWhiteboardUp);
+            document.getElementById('map-container').style.cursor = '';
+            const infoDiv = document.getElementById('auto-route-info'); if (infoDiv) infoDiv.style.display = 'none';
+            document.getElementById('drawing-actions').style.display = 'none';
+            window.whiteboardLines = [];
+        };
+
+        window.undoWhiteboardStroke = function () {
+            if (window.whiteboardLines.length > 0) {
+                const lastLine = window.whiteboardLines.pop();
+                window.drawnItems.removeLayer(lastLine);
+                if (typeof window.syncMapToRoom === 'function') window.syncMapToRoom();
+            }
+        };
+
+        function simplifyPoints(points, epsilon) {
+            if (points.length < 3) return points;
+            const sqTolerance = epsilon * epsilon;
+            const last = points.length - 1;
+            const keep = new Uint8Array(points.length);
+            keep[0] = 1; keep[last] = 1;
+
+            function getSqDist(p, p1, p2) {
+                let x = p1.lng, y = p1.lat, dx = p2.lng - x, dy = p2.lat - y;
+                if (dx !== 0 || dy !== 0) {
+                    const t = ((p.lng - x) * dx + (p.lat - y) * dy) / (dx * dx + dy * dy);
+                    if (t > 1) { x = p2.lng; y = p2.lat; } else if (t > 0) { x += dx * t; y += dy * t; }
+                }
+                dx = p.lng - x; dy = p.lat - y;
+                return dx * dx + dy * dy;
+            }
+
+            function simplifyDPStep(points, first, last, sqTolerance, keep) {
+                let maxSqDist = sqTolerance; let index = -1;
+                for (let i = first + 1; i < last; i++) {
+                    const sqDist = getSqDist(points[i], points[first], points[last]);
+                    if (sqDist > maxSqDist) { index = i; maxSqDist = sqDist; }
+                }
+                if (maxSqDist > sqTolerance) {
+                    keep[index] = 1;
+                    simplifyDPStep(points, first, index, sqTolerance, keep);
+                    simplifyDPStep(points, index, last, sqTolerance, keep);
+                }
+            }
+            simplifyDPStep(points, 0, last, sqTolerance, keep);
+            return points.filter((p, i) => keep[i]);
+        }
+
+        function handleWhiteboardDown(e) {
+            window.whiteboardIsDrawing = true;
+            const weight = parseInt(document.getElementById('drawWeight').value) || 4;
+            const color = document.getElementById('drawColor').value || '#2ecc71';
+            window.currentWhiteboardLine = L.polyline([e.latlng], { color: color, weight: weight, interactive: true });
+            window.currentWhiteboardLine.addTo(window.map);
+        }
+
+        function handleWhiteboardMove(e) {
+            if (!window.whiteboardIsDrawing || !window.currentWhiteboardLine) return;
+            window.currentWhiteboardLine.addLatLng(e.latlng);
+        }
+
+        function handleWhiteboardUp(e) {
+            if (!window.whiteboardIsDrawing || !window.currentWhiteboardLine) return;
+            window.whiteboardIsDrawing = false;
+            const latlngs = window.currentWhiteboardLine.getLatLngs();
+            window.map.removeLayer(window.currentWhiteboardLine);
+            if (latlngs.length < 2) { window.currentWhiteboardLine = null; return; }
+            const simplified = simplifyPoints(latlngs, 0.00001);
+            const weight = parseInt(document.getElementById('drawWeight').value) || 4;
+            const color = document.getElementById('drawColor').value || '#2ecc71';
+            const finalLine = L.polyline(simplified, { color: color, weight: weight });
+            finalLine.feature = { type: 'Feature', properties: { layerName: 'Trazo Pizarra', faction: window.projectName, color: color } };
+            let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${L.stamp(finalLine)})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${L.stamp(finalLine)})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
+            finalLine.bindPopup(`<div><b>🖍️ Trazo Táctico</b></div>` + actionBtns);
+            finalLine.feature.properties.baseText = `<div><b>🖍️ Trazo Táctico</b></div>`;
+            window.drawnItems.addLayer(finalLine);
+            window.whiteboardLines.push(finalLine);
+            window.currentWhiteboardLine = null;
+            if (typeof window.syncMapToRoom === 'function') window.syncMapToRoom();
+        }
+
+        window.enableTool = function (type) {
+            window.stopDrawing(); window.toggleMenu(); document.getElementById('drawing-actions').style.display = 'flex'; document.getElementById('undo-point-btn').style.display = (type === 'polyline' || type === 'polygon' || type === 'auto-route' || type === 'measure') ? 'block' : 'none';
+            const finishBtn = document.getElementById('finish-route-btn'); const routeModeSelect = document.getElementById('route-mode-select');
+            const undoWBtn = document.getElementById('undo-whiteboard-btn'); const finishWBtn = document.getElementById('finish-whiteboard-btn');
+            if (finishBtn) finishBtn.style.display = (type === 'auto-route') ? 'block' : 'none'; if (routeModeSelect) routeModeSelect.style.display = (type === 'auto-route') ? 'block' : 'none';
+            if (undoWBtn) undoWBtn.style.display = (type === 'whiteboard') ? 'block' : 'none';
+            if (finishWBtn) finishWBtn.style.display = (type === 'whiteboard') ? 'block' : 'none';
+            if (type === 'delete') { document.getElementById('cancel-crop-btn').innerText = "✕ Salir"; drawnItems.eachLayer(layer => layer.on('click', window.deleteClickHandler)); return; } else { document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar"; }
+            if (type === 'measure') { measurePoints = []; measureLayer.addTo(map); map.on('click', handleMeasureClick); map.on('mousemove', handleMeasureMove); document.getElementById('map-container').style.cursor = 'crosshair'; const infoDiv = document.getElementById('auto-route-info'); if (infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📐 Modo Regla: Haz clic en el mapa para medir`; } return; }
+            if (type === 'auto-route') { autoRoutePoints = []; autoRouteCoordinates = []; autoRouteLayer.addTo(map); map.on('click', handleAutoRouteClick); document.getElementById('map-container').style.cursor = 'crosshair'; return; }
+            if (type === 'whiteboard') { window.startWhiteboard(); return; }
+            if (type === 'marker') { drawOptions.marker.icon = getMarkerIconObj(document.getElementById('markerColor').value || '#e74c3c', 'punto'); activeHandler = new L.Draw.Marker(map, drawOptions.marker); }
+            if (type === 'polyline') { drawOptions.polyline.shapeOptions.weight = parseInt(document.getElementById('drawWeight').value) || 4; drawOptions.polyline.shapeOptions.color = document.getElementById('drawColor').value || '#2ecc71'; activeHandler = new L.Draw.Polyline(map, drawOptions.polyline); }
+            if (type === 'polygon') activeHandler = new L.Draw.Polygon(map, drawOptions.polygon);
+            if (activeHandler) activeHandler.enable();
+        };
+
+        window.processFieldMap = function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1200; const MAX_HEIGHT = 1200;
+                    let width = img.width; let height = img.height;
+                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
+                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedData = canvas.toDataURL('image/jpeg', 0.6);
+
+                    const center = window.map.getCenter();
+                    const bounds = window.map.getBounds();
+                    const latDiff = (bounds.getNorth() - bounds.getSouth()) * 0.3;
+                    const lngDiff = (bounds.getEast() - bounds.getWest()) * 0.3;
+
+                    const nw = [center.lat + latDiff, center.lng - lngDiff];
+                    const se = [center.lat - latDiff, center.lng + lngDiff];
+                    const imageBounds = [nw, se];
+
+                    const p1 = L.latLng(center.lat + latDiff, center.lng - lngDiff); // NW (TopLeft)
+                    const p2 = L.latLng(center.lat + latDiff, center.lng + lngDiff); // NE (TopRight)
+                    const p3 = L.latLng(center.lat - latDiff, center.lng + lngDiff); // SE (BottomRight)
+                    const p4 = L.latLng(center.lat - latDiff, center.lng - lngDiff); // SW (BottomLeft)
+
+                    const layer = L.polygon([p1, p2, p3, p4], { color: '#fbbf24', weight: 0, fillOpacity: 0, interactive: false });
+                    layer.feature = { type: 'Feature', properties: { layerName: file.name, faction: window.projectName, isFieldMap: true, opacity: 0.6, rotation: 0, corners: { tl: p1, tr: p2, bl: p4, br: p3 } } };
+
+                    window.drawnItems.addLayer(layer);
+                    const id = L.stamp(layer);
+
+                    const overlay = L.imageOverlay.rotated(compressedData, p1, p2, p4, { opacity: 0.6, interactive: false }).addTo(window.map);
+                    window.fieldMapOverlays[id] = overlay;
+                    window.fieldMapCenterPins[id] = window.createFieldMapCenter(id, L.latLngBounds([p1, p3]));
+
+                    let actionBtns = `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.toggleFieldMapAdjust(${id})" style="color:var(--ign-gold);border:1px solid var(--ign-gold);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🔄 Ajustar</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;flex:1;font-weight:bold;">🗑️</button></div>`;
+                    let baseText = `<div><b>🗺️ ${file.name}</b><br>Mapa de campo solapado.</div>`;
+                    layer.bindPopup(baseText + actionBtns);
+                    layer.feature.properties.baseText = baseText;
+                    layer.feature.properties.imageUrlData = compressedData;
+
+                    window.updateLayerTree();
+                    window.toggleFieldMapAdjust(id);
+                    setTimeout(() => window.zoomToLayer(id), 100);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        };
+
+        window.getMercatorCenter = function (map, bounds) {
+            const projNw = map.project(bounds.getNorthWest(), 0);
+            const projSe = map.project(bounds.getSouthEast(), 0);
+            return map.unproject(projNw.add(projSe).divideBy(2), 0);
+        };
+
+        window.getRotatedLatLng = function (map, latlng, centerLatLng, angleDeg) {
+            const pt = map.latLngToLayerPoint(latlng);
+            const centerPt = map.latLngToLayerPoint(centerLatLng);
+            const angleRad = angleDeg * Math.PI / 180;
+            const dx = pt.x - centerPt.x;
+            const dy = pt.y - centerPt.y;
+            const rx = dx * Math.cos(angleRad) - dy * Math.sin(angleRad);
+            const ry = dx * Math.sin(angleRad) + dy * Math.cos(angleRad);
+            return map.layerPointToLatLng(L.point(centerPt.x + rx, centerPt.y + ry));
+        };
+
+        window.updateLayerPolygon = function (layer, tl, tr, bl) {
+            if (!layer || !layer.setLatLngs) return;
+            var pTL = window.map.latLngToLayerPoint(tl);
+            var pTR = window.map.latLngToLayerPoint(tr);
+            var pBL = window.map.latLngToLayerPoint(bl);
+            var pBR = pTR.subtract(pTL).add(pBL);
+            var br = window.map.layerPointToLatLng(pBR);
+            layer.setLatLngs([tl, tr, br, bl]);
+            layer.feature.properties.corners = { tl: tl, tr: tr, bl: bl, br: br };
+            return br;
+        };
+
+        window.toggleFieldMapAdjust = function (id) {
+            const layer = window.drawnItems.getLayer(id);
+            const overlay = window.fieldMapOverlays[id];
+            if (!layer || !overlay) return;
+
+            if (window.fieldMapAdjusters[id]) {
+                const adj = window.fieldMapAdjusters[id];
+                window.map.dragging.enable(); window.map.touchZoom.enable(); window.map.scrollWheelZoom.enable(); window.map.doubleClickZoom.enable();
+                layer.options.interactive = true;
+                if (layer.getElement()) layer.getElement().style.pointerEvents = "auto";
+                if (overlay.getElement()) { overlay.getElement().style.outline = "none"; overlay.getElement().style.pointerEvents = "none"; overlay.getElement().style.cursor = ""; }
+
+                if (adj.tlMarker) window.map.removeLayer(adj.tlMarker);
+                if (adj.trMarker) window.map.removeLayer(adj.trMarker);
+                if (adj.blMarker) window.map.removeLayer(adj.blMarker);
+                delete window.fieldMapAdjusters[id];
+                document.getElementById('finish-adjust-btn').style.display = 'none';
+                window.currentAdjustId = null;
+                layer.setStyle({ weight: 3, fillOpacity: 0.1 });
+                window.customAlert("Modo Ajuste", "Ajuste finalizado.");
+            } else {
+                layer.setStyle({ weight: 0, fillOpacity: 0 });
+                layer.options.interactive = false;
+                const disablePath = () => { if (layer.getElement()) layer.getElement().style.pointerEvents = "none"; else setTimeout(disablePath, 50); }; disablePath();
+
+                const el = overlay.getElement();
+                if (el) { el.style.outline = "4px dashed #fbbf24"; el.style.outlineOffset = "-4px"; el.style.pointerEvents = "none"; }
+
+                let corners = layer.feature.properties.corners;
+                if (!corners) {
+                    const b = overlay.getBounds();
+                    corners = { tl: b.getNorthWest(), tr: b.getNorthEast(), bl: b.getSouthWest(), br: b.getSouthEast() };
+                    layer.feature.properties.corners = corners;
+                }
+
+                const moveIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--info);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">✥</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+                const rotIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--ign-gold);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">↻</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+                const scaleIcon = L.divIcon({ className: 'custom-handle', html: '<div style="background:var(--success);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;box-shadow:var(--shadow);">⤡</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+
+                const tlMarker = L.marker(corners.tl, { draggable: true, icon: moveIcon }).addTo(window.map);
+                const trMarker = L.marker(corners.tr, { draggable: true, icon: rotIcon }).addTo(window.map);
+                const blMarker = L.marker(corners.bl, { draggable: true, icon: scaleIcon }).addTo(window.map);
+
+                const updateOverlay = () => {
+                    const tl = tlMarker.getLatLng(), tr = trMarker.getLatLng(), bl = blMarker.getLatLng();
+                    if (overlay.reposition) overlay.reposition(tl, tr, bl);
+                    window.updateLayerPolygon(layer, tl, tr, bl);
+                };
+
+                tlMarker.on('drag', function (e) {
+                    const latDiff = e.latlng.lat - corners.tl.lat;
+                    const lngDiff = e.latlng.lng - corners.tl.lng;
+                    trMarker.setLatLng([corners.tr.lat + latDiff, corners.tr.lng + lngDiff]);
+                    blMarker.setLatLng([corners.bl.lat + latDiff, corners.bl.lng + lngDiff]);
+                    updateOverlay();
+                });
+                tlMarker.on('dragend', function (e) { corners = layer.feature.properties.corners; });
+                trMarker.on('drag', function (e) { updateOverlay(); });
+                trMarker.on('dragend', function (e) { corners = layer.feature.properties.corners; });
+                blMarker.on('drag', function (e) { updateOverlay(); });
+                blMarker.on('dragend', function (e) { corners = layer.feature.properties.corners; });
+
+                window.fieldMapAdjusters[id] = { tlMarker, trMarker, blMarker };
+                window.currentAdjustId = id;
+                document.getElementById('finish-adjust-btn').style.display = 'block';
+                setTimeout(() => window.map.closePopup(), 50);
+                window.customAlert("Modo Ajuste (Motor 3D)", "Usa los tiradores en las esquinas:\n\n✥ <b>Arriba Izquierda:</b> Mover mapa libremente\n↻ <b>Arriba Derecha:</b> Rotar/Estirar ancho\n⤡ <b>Abajo Izquierda:</b> Rotar/Estirar alto\n\nEl mapa base es libremente navegable.");
+            }
+        };
+
+        window.isSelectingOfflineZone = false;
+        window.startOfflineSelection = function () {
+            window.stopDrawing(); window.toggleMenu(); window.isSelectingOfflineZone = true;
+            document.getElementById('drawing-actions').style.display = 'flex'; document.getElementById('undo-point-btn').style.display = 'none';
+            if (document.getElementById('finish-route-btn')) document.getElementById('finish-route-btn').style.display = 'none';
+            if (document.getElementById('route-mode-select')) document.getElementById('route-mode-select').style.display = 'none';
+            document.getElementById('cancel-crop-btn').innerText = "✕ Cancelar";
+            const infoDiv = document.getElementById('auto-route-info'); if (infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `🔲 Dibuja un rectángulo en el mapa`; }
+            activeHandler = new L.Draw.Rectangle(map, { shapeOptions: { color: '#28a745', weight: 2, fillOpacity: 0.2 } }); activeHandler.enable();
+        };
+
+        window.stopDrawing = function () {
+            if (window.isWhiteboardMode) window.stopWhiteboard();
+            if (activeHandler) { activeHandler.disable(); activeHandler = null; } window.isSelectingOfflineZone = false;
+            drawnItems.eachLayer(layer => layer.off('click', window.deleteClickHandler)); document.getElementById('drawing-actions').style.display = 'none';
+            map.off('click', handleAutoRouteClick); if (typeof autoRouteLayer !== 'undefined') { autoRouteLayer.clearLayers(); map.removeLayer(autoRouteLayer); }
+            map.off('click', handleMeasureClick); map.off('mousemove', handleMeasureMove); if (typeof measureLayer !== 'undefined') { measureLayer.clearLayers(); map.removeLayer(measureLayer); } if (measureTempLine) { map.removeLayer(measureTempLine); measureTempLine = null; }
+            if (typeof currentAutoRouteLine !== 'undefined') currentAutoRouteLine = null; document.getElementById('map-container').style.cursor = '';
+            const infoDiv = document.getElementById('auto-route-info'); if (infoDiv) infoDiv.style.display = 'none';
+        };
+
+        async function handleAutoRouteClick(e) {
+            autoRoutePoints.push(e.latlng); L.circleMarker(e.latlng, { radius: 5, color: '#2ecc71', fillColor: '#fff', fillOpacity: 1 }).addTo(autoRouteLayer);
+            if (autoRoutePoints.length > 1) {
+                const coordsStr = autoRoutePoints.map(p => `${p.lng},${p.lat}`).join(';'); const mode = document.getElementById('route-mode-select').value || 'foot';
+                try {
+                    const response = await fetch(`https://routing.openstreetmap.de/routed-${mode==='driving'?'car':mode}/route/v1/driving/${coordsStr}?geometries=geojson&overview=full`); const data = await response.json();
+                    if (data.code === 'Ok' && data.routes.length > 0) {
+                        const route = data.routes[0]; autoRouteCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                        if (currentAutoRouteLine) autoRouteLayer.removeLayer(currentAutoRouteLine);
+                        const lineColor = document.getElementById('drawColor').value || '#2ecc71'; const lineWeight = parseInt(document.getElementById('drawWeight').value) || 4;
+                        currentAutoRouteLine = L.polyline(autoRouteCoordinates, { color: lineColor, weight: lineWeight, dashArray: '5, 10' }).addTo(autoRouteLayer);
+                        const dist = route.distance; const distText = dist > 1000 ? (dist / 1000).toFixed(2) + ' km' : dist.toFixed(0) + ' m';
+                        let timeMinutes = 0; if (mode === 'driving') timeMinutes = route.duration / 60; else if (mode === 'bike' || mode === 'bicycle') timeMinutes = dist * 0.004; else timeMinutes = dist * 0.012;
+                        const timeHours = Math.floor(timeMinutes / 60); const remMin = Math.round(timeMinutes % 60); const timeText = timeHours > 0 ? `${timeHours}h ${remMin}min` : `${remMin}min`;
+                        const mIcon = mode === 'driving' ? '🚗' : ((mode === 'bike' || mode === 'bicycle') ? '🚲' : '🚶‍♂️'); const infoDiv = document.getElementById('auto-route-info');
+                        if (infoDiv) { infoDiv.style.display = 'block'; infoDiv.innerHTML = `📏 Dist: ${distText} | ${mIcon} Aprox: ${timeText}`; }
+                    } else { window.customAlert("Atención", "No se encontró camino conectable."); }
+                } catch (error) { window.customAlert("Error", "Error al calcular."); }
+            }
+        }
+
+        function calculateAzimuth(p1, p2) {
+            const lat1 = p1.lat * Math.PI / 180;
+            const lon1 = p1.lng * Math.PI / 180;
+            const lat2 = p2.lat * Math.PI / 180;
+            const lon2 = p2.lng * Math.PI / 180;
+            const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+            let brng = Math.atan2(y, x) * 180 / Math.PI;
+            return (brng + 360) % 360;
+        }
+
+        async function handleMeasureClick(e) {
+            measurePoints.push(e.latlng);
+            L.circleMarker(e.latlng, { radius: 4, color: '#e6b800', fillColor: '#fff', fillOpacity: 1, weight: 2 }).addTo(measureLayer);
+            if (measurePoints.length > 1) {
+                const p1 = measurePoints[measurePoints.length - 2];
+                const p2 = measurePoints[measurePoints.length - 1];
+                L.polyline([p1, p2], { color: '#e6b800', weight: 4, dashArray: '5, 8' }).addTo(measureLayer);
+                let totalDist = 0; for (let i = 0; i < measurePoints.length - 1; i++) totalDist += measurePoints[i].distanceTo(measurePoints[i + 1]);
+                let distText = totalDist > 1000 ? (totalDist / 1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m';
+                let azimut = calculateAzimuth(p1, p2);
+
+                const ttip = L.tooltip({ permanent: true, direction: 'auto', className: 'grid-label' })
+                    .setLatLng(e.latlng)
+                    .setContent(`📐 ${distText}<br>🧭 Azimut: ${azimut.toFixed(1)}°<br>⛰️ Desnivel: <i>Calc...</i>`)
+                    .addTo(measureLayer);
+
+                try {
+                    const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${p1.lat.toFixed(5)},${p2.lat.toFixed(5)}&longitude=${p1.lng.toFixed(5)},${p2.lng.toFixed(5)}`);
+                    const data = await res.json();
+                    if (data && data.elevation && data.elevation.length === 2) {
+                        const elevDiff = data.elevation[1] - data.elevation[0];
+                        const elevText = elevDiff > 0 ? `<span style="color:var(--success)">+${elevDiff.toFixed(0)}m</span>` : (elevDiff < 0 ? `<span style="color:var(--danger)">${elevDiff.toFixed(0)}m</span>` : `0m`);
+                        ttip.setContent(`📐 ${distText}<br>🧭 Azimut: ${azimut.toFixed(1)}°<br>⛰️ Desnivel: ${elevText}`);
+                    } else {
+                        ttip.setContent(`📐 ${distText}<br>🧭 Azimut: ${azimut.toFixed(1)}°<br>⛰️ Desnivel: N/A`);
+                    }
+                } catch (err) {
+                    ttip.setContent(`📐 ${distText}<br>🧭 Azimut: ${azimut.toFixed(1)}°<br>⛰️ Desnivel: Error`);
+                }
+            }
+        }
+
+        function handleMeasureMove(e) {
+            if (measurePoints.length > 0) {
+                if (measureTempLine) map.removeLayer(measureTempLine);
+                const p1 = measurePoints[measurePoints.length - 1];
+                measureTempLine = L.polyline([p1, e.latlng], { color: '#e6b800', weight: 2, dashArray: '5, 8', opacity: 0.6 }).addTo(map);
+                let segmentDist = p1.distanceTo(e.latlng);
+                let totalDist = segmentDist;
+                for (let i = 0; i < measurePoints.length - 1; i++) totalDist += measurePoints[i].distanceTo(measurePoints[i + 1]);
+                let distText = totalDist > 1000 ? (totalDist / 1000).toFixed(2) + ' km' : totalDist.toFixed(0) + ' m';
+                let azimut = calculateAzimuth(p1, e.latlng);
+                const infoDiv = document.getElementById('auto-route-info');
+                if (infoDiv) { infoDiv.innerHTML = `📐 Distancia: <b>${distText}</b> | 🧭 Azimut: <b>${azimut.toFixed(1)}°</b>`; }
+            }
+        }
+
+        window.finishAutoRoute = function () {
+            if (autoRouteCoordinates.length > 1) {
+                const finalPolyline = L.polyline(autoRouteCoordinates, { color: document.getElementById('drawColor').value || '#2ecc71', weight: parseInt(document.getElementById('drawWeight').value) || 4 });
+                finalPolyline.isAutoRoute = true; finalPolyline.routeMode = document.getElementById('route-mode-select').value || 'foot';
+                finalPolyline.autoRouteOriginalPoints = autoRoutePoints.map(p => ({ lat: p.lat, lng: p.lng }));
+                map.fire(L.Draw.Event.CREATED, { layer: finalPolyline, layerType: 'polyline' });
+            } else { window.stopDrawing(); }
+        };
+
+        function askName(title, defaultText) { return new Promise((resolve) => { const modal = document.getElementById('custom-modal'); const input = document.getElementById('modal-input'); document.getElementById('modal-title').innerText = title; input.value = defaultText; modal.style.display = 'flex'; setTimeout(() => input.select(), 100); window.confirmModal = () => { modal.style.display = 'none'; resolve(input.value.trim() || defaultText); }; window.closeModal = () => { modal.style.display = 'none'; resolve(defaultText); }; }); }
+
+        map.on(L.Draw.Event.CREATED, async (e) => {
+            if (window.isSelectingOfflineZone) { window.stopDrawing(); window.downloadOfflineMap(e.layer.getBounds()); return; }
+            const layer = e.layer; const id = L.stamp(layer);
+            let defaultName = e.layerType === 'marker' ? 'Marcador' : (e.layerType === 'polyline' ? (layer.isAutoRoute ? 'Ruta Inteligente' : 'Ruta') : 'Área');
+            const layerName = await askName(`Nombre para ${defaultName}:`, defaultName);
+            layer.feature = layer.feature || { type: 'Feature', properties: {} }; layer.feature.properties.layerName = layerName; layer.feature.properties.faction = window.projectName; layer.feature.properties.grupo = ""; layer.feature.properties.isAutoRoute = layer.isAutoRoute || false; layer.isHidden = false;
+
+            if (e.layerType === 'marker') {
+                layer.feature.properties.color = document.getElementById('markerColor').value || '#e74c3c'; layer.feature.properties.iconType = 'punto'; layer.feature.properties.bufferRadius = 0; layer.feature.properties.showLabel = false; layer.feature.properties.coneEnabled = false; layer.feature.properties.coneAngle = 0; layer.feature.properties.coneSpread = 60; layer.feature.properties.coneDist = 100; layer.feature.properties.coneColor = document.getElementById('markerColor').value || '#f1c40f';
+            } else if (layer.options) { layer.feature.properties.color = layer.options.color; layer.feature.properties.weight = layer.options.weight; layer.feature.properties.fillOpacity = layer.options.fillOpacity; }
+
+            layer.feature.properties.notes = "";
+            layer.feature.properties.imageUrl = "";
+            let baseText = 'Elemento'; let notesHtml = '';
+            let imageHtml = ''; let extrasHtml = imageHtml + notesHtml;
+            let actionBtns = extrasHtml;
+            if (e.layerType === 'marker') {
+                const latlng = layer.getLatLng();
+                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${layerName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+            } else {
+                actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+            }
+            drawnItems.addLayer(layer); updateLayerTree(); window.stopDrawing();
+
+            if (e.layerType === 'marker') {
+                const latlng = layer.getLatLng(); const lat = latlng.lat; const lng = latlng.lng; const type = document.getElementById('gridType').value;
+                let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lng.toFixed(5)}`;
+                if (type === 'dms') { coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lng, false)}`; } else if (type === 'utm') { const u = latLonToUTM(lat, lng); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lng + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
+                baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Altitud: <i>Calculando...</i></div>`; layer.bindPopup(baseText + actionBtns).openPopup();
+                try { const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lng.toFixed(5)}`); const data = await res.json(); baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Alt: <b>${data.elevation[0]} m</b></div>`; } catch (error) { baseText = `<div style="font-size:12px;"><b>📍 ${layerName}</b><br>${coordText}<br>Alt: Error</div>`; }
+                layer.feature.properties.baseText = baseText; layer.setPopupContent(baseText + actionBtns);
+            }
+            else if (e.layerType === 'polyline') {
+                const latlngs = layer.getLatLngs(); layer.feature.properties.routeMode = layer.routeMode || 'foot';
+                if (layer.autoRouteOriginalPoints) layer.feature.properties.autoRouteOriginalPoints = layer.autoRouteOriginalPoints;
+                let rMode = layer.feature.properties.routeMode; let mIcon = rMode === 'driving' ? '🚗' : (rMode === 'bike' ? '🚲' : '🚶‍♂️');
+                if (layer.isAutoRoute) { const endPt = latlngs[latlngs.length - 1]; layer.endMarker = L.marker(endPt, { icon: getMarkerIconObj(layer.feature.properties.color || '#2ecc71', 'bandera'), zIndexOffset: 1000 }).addTo(map); const originalSetPopupContent = layer.setPopupContent.bind(layer); layer.setPopupContent = function (content) { originalSetPopupContent(content); if (layer.endMarker) layer.endMarker.setPopupContent(content); }; layer.endMarker.on('popupopen', () => { if (layer.feature.properties.chartData) window.renderChart(layer, id); }); }
+
+                let distance = 0; for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i + 1]);
+                const distText = distance > 1000 ? (distance / 1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                baseText = `<div><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b><br>Desnivel: <i>...</i></div>`;
+                layer.bindPopup(baseText + actionBtns).openPopup(); if (layer.endMarker) layer.endMarker.bindPopup(baseText + actionBtns);
+
+                try {
+                    let samplePoints = latlngs; if (latlngs.length > 90) { const step = Math.ceil(latlngs.length / 90); samplePoints = latlngs.filter((_, idx) => idx % step === 0); if (samplePoints[samplePoints.length - 1] !== latlngs[latlngs.length - 1]) samplePoints.push(latlngs[latlngs.length - 1]); }
+                    const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(','); const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
+                    const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`); const data = await res.json();
+
+                    if (data && data.elevation && data.elevation.length > 0) {
+                        let elevGain = 0, elevLoss = 0; const elevations = data.elevation; let distancesArray = [0], cumDist = 0;
+                        for (let i = 1; i < samplePoints.length; i++) { cumDist += samplePoints[i - 1].distanceTo(samplePoints[i]); distancesArray.push((cumDist / 1000).toFixed(2)); }
+                        layer.feature.properties.chartData = { labels: distancesArray, data: elevations };
+                        for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i + 1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
+
+                        let timeMinutes = 0; if (rMode === 'driving') timeMinutes = (layer.feature.properties.isAutoRoute && layer.feature.properties.routeDuration) ? (layer.feature.properties.routeDuration / 60) : (distance * 0.001); else if (rMode === 'bike' || rMode === 'bicycle') timeMinutes = distance * 0.004; else timeMinutes = (distance * 0.012) + (elevGain * 0.1);
+                        let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`; const distText = distance > 1000 ? (distance / 1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                        baseText = `<div style="min-width:260px;"><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height:120px;width:100%;margin-top:8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                        layer.feature.properties.baseText = baseText; layer.setPopupContent(baseText + actionBtns); window.attachChartListener(layer, id); window.renderChart(layer, id);
+                    }
+                } catch (error) { baseText = `<div><b>📏 ${layerName}</b><br>Dist: <b>${distText}</b><br>Desnivel: Error</div>`; layer.feature.properties.baseText = baseText; layer.setPopupContent(baseText + actionBtns); }
+            }
+            else if (e.layerType === 'polygon') {
+                let latlngs = layer.getLatLngs(); if (latlngs.length > 0 && Array.isArray(latlngs[0])) latlngs = latlngs[0];
+                const area = L.GeometryUtil.geodesicArea(latlngs); let areaText = area.toFixed(2) + ' m²';
+                if (area > 1000000) areaText = (area / 1000000).toFixed(2) + ' km²'; else if (area > 10000) areaText = (area / 10000).toFixed(2) + ' ha';
+                baseText = `<div><b>🔲 ${layerName}</b><br>Área: <b>${areaText}</b></div>`; layer.feature.properties.baseText = baseText; layer.bindPopup(baseText + actionBtns).openPopup();
+            }
+        });
+
+        window.editLayerById = function (id) {
+            const layer = drawnItems.getLayer(id); if (!layer) return; const modal = document.getElementById('edit-modal');
+            document.getElementById('edit-name-input').value = layer.feature.properties.layerName || ''; document.getElementById('edit-group-input').value = layer.feature.properties.grupo || '';
+            document.getElementById('edit-notes-input').value = layer.feature.properties.notes || '';
+            document.getElementById('edit-image-input').value = layer.feature.properties.imageUrl || '';
+            if (typeof window.previewReconImage === 'function') window.previewReconImage();
+            const factionSelect = document.getElementById('edit-faction-input'); const currentFaction = layer.feature.properties.faction || window.projectName;
+            let factionExists = Array.from(factionSelect.options).some(opt => opt.value === currentFaction);
+            if (!factionExists) { const newOpt = document.createElement('option'); newOpt.value = currentFaction; newOpt.text = '📁 ' + currentFaction; factionSelect.appendChild(newOpt); }
+            factionSelect.value = currentFaction;
+
+            const isShape = (layer instanceof L.Polyline); const isMarker = (layer instanceof L.Marker); const isFieldMap = layer.feature.properties.isFieldMap || false;
+            document.getElementById('edit-style-options').style.display = (isShape || isMarker) ? 'block' : 'none'; document.getElementById('edit-autoroute-options').style.display = (isShape && layer.feature.properties.isAutoRoute) ? 'block' : 'none';
+            const fieldMapDiv = document.getElementById('edit-fieldmap-specifics'); if (fieldMapDiv) fieldMapDiv.style.display = isFieldMap ? 'block' : 'none';
+
+            const colorInput = document.getElementById('edit-color-input');
+            if (colorInput) { colorInput.style.display = isFieldMap ? 'none' : 'block'; if (colorInput.previousElementSibling) colorInput.previousElementSibling.style.display = isFieldMap ? 'none' : 'block'; }
+
+            if (isShape || isMarker) {
+                document.getElementById('edit-color-input').value = layer.feature.properties.color || layer.options.color || '#2ecc71';
+                const opInput = document.getElementById('edit-opacity-input');
+                if (opInput) opInput.value = layer.feature.properties.opacity !== undefined ? layer.feature.properties.opacity : 0.6;
+                const rotInput = document.getElementById('edit-rotation-input');
+                if (rotInput) { rotInput.value = layer.feature.properties.rotation || 0; const rotVal = document.getElementById('edit-rotation-val'); if (rotVal) rotVal.innerText = rotInput.value + '°'; }
+                document.getElementById('edit-marker-specifics').style.display = isMarker ? 'block' : 'none'; document.getElementById('edit-shape-specifics').style.display = (isShape && !isFieldMap) ? 'block' : 'none';
+                if (isMarker) {
+                    document.getElementById('edit-icon-input').value = layer.feature.properties.iconType || 'punto'; document.getElementById('edit-buffer-input').value = layer.feature.properties.bufferRadius || ''; document.getElementById('edit-show-label-input').checked = layer.feature.properties.showLabel || false; document.getElementById('edit-cone-enable').checked = layer.feature.properties.coneEnabled || false; document.getElementById('edit-cone-color-input').value = layer.feature.properties.coneColor || layer.feature.properties.color || '#f1c40f'; document.getElementById('edit-cone-angle-range').value = layer.feature.properties.coneAngle || 0; document.getElementById('edit-cone-angle-val').innerText = (layer.feature.properties.coneAngle || 0) + '°'; document.getElementById('edit-cone-spread-range').value = layer.feature.properties.coneSpread || 60; document.getElementById('edit-cone-spread-val').innerText = (layer.feature.properties.coneSpread || 60) + '°'; document.getElementById('edit-cone-dist').value = layer.feature.properties.coneDist || 100; document.getElementById('edit-cone-options').style.display = layer.feature.properties.coneEnabled ? 'block' : 'none';
+                } else { document.getElementById('edit-weight-input').value = layer.options.weight || 4; }
+                if (isShape && layer.feature.properties.isAutoRoute) { document.getElementById('edit-route-mode').value = layer.feature.properties.routeMode || 'foot'; }
+            }
+            modal.style.display = 'flex';
+
+            window.confirmEditModal = function () {
+                modal.style.display = 'none'; let routeModeChanged = false;
+                const newName = document.getElementById('edit-name-input').value.trim() || layer.feature.properties.layerName; layer.feature.properties.faction = document.getElementById('edit-faction-input').value; layer.feature.properties.grupo = document.getElementById('edit-group-input').value.trim();
+                layer.feature.properties.notes = document.getElementById('edit-notes-input').value.trim();
+                layer.feature.properties.imageUrl = document.getElementById('edit-image-input').value.trim();
+                if (newName !== layer.feature.properties.layerName) { const oldName = layer.feature.properties.layerName; layer.feature.properties.layerName = newName; if (layer.feature.properties.baseText) { layer.feature.properties.baseText = layer.feature.properties.baseText.replace(oldName, newName); } }
+                let notesHtml = layer.feature.properties.notes ? `<div style="margin-top:5px;padding:5px;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:4px;font-size:11px;color:#475569;max-height:80px;overflow-y:auto;word-wrap:break-word;"><i>${layer.feature.properties.notes.replace(/\n/g, '<br>')}</i></div>` : '';
+                let imageHtml = layer.feature.properties.imageUrl ? `<img src="${layer.feature.properties.imageUrl}" style="width:100%;max-height:140px;object-fit:cover;border-radius:4px;margin-top:5px;border:1px solid #cbd5e0;cursor:zoom-in;" onclick="window.openImageModal(this.src)">` : '';
+                let extrasHtml = imageHtml + notesHtml;
+                let actionBtns = extrasHtml;
+                if (isMarker) {
+                    const latlng = layer.getLatLng();
+                    actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${latlng.lat}, ${latlng.lng}, '${newName.replace(/'/g, "\\'")}')" style="color:#9b59b6;border:1px solid #9b59b6;padding:3px;border-radius:4px;flex:1;font-weight:bold;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;flex:1;font-weight:bold;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;font-weight:bold;">🗑️</button></div>`;
+                } else {
+                    actionBtns += `<div style="margin-top:8px;display:flex;gap:5px;"><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue);border:1px solid var(--ign-blue);padding:3px;border-radius:4px;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger);border:1px solid var(--danger);padding:3px;border-radius:4px;">🗑️</button></div>`;
+                }
+
+                if (isShape) {
+                    const newColor = document.getElementById('edit-color-input').value; const newWeight = parseInt(document.getElementById('edit-weight-input').value);
+                    const opInput = document.getElementById('edit-opacity-input'); const newOpacity = opInput ? parseFloat(opInput.value) : 0.6; layer.feature.properties.opacity = newOpacity;
+                    layer.setStyle({ color: newColor, weight: newWeight, fillOpacity: layer.feature.properties.isFieldMap ? 0 : newOpacity }); layer.options.color = newColor; layer.options.weight = newWeight; layer.options.fillOpacity = layer.feature.properties.isFieldMap ? 0 : newOpacity; layer.feature.properties.color = newColor; layer.feature.properties.weight = newWeight;
+                    if (layer.feature.properties.isFieldMap && window.fieldMapOverlays[id]) {
+                        const rotInput = document.getElementById('edit-rotation-input');
+                        const newRot = rotInput ? (parseInt(rotInput.value) || 0) : (layer.feature.properties.rotation || 0);
+                        layer.feature.properties.rotation = newRot;
+                        window.fieldMapOverlays[id].setOpacity(newOpacity);
+                        if (window.fieldMapOverlays[id].getElement()) window.fieldMapOverlays[id].getElement().style.rotate = `${newRot}deg`;
+                        if (newWeight === 0 && window.fieldMapAdjusters[id]) { window.toggleFieldMapAdjust(id); }
+                    }
+                    if (layer.endMarker) { layer.endMarker.setIcon(getMarkerIconObj(newColor, 'bandera')); }
+                    if (layer.feature.properties.isAutoRoute) {
+                        const newMode = document.getElementById('edit-route-mode').value; const oldMode = layer.feature.properties.routeMode || 'foot'; layer.feature.properties.routeMode = newMode;
+                        const mIcon = newMode === 'driving' ? '🚗' : (newMode === 'bike' ? '🚲' : '🚶‍♂️');
+                        if (newMode !== oldMode && layer.feature.properties.autoRouteOriginalPoints && layer.feature.properties.autoRouteOriginalPoints.length > 1) {
+                            routeModeChanged = true; const pts = layer.feature.properties.autoRouteOriginalPoints; const coordsStr = pts.map(p => `${p.lng},${p.lat}`).join(';');
+                            fetch(`https://routing.openstreetmap.de/routed-${newMode==='driving'?'car':newMode}/route/v1/driving/${coordsStr}?geometries=geojson&overview=full`).then(res => res.json()).then(async data => {
+                                if (data.code === 'Ok' && data.routes.length > 0) {
+                                    const route = data.routes[0]; const newCoords = route.geometry.coordinates.map(c => [c[1], c[0]]); layer.setLatLngs(newCoords); layer.feature.properties.routeDuration = route.duration; if (layer.endMarker) layer.endMarker.setLatLng(newCoords[newCoords.length - 1]);
+                                    let distance = route.distance; let samplePoints = layer.getLatLngs(); if (samplePoints.length > 90) { const step = Math.ceil(samplePoints.length / 90); samplePoints = samplePoints.filter((_, idx) => idx % step === 0); if (samplePoints[samplePoints.length - 1] !== layer.getLatLngs()[layer.getLatLngs().length - 1]) samplePoints.push(layer.getLatLngs()[layer.getLatLngs().length - 1]); }
+                                    const lats = samplePoints.map(ll => ll.lat.toFixed(5)).join(','); const lons = samplePoints.map(ll => ll.lng.toFixed(5)).join(',');
+                                    try {
+                                        const resEle = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`); const eleData = await resEle.json();
+                                        if (eleData && eleData.elevation) {
+                                            let elevGain = 0, elevLoss = 0; const elevations = eleData.elevation; let distancesArray = [0], cumDist = 0; for (let i = 1; i < samplePoints.length; i++) { cumDist += samplePoints[i - 1].distanceTo(samplePoints[i]); distancesArray.push((cumDist / 1000).toFixed(2)); } layer.feature.properties.chartData = { labels: distancesArray, data: elevations }; for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i + 1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
+                                            let timeMinutes = 0; if (newMode === 'driving') timeMinutes = route.duration / 60; else if (newMode === 'bike' || newMode === 'bicycle') timeMinutes = distance * 0.004; else timeMinutes = (distance * 0.012) + (elevGain * 0.1);
+                                            let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`; const distText = distance > 1000 ? (distance / 1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                                            const newBaseText = `<div style="min-width:260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height:120px;width:100%;margin-top:8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                                            layer.feature.properties.baseText = newBaseText; layer.setPopupContent(newBaseText + actionBtns); if (layer.endMarker) layer.endMarker.setPopupContent(newBaseText + actionBtns); window.renderChart(layer, id);
+                                        }
+                                    } catch (e) { }
+                                }
+                            }).catch(err => { console.error(err); });
+                        } else if (newMode !== oldMode && layer.feature.properties.chartData) {
+                            routeModeChanged = true; let distance = 0; const latlngs = layer.getLatLngs(); for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i + 1]); let elevGain = 0, elevLoss = 0; const elevations = layer.feature.properties.chartData.data; for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i + 1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); }
+                            let timeMinutes = 0; if (newMode === 'driving') timeMinutes = distance * 0.001; else if (newMode === 'bike' || newMode === 'bicycle') timeMinutes = distance * 0.004; else timeMinutes = (distance * 0.012) + (elevGain * 0.1); let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`; const distText = distance > 1000 ? (distance / 1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                            const newBaseText = `<div style="min-width:260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height:120px;width:100%;margin-top:8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                            layer.feature.properties.baseText = newBaseText; layer.setPopupContent(newBaseText + actionBtns); if (layer.endMarker) layer.endMarker.setPopupContent(newBaseText + actionBtns);
+                        }
+                    } else if (layer.feature.properties.chartData) {
+                        let mIcon = '🚶‍♂️'; let distance = 0; const latlngs = layer.getLatLngs(); for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i + 1]); let elevGain = 0, elevLoss = 0; const elevations = layer.feature.properties.chartData.data; for (let i = 0; i < elevations.length - 1; i++) { let diff = elevations[i + 1] - elevations[i]; if (diff > 0) elevGain += diff; else elevLoss += Math.abs(diff); } let timeMinutes = (distance * 0.012) + (elevGain * 0.1); let timeHours = Math.floor(timeMinutes / 60); let remainMinutes = Math.round(timeMinutes % 60); let timeText = timeHours > 0 ? `${timeHours}h ${remainMinutes}min` : `${remainMinutes}min`; const distText = distance > 1000 ? (distance / 1000).toFixed(2) + ' km' : distance.toFixed(0) + ' m';
+                        const newBaseText = `<div style="min-width:260px;"><b>📏 ${layer.feature.properties.layerName}</b><br>Dist: <b>${distText}</b> | ${mIcon} <b>${timeText}</b><br>Desnivel: <span style="color:green">+${elevGain.toFixed(0)}m</span> | <span style="color:red">-${elevLoss.toFixed(0)}m</span><div style="height:120px;width:100%;margin-top:8px;"><canvas id="chart-${id}"></canvas></div></div>`;
+                        layer.feature.properties.baseText = newBaseText;
+                    }
+                } else if (isMarker) {
+                    const newColor = document.getElementById('edit-color-input').value; const newIconType = document.getElementById('edit-icon-input').value; layer.setIcon(getMarkerIconObj(newColor, newIconType)); layer.feature.properties.color = newColor; layer.feature.properties.iconType = newIconType; layer.feature.properties.bufferRadius = parseFloat(document.getElementById('edit-buffer-input').value) || 0; layer.feature.properties.showLabel = document.getElementById('edit-show-label-input').checked; layer.feature.properties.coneEnabled = document.getElementById('edit-cone-enable').checked; layer.feature.properties.coneColor = document.getElementById('edit-cone-color-input').value; layer.feature.properties.coneAngle = parseFloat(document.getElementById('edit-cone-angle-range').value); layer.feature.properties.coneSpread = parseFloat(document.getElementById('edit-cone-spread-range').value); layer.feature.properties.coneDist = parseFloat(document.getElementById('edit-cone-dist').value) || 100;
+                    updateMarkerBuffer(layer); updateMarkerLabel(layer); updateMarkerCone(layer);
+                }
+                if (!routeModeChanged) { layer.setPopupContent(layer.feature.properties.baseText + actionBtns); if (layer.feature.properties.chartData) window.renderChart(layer, id); }
+                updateLayerTree();
+            };
+            window.closeEditModal = () => modal.style.display = 'none';
+        };
+
+        window.previewReconImage = function () {
+            const input = document.getElementById('edit-image-input');
+            const preview = document.getElementById('edit-image-preview');
+            if (input && input.value) { preview.src = input.value; preview.style.display = 'block'; }
+            else if (preview) { preview.style.display = 'none'; preview.src = ''; }
+        };
+
+        window.clearReconImage = function () {
+            const input = document.getElementById('edit-image-input');
+            const fileInput = document.getElementById('edit-image-file');
+            const cameraInput = document.getElementById('edit-image-camera');
+            if (input) input.value = '';
+            if (fileInput) fileInput.value = '';
+            if (cameraInput) cameraInput.value = '';
+            window.previewReconImage();
+        };
+
+        window.processReconImage = function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 300; const MAX_HEIGHT = 300;
+                    let width = img.width; let height = img.height;
+                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
+                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    document.getElementById('edit-image-input').value = canvas.toDataURL('image/jpeg', 0.4);
+                    window.previewReconImage();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        };
+
+        window.removeLayerById = function (id) { const layer = drawnItems.getLayer(id); if (layer) { if (layer.bufferCircle) map.removeLayer(layer.bufferCircle); if (layer.conePolygon) map.removeLayer(layer.conePolygon); if (layer.endMarker) map.removeLayer(layer.endMarker); if (window.fieldMapOverlays && window.fieldMapOverlays[id]) { map.removeLayer(window.fieldMapOverlays[id]); delete window.fieldMapOverlays[id]; } if (window.fieldMapAdjusters && window.fieldMapAdjusters[id]) { const adj = window.fieldMapAdjusters[id]; if (adj.nw) map.removeLayer(adj.nw); if (adj.se) map.removeLayer(adj.se); if (adj.center) map.removeLayer(adj.center); if (adj.scale) map.removeLayer(adj.scale); if (adj.rotate) map.removeLayer(adj.rotate); if (adj.isDirect) { window.map.dragging.enable(); window.map.touchZoom.enable(); window.map.scrollWheelZoom.enable(); window.map.doubleClickZoom.enable(); document.removeEventListener('mousemove', adj.onMove); document.removeEventListener('touchmove', adj.onMove); document.removeEventListener('mouseup', adj.onUp); document.removeEventListener('touchend', adj.onUp); } delete window.fieldMapAdjusters[id]; } if (window.fieldMapCenterPins && window.fieldMapCenterPins[id]) { map.removeLayer(window.fieldMapCenterPins[id]); delete window.fieldMapCenterPins[id]; } drawnItems.removeLayer(layer); updateLayerTree(); } };
+        window.zoomToLayer = function (id) { const layer = drawnItems.getLayer(id); if (!layer) return; if (layer instanceof L.Marker) { map.setView(layer.getLatLng(), 18); if (!layer.isHidden) layer.openPopup(); } else if (layer.getBounds) { map.fitBounds(layer.getBounds()); if (!layer.isHidden) layer.openPopup(); } };
+        window.openImageModal = function (src) { document.getElementById('image-modal-content').src = src; document.getElementById('image-modal').style.display = 'flex'; };
+        window.closeImageModal = function () { document.getElementById('image-modal').style.display = 'none'; document.getElementById('image-modal-content').src = ''; };
+
+        window.printImage = function (src, title, captureId = null) {
+            const printWin = window.open('', '_blank'); if (!printWin) return window.customAlert("Atención", "Permite popups.");
+            const parentStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(el => el.outerHTML).join('\n'); const extras = (captureId && window.captures && window.captures[captureId]) ? window.captures[captureId] : {};
+            let extrasHtml = ''; let extTop = 20; let extLeft = 20;
+            if (extras.legend) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.legend}</div>`; extTop += 100; } if (extras.compass) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.compass}</div>`; extTop += 120; } if (extras.numScale) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.numScale}</div>`; extTop += 60; } if (extras.geoScale) { extrasHtml += `<div class="print-extra" style="top: ${extTop}px; left: ${extLeft}px;">${extras.geoScale}</div>`; }
+            printWin.document.write(`<!DOCTYPE html><html><head><title>${title} - Impresión</title><meta name="viewport" content="width=device-width, initial-scale=1.0">${parentStyles.replace(/`/g, '\\`')}
+        <style>*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}body{margin:0!important;background:#cbd5e0!important;font-family:'Segoe UI',sans-serif!important;overflow-x:hidden!important;}.no-print{position:sticky!important;top:0!important;width:100%!important;background:#f8fafc!important;padding:12px!important;box-shadow:0 4px 15px rgba(0,0,0,0.15)!important;z-index:1000!important;border-bottom:3px solid #003366!important;display:flex!important;flex-direction:column!important;gap:10px!important;box-sizing:border-box!important;}.toolbar-row{display:flex!important;justify-content:center!important;align-items:center!important;gap:10px!important;width:100%!important;flex-wrap:wrap!important;}.toolbar-row label{font-size:14px!important;font-weight:bold!important;color:#003366!important;}.toolbar-row select{padding:8px!important;border-radius:6px!important;border:2px solid #cbd5e0!important;font-weight:bold!important;cursor:pointer!important;}.check-btn{background:#e2e8f0!important;padding:8px 12px!important;border-radius:6px!important;border:1px solid #cbd5e0!important;cursor:pointer!important;display:flex!important;align-items:center!important;gap:5px!important;font-size:13px!important;font-weight:bold!important;color:#003366!important;}.toolbar-row input[type="range"]{flex:1!important;min-width:100px!important;max-width:250px!important;}.buttons{display:flex!important;gap:8px!important;width:100%!important;justify-content:center!important;}.buttons button{padding:10px!important;border-radius:6px!important;font-weight:bold!important;font-size:14px!important;color:white!important;border:none!important;cursor:pointer!important;flex:1!important;max-width:180px!important;box-shadow:0 2px 5px rgba(0,0,0,0.2)!important;}.btn-print{background:#003366!important;}.btn-print:hover{background:#002244!important;}.btn-down{background:#10b981!important;}.btn-close{background:#dc3545!important;}.hint{font-size:12px!important;color:#64748b!important;text-align:center!important;margin-top:5px!important;}.workspace{margin-top:20px!important;display:flex!important;justify-content:center!important;padding:20px!important;box-sizing:border-box!important;}#paper{background:white!important;box-shadow:0 10px 25px rgba(0,0,0,0.3)!important;position:relative!important;overflow:hidden!important;}#mapBox{position:absolute!important;top:20px;left:20px;width:250px;border:2px dashed #003366!important;cursor:grab!important;box-sizing:border-box!important;touch-action:none!important;background:rgba(255,255,255,0.01)!important;z-index:10!important;}#mapBox:active{cursor:grabbing!important;}#mapBox img{width:100%!important;height:auto!important;display:block!important;-webkit-user-drag:none!important;pointer-events:auto!important;user-select:none!important;}.resize-handle{position:absolute!important;width:30px!important;height:30px!important;background:#e6b800!important;border:2px solid #003366!important;border-radius:50%!important;z-index:20!important;touch-action:none!important;pointer-events:auto!important;}.nw{top:-15px!important;left:-15px!important;cursor:nw-resize!important;}.ne{top:-15px!important;right:-15px!important;cursor:ne-resize!important;}.sw{bottom:-15px!important;left:-15px!important;cursor:sw-resize!important;}.se{bottom:-15px!important;right:-15px!important;cursor:se-resize!important;}.n{top:-15px!important;left:50%!important;transform:translateX(-50%)!important;cursor:n-resize!important;}.s{bottom:-15px!important;left:50%!important;transform:translateX(-50%)!important;cursor:s-resize!important;}.w{top:50%!important;left:-15px!important;transform:translateY(-50%)!important;cursor:w-resize!important;}.e{top:50%!important;right:-15px!important;transform:translateY(-50%)!important;cursor:e-resize!important;}.print-extra{position:absolute!important;cursor:grab!important;z-index:50!important;touch-action:none!important;}.print-extra:active{cursor:grabbing!important;}.print-extra > *{position:relative!important;bottom:auto!important;top:auto!important;left:auto!important;right:auto!important;margin:0!important;pointer-events:none!important;user-select:none!important;}@media print{body{background:white!important;}.no-print,.resize-handle{display:none!important;}.workspace{margin:0!important;padding:0!important;}#paper{box-shadow:none!important;margin:0!important;border:none!important;transform:none!important;overflow:hidden!important;}#mapBox{border:none!important;}}</style></head><body>
+        <div class="no-print"><div class="toolbar-row"><label>📄 Papel:</label><select id="formatSelect"><option value="A4-L">A4 (Horizontal)</option><option value="A4-P">A4 (Vertical)</option><option value="A3-L">A3 (Horizontal)</option><option value="A3-P">A3 (Vertical)</option></select><label class="check-btn"><input type="checkbox" id="fitScreenCheck" checked> 🔍 Auto-Ajuste</label></div><div class="toolbar-row"><label>🔍 Zoom de Trabajo:</label><input type="range" id="manualZoomSlider" min="0.2" max="2.5" step="0.05" value="1"><span id="zoomVal" style="font-weight:bold; color:#003366; width:45px; text-align:right;">Auto</span></div><div class="buttons"><button onclick="window.print()" class="btn-print">🖨️ Imprimir</button><button onclick="downloadMap(event)" class="btn-down">⬇️ Descargar</button><button onclick="window.close()" class="btn-close">❌ Salir</button></div><span class="hint">* Arrastra el mapa y los elementos. Tira de los puntos dorados para recortar.</span></div>
+        <div class="workspace"><div id="paper"><div id="mapBox"><img src="${src}" id="mapImg" draggable="false"><div class="resize-handle nw" id="nw"></div><div class="resize-handle ne" id="ne"></div><div class="resize-handle sw" id="sw"></div><div class="resize-handle se" id="se"></div><div class="resize-handle n" id="n"></div><div class="resize-handle s" id="s"></div><div class="resize-handle e" id="e"></div><div class="resize-handle w" id="w"></div></div>${extrasHtml}</div></div>
+        <script>
+            const paper = document.getElementById('paper'); const formatSelect = document.getElementById('formatSelect'); const fitScreenCheck = document.getElementById('fitScreenCheck'); const manualZoomSlider = document.getElementById('manualZoomSlider'); const zoomVal = document.getElementById('zoomVal');
+            async function downloadMap(event) { const btn = event.currentTarget; const originalText = btn.innerHTML; btn.innerHTML = "⏳..."; btn.disabled = true; if (!window.html2canvas) { const script = document.createElement('script'); script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; document.head.appendChild(script); await new Promise(resolve => script.onload = resolve); } const originalTransform = paper.style.transform; const mapBox = document.getElementById('mapBox'); const originalMapBoxCss = mapBox.style.cssText; paper.style.transform = 'scale(1)'; paper.style.setProperty('box-shadow', 'none', 'important'); mapBox.style.setProperty('border', 'none', 'important'); document.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'none'); await new Promise(resolve => setTimeout(resolve, 150)); try { const canvas = await html2canvas(paper, { useCORS: true, allowTaint: true, scale: 1, backgroundColor: "#ffffff", width: paper.offsetWidth, height: paper.offsetHeight }); paper.style.transform = originalTransform; mapBox.style.cssText = originalMapBoxCss; document.querySelectorAll('.resize-handle').forEach(h => h.style.display = ''); const link = document.createElement('a'); link.download = 'Mapa_Airsoft.png'; link.href = canvas.toDataURL('image/png'); link.click(); } catch (e) {} finally { btn.innerHTML = originalText; btn.disabled = false; } }
+            const SCALE_FACTOR = 3.5; const formats = { 'A4-L': { w: 297, h: 210, print: 'A4 landscape' }, 'A4-P': { w: 210, h: 297, print: 'A4 portrait' }, 'A3-L': { w: 420, h: 297, print: 'A3 landscape' }, 'A3-P': { w: 297, h: 420, print: 'A3 portrait' } };
+            function updateLayout() { const f = formats[formatSelect.value]; const paperW = f.w * SCALE_FACTOR; const paperH = f.h * SCALE_FACTOR; paper.style.width = paperW + 'px'; paper.style.height = paperH + 'px'; const availableWidth = window.innerWidth - 20; const availableHeight = window.innerHeight - document.querySelector('.no-print').offsetHeight - 20; let scale = 1; if (fitScreenCheck.checked) { scale = Math.min(availableWidth / paperW, availableHeight / paperH); manualZoomSlider.value = scale; zoomVal.innerText = 'Auto'; } else { scale = parseFloat(manualZoomSlider.value); zoomVal.innerText = Math.round(scale * 100) + '%'; } window.currentVisualScale = scale; paper.style.transform = 'scale(' + scale + ')'; paper.style.transformOrigin = 'top center'; document.querySelector('.workspace').style.height = (paperH * scale + 40) + 'px'; let style = document.getElementById('printPageStyle'); if(!style) { style = document.createElement('style'); style.id = 'printPageStyle'; document.head.appendChild(style); } style.innerHTML = '@page { size: ' + f.print + '; margin: 0; }'; if (!window.mapInitialized) { mapBox.style.width = (paperW * 0.8) + 'px'; window.mapInitialized = true; } }
+            formatSelect.addEventListener('change', updateLayout); fitScreenCheck.addEventListener('change', () => { if(fitScreenCheck.checked) updateLayout(); }); manualZoomSlider.addEventListener('input', () => { fitScreenCheck.checked = false; updateLayout(); }); window.addEventListener('resize', updateLayout); window.addEventListener('beforeprint', () => { paper.style.transform = 'none'; }); window.addEventListener('afterprint', () => { updateLayout(); }); updateLayout(); 
+            let isDragging = false, isResizing = false; let startX, startY, startLeft, startTop, startWidth, startHeight; let activeHandle = null; let activeExtra = null; let extraStartX, extraStartY, extraStartLeft, extraStartTop; let ratio = 1;
+            const mapImg = document.getElementById('mapImg'); mapImg.onload = () => { ratio = mapImg.naturalHeight / mapImg.naturalWidth; };
+            function getCoords(e) { return e.touches && e.touches.length > 0 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY }; }
+            const startMapDrag = (e) => { if (e.target.classList.contains('resize-handle')) return; isDragging = true; const coords = getCoords(e); startX = coords.x; startY = coords.y; startLeft = mapBox.offsetLeft; startTop = mapBox.offsetTop; if (e.type === 'mousedown') e.preventDefault(); };
+            mapBox.addEventListener('mousedown', startMapDrag); mapBox.addEventListener('touchstart', startMapDrag, {passive: false});
+            document.querySelectorAll('.print-extra').forEach(extra => { const startExtraDrag = (e) => { activeExtra = extra; const coords = getCoords(e); extraStartX = coords.x; extraStartY = coords.y; extraStartLeft = extra.offsetLeft; extraStartTop = extra.offsetTop; document.querySelectorAll('.print-extra').forEach(el => el.style.zIndex = 50); extra.style.zIndex = 100; e.stopPropagation(); if (e.type === 'mousedown') e.preventDefault(); }; extra.addEventListener('mousedown', startExtraDrag); extra.addEventListener('touchstart', startExtraDrag, {passive: false}); });
+            document.querySelectorAll('.resize-handle').forEach(handle => { const startResize = (e) => { isResizing = true; activeHandle = e.target.id; const coords = getCoords(e); startX = coords.x; startY = coords.y; startWidth = mapBox.offsetWidth; startHeight = mapBox.offsetHeight; startLeft = mapBox.offsetLeft; startTop = mapBox.offsetTop; if (ratio === 1 && mapImg.naturalWidth) { ratio = mapImg.naturalHeight / mapImg.naturalWidth; } e.stopPropagation(); if (e.type === 'mousedown') e.preventDefault(); }; handle.addEventListener('mousedown', startResize); handle.addEventListener('touchstart', startResize, {passive: false}); });
+            const moveHandler = (e) => { if (!isDragging && !isResizing && !activeExtra) return; if (e.cancelable) e.preventDefault(); const coords = getCoords(e); const scale = window.currentVisualScale || 1; if (isDragging) { const dx = (coords.x - startX) / scale; const dy = (coords.y - startY) / scale; mapBox.style.left = (startLeft + dx) + 'px'; mapBox.style.top = (startTop + dy) + 'px'; } else if (isResizing) { const dx = (coords.x - startX) / scale; const dy = (coords.y - startY) / scale; let newWidth = startWidth; let newLeft = startLeft; let newTop = startTop; if (activeHandle === 'se') { newWidth = startWidth + dx; } else if (activeHandle === 'sw') { newWidth = startWidth - dx; newLeft = startLeft + dx; } else if (activeHandle === 'ne') { newWidth = startWidth + dx; newTop = startTop - ((newWidth - startWidth) * ratio); } else if (activeHandle === 'nw') { newWidth = startWidth - dx; newLeft = startLeft + dx; newTop = startTop - ((newWidth - startWidth) * ratio); } else if (activeHandle === 'e') { newWidth = startWidth + dx; } else if (activeHandle === 'w') { newWidth = startWidth - dx; newLeft = startLeft + dx; } else if (activeHandle === 's') { newWidth = startWidth + (dy / ratio); } else if (activeHandle === 'n') { newWidth = startWidth - (dy / ratio); newTop = startTop - ((newWidth - startWidth) * ratio); } if (newWidth > 50) { mapBox.style.width = newWidth + 'px'; if (['sw', 'nw', 'w'].includes(activeHandle)) mapBox.style.left = newLeft + 'px'; if (['ne', 'nw', 'n'].includes(activeHandle)) mapBox.style.top = newTop + 'px'; } } else if (activeExtra) { const dx = (coords.x - extraStartX) / scale; const dy = (coords.y - extraStartY) / scale; activeExtra.style.left = (extraStartLeft + dx) + 'px'; activeExtra.style.top = (extraStartTop + dy) + 'px'; } };
+            const endHandler = () => { isDragging = false; isResizing = false; activeHandle = null; activeExtra = null; }; window.addEventListener('mousemove', moveHandler); window.addEventListener('touchmove', moveHandler, {passive: false}); window.addEventListener('mouseup', endHandler); window.addEventListener('touchend', endHandler);
+        <\/script></body></html>`); printWin.document.close();
+        };
+
+        window.captureMap = async function () {
+            try {
+                const captureName = await askName("Nombre para captura:", "Mapa_AirsoftMaps"); const safeName = captureName.endsWith('.jpg') ? captureName : captureName + '.jpg';
+                window.toggleMenu(); document.body.classList.add('hide-controls'); const captureId = Date.now(); window.captures = window.captures || {}; const legendEl = document.getElementById('map-legend'); const compassEl = document.getElementById('compass-rose'); const numScaleEl = document.getElementById('numeric-scale-widget'); const geoScaleEl = document.querySelector('.leaflet-control-scale');
+                window.captures[captureId] = { legend: (isLegendVisible && legendEl) ? legendEl.outerHTML : '', compass: (compassEl && compassEl.style.display !== 'none') ? compassEl.outerHTML : '', numScale: numScaleEl ? numScaleEl.outerHTML : '', geoScale: geoScaleEl ? geoScaleEl.outerHTML : '' };
+                setTimeout(async () => {
+                    try {
+                        const canvas = await html2canvas(document.getElementById('map-container'), { useCORS: true, allowTaint: false, scale: 1, logging: false, ignoreElements: (el) => { if (!el.classList) return false; if (el.classList.contains('leaflet-top') || el.classList.contains('leaflet-control-attribution') || el.id === 'map-legend' || el.id === 'compass-rose' || el.id === 'numeric-scale-widget' || el.classList.contains('leaflet-control-scale')) return true; return false; } });
+                        const imgData = canvas.toDataURL('image/jpeg', 0.80); const item = document.createElement('div'); item.className = 'gallery-item';
+                        item.innerHTML = `<img src="${imgData}" style="cursor:zoom-in;" onclick="window.openImageModal(this.src)"><div style="font-size:13px;font-weight:bold;color:var(--ign-blue);text-align:center;margin:5px 0;">${captureName}</div><div style="display:flex;justify-content:space-between;align-items:center;padding:5px;flex-wrap:wrap;gap:5px;"><button onclick="window.openImageModal(this.closest('.gallery-item').querySelector('img').src)" style="border:none;background:none;color:var(--success);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">👁️ Ver</button><a href="${imgData}" download="${safeName}" style="color:var(--ign-blue);font-weight:bold;text-decoration:none;font-size:12px;">⬇️ Descargar</a><button onclick="this.closest('.gallery-item').remove()" style="border:none;background:none;color:var(--danger);cursor:pointer;font-weight:bold;font-size:12px;padding:0;">🗑️ Borrar</button></div>`;
+                        document.getElementById('gallery').prepend(item); window.customAlert("Éxito", "Captura realizada correctamente."); setTimeout(() => window.toggleGroup('gallery-container'), 300);
+                    } catch (error) { window.customAlert("Error", "No se pudo generar la captura. El mapa es demasiado pesado. Intenta alejar el zoom un poco."); } finally { document.body.classList.remove('hide-controls'); window.toggleMenu(); }
+                }, 600);
+            } catch (e) { }
+        };
+
+        function getMTNLeaf(lat, lon) { const refLat = 44.0, refLon = -9.5; const row = Math.floor((refLat - lat) / (10 / 60)) + 1; const col = Math.floor((lon - refLon) / (20 / 60)) + 1; return (row * 30 + col).toString().padStart(4, '0'); }
+        function updateMtnInfo() { const center = map.getCenter(); const hoja = getMTNLeaf(center.lat, center.lng); const infoDiv = document.getElementById('mtnInfo'); if (infoDiv) { infoDiv.innerHTML = `<div class="mtn-title">Hoja MTN50: ${hoja}</div><a href="https://centrodedescargas.cnig.es/CentroDescargas/buscar.do?serie=MTN50&numHoja=${hoja}" target="_blank" style="font-size:10px; color:var(--info); text-decoration:none;">Descargar Hoja Oficial</a>`; } }
+
+        window.getWeatherReport = async function () {
+            const center = window.map.getCenter();
+            const lat = center.lat.toFixed(5);
+            const lng = center.lng.toFixed(5);
+            const btn = document.querySelector('[data-i18n="weather_btn"]');
+            const originalText = btn ? btn.innerHTML : "🌬️ Reporte Meteorológico";
+            if (btn) { btn.innerHTML = "⏳..."; btn.disabled = true; }
+
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&daily=sunrise,sunset,precipitation_probability_max,precipitation_sum,temperature_2m_max,temperature_2m_min&timezone=auto`);
+                const data = await res.json();
+                if (data && data.current_weather) {
+                    const temp = data.current_weather.temperature;
+                    const windSpeed = data.current_weather.windspeed;
+                    const windDir = data.current_weather.winddirection;
+                    let sunrise = "N/A", sunset = "N/A", precipProb = "0", precipSum = "0";
+                    if (data.daily) {
+                        if (data.daily.sunrise && data.daily.sunrise.length > 0) sunrise = new Date(data.daily.sunrise[0]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        if (data.daily.sunset && data.daily.sunset.length > 0) sunset = new Date(data.daily.sunset[0]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        if (data.daily.precipitation_probability_max && data.daily.precipitation_probability_max.length > 0) precipProb = data.daily.precipitation_probability_max[0];
+                        if (data.daily.precipitation_sum && data.daily.precipitation_sum.length > 0) precipSum = data.daily.precipitation_sum[0];
+                    }
+                    let report = `🌡️ Temp. Actual: ${temp}°C\n💨 Viento: ${windSpeed} km/h (Dir: ${windDir}°)\n☔ Lluvia Hoy: ${precipProb}% prob. (${precipSum} mm)\n🌅 Amanecer: ${sunrise} | 🌇 Ocaso: ${sunset}\n\n📅 Previsión próximos días:\n`;
+                    if (data.daily && data.daily.time) {
+                        for (let i = 1; i <= 3; i++) {
+                            if (data.daily.time[i]) {
+                                let dDate = new Date(data.daily.time[i] + 'T12:00:00').toLocaleDateString([], { weekday: 'short', day: '2-digit', month: '2-digit' });
+                                let dMax = data.daily.temperature_2m_max[i];
+                                let dMin = data.daily.temperature_2m_min[i];
+                                let dProb = data.daily.precipitation_probability_max[i];
+                                let dSum = data.daily.precipitation_sum[i];
+                                report += `🔹 ${dDate}: ${dMin}°C a ${dMax}°C | ☔ ${dProb}% (${dSum} mm)\n`;
+                            }
+                        }
+                    }
+                    window.customAlert("🌬️ Clima Táctico", report);
+                } else { window.customAlert("Error", "No se pudo obtener el clima."); }
+            } catch (error) { window.customAlert("Error", "Fallo al conectar con el servidor meteorológico."); }
+            finally { if (btn) { btn.innerHTML = originalText; btn.disabled = false; } }
+        };
+
+        window.toggleMtnGrid = function () {
+            isMtnGridVisible = !isMtnGridVisible; const btn = document.getElementById('mtnGridBtn');
+            if (isMtnGridVisible) {
+                if (mtnGridLayer) map.removeLayer(mtnGridLayer); mtnGridLayer = L.layerGroup();
+                const b = map.getBounds(); const stepLat = 10 / 60, stepLon = 20 / 60; const sLat = Math.floor(b.getSouth() / stepLat) * stepLat; const eLat = Math.ceil(b.getNorth() / stepLat) * stepLat; const sLng = Math.floor(b.getWest() / stepLon) * stepLon; const eLng = Math.ceil(b.getEast() / stepLon) * stepLon;
+                const gridStyle = { color: '#e6b800', weight: 1.5, opacity: 0.8, dashArray: '5, 5' };
+                for (let lat = sLat; lat <= eLat; lat += stepLat) L.polyline([[lat, b.getWest()], [lat, b.getEast()]], gridStyle).addTo(mtnGridLayer);
+                for (let lng = sLng; lng <= eLng; lng += stepLon) L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], gridStyle).addTo(mtnGridLayer);
+                mtnGridLayer.addTo(map); btn.innerText = "Ocultar Cuadrículas MTN";
+            } else { if (mtnGridLayer) map.removeLayer(mtnGridLayer); btn.innerText = "Ver Cuadrículas MTN"; }
+        };
+
+        let gridLayer = null, isGridVisible = false, isMtnGridVisible = false, mtnGridLayer = null;
+        window.toggleGrid = function () { isGridVisible = !isGridVisible; const btn = document.getElementById('gridToggleBtn'); if (isGridVisible) { window.updateGrid(); map.on('moveend', window.updateGrid); btn.innerText = "Desactivar Cuadrícula"; } else { if (gridLayer) map.removeLayer(gridLayer); map.off('moveend', window.updateGrid); btn.innerText = "Activar Cuadrícula"; } };
+        window.updateGridByScale = function () { const scaleStr = document.getElementById('gridScale').value; if (scaleStr !== 'auto') { const targetScale = parseInt(scaleStr); const lat = map.getCenter().lat; const targetZoom = Math.log2((156543.03392 * Math.cos(lat * Math.PI / 180)) / (targetScale * 0.0002645833)); map.setZoom(targetZoom); if (!isZoomLocked) { window.toggleZoomLock(); } } else { if (isZoomLocked) { window.toggleZoomLock(); } } window.updateGrid(); };
+        function getGridStep(z) { return (z > 17 ? 0.0005 : z > 15 ? 0.002 : z > 13 ? 0.01 : z > 11 ? 0.02 : z > 9 ? 0.1 : z > 7 ? 0.5 : z > 5 ? 1.0 : 5.0); }
+        function getAlphaFromNumber(num) { let letters = ''; while (num >= 0) { letters = String.fromCharCode(65 + (num % 26)) + letters; num = Math.floor(num / 26) - 1; } return letters; }
+        window.onGridTypeChange = function () { if (!isGridVisible) { window.toggleGrid(); } else { window.updateGrid(); } };
+
+        window.updateGrid = function () {
+            if (!isGridVisible) return; if (gridLayer) map.removeLayer(gridLayer); gridLayer = L.layerGroup();
+            const b = map.getBounds(), z = map.getZoom(); const type = document.getElementById('gridType').value; const color = document.getElementById('gridColor').value; const weight = parseFloat(document.getElementById('gridWeight').value);
+            let step = getGridStep(z); let sLat = Math.floor(b.getSouth() / step) * step; let eLat = Math.ceil(b.getNorth() / step) * step; let sLng = Math.floor(b.getWest() / step) * step; let eLng = Math.ceil(b.getEast() / step) * step;
+            while (((eLat - sLat) / step) * ((eLng - sLng) / step) > 3000) { step *= 2; sLat = Math.floor(b.getSouth() / step) * step; eLat = Math.ceil(b.getNorth() / step) * step; sLng = Math.floor(b.getWest() / step) * step; eLng = Math.ceil(b.getEast() / step) * step; }
+            const lineStyle = { color: color, weight: weight, opacity: 0.6 };
+            for (let lat = sLat; lat <= eLat; lat += step) { L.polyline([[lat, b.getWest()], [lat, b.getEast()]], lineStyle).addTo(gridLayer); if (type !== 'alpha') { let label = (type === 'utm') ? `Y:${latLonToUTM(lat, b.getCenter().lng).y.toFixed(0)}` : (type === 'dms' ? formatDMS(lat, true) : lat.toFixed(3)); L.marker([lat, b.getWest()], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [-5, 10], style: `color:${color}` }) }).addTo(gridLayer); } }
+            for (let lng = sLng; lng <= eLng; lng += step) { L.polyline([[b.getSouth(), lng], [b.getNorth(), lng]], lineStyle).addTo(gridLayer); if (type !== 'alpha') { let label = (type === 'utm') ? `X:${latLonToUTM(b.getCenter().lat, lng).x.toFixed(0)}` : (type === 'dms' ? formatDMS(lng, false) : lng.toFixed(3)); L.marker([b.getNorth(), lng], { icon: L.divIcon({ className: 'grid-label', html: label, iconAnchor: [30, -5], style: `color:${color}` }) }).addTo(gridLayer); } }
+            if (type === 'alpha') {
+                const topEdgeLat = b.getNorth(); const leftEdgeLng = b.getWest();
+                for (let lng = sLng; lng < eLng; lng += step) { let lngIndex = Math.floor((lng + 180) / step); let letter = getAlphaFromNumber(lngIndex); L.marker([topEdgeLat, lng + step / 2], { icon: L.divIcon({ className: 'alpha-grid-header', html: `<div style="color:${color}; font-size:15px; font-weight:900; background:rgba(255,255,255,0.95); border:2px solid ${color}; width: 28px; height: 28px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">${letter}</div>`, iconSize: [32, 32], iconAnchor: [16, -10] }), interactive: false }).addTo(gridLayer); }
+                for (let lat = sLat; lat < eLat; lat += step) { let latIndex = Math.floor((lat + 90) / step); L.marker([lat + step / 2, leftEdgeLng], { icon: L.divIcon({ className: 'alpha-grid-header', html: `<div style="color:${color}; font-size:15px; font-weight:900; background:rgba(255,255,255,0.95); border:2px solid ${color}; width: 28px; height: 28px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">${latIndex}</div>`, iconSize: [32, 32], iconAnchor: [-10, 16] }), interactive: false }).addTo(gridLayer); }
+            }
+            gridLayer.addTo(map);
+        };
+
+        function latLonToUTM(lat, lon) {
+            const a = 6378137.0, f = 1 / 298.257223563, k0 = 0.9996; let huso = Math.floor((lon + 180) / 6) + 1; const lon0 = (huso - 1) * 6 - 180 + 3; const phi = lat * Math.PI / 180, lambda = lon * Math.PI / 180, lambda0 = lon0 * Math.PI / 180;
+            const e2 = 2 * f - f * f, ep2 = e2 / (1 - e2); const N = a / Math.sqrt(1 - e2 * Math.sin(phi) * Math.sin(phi)); const T = Math.tan(phi) ** 2, C = ep2 * Math.cos(phi) ** 2, A = (lambda - lambda0) * Math.cos(phi);
+            const M = a * ((1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256) * phi - (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 * e2 * e2 / 1024) * Math.sin(2 * phi) + (15 * e2 / 256 + 45 * e2 * e2 / 1024) * Math.sin(4 * phi) - (35 * e2 / 3072) * Math.sin(6 * phi));
+            const x = k0 * N * (A + (1 - T + C) * A ** 3 / 6 + (5 - 18 * T + T ** 2 + 72 * C - 58 * ep2) * A ** 5 / 120) + 500000.0;
+            let y = k0 * (M + N * Math.tan(phi) * (A ** 2 / 2 + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24 + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720)); if (lat < 0) y += 10000000.0;
+            const letters = "CDEFGHJKLMNPQRSTUVWXX"; let index = Math.floor((lat + 80) / 8); if (index < 0) index = 0; if (index > 20) index = 20; return { x, y, huso, banda: letters[index] };
+        }
+
+        function utmToLatLon(zone, x, y, isSouth) {
+            const a = 6378137.0, f = 1 / 298.257223563, k0 = 0.9996; const e2 = 2 * f - f * f, ep2 = e2 / (1 - e2); if (isSouth) y -= 10000000.0;
+            const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2)); const M = y / k0; const mu = M / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * Math.pow(e2, 3) / 256));
+            const phi1 = mu + (3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32) * Math.sin(2 * mu) + (21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32) * Math.sin(4 * mu) + (151 * Math.pow(e1, 3) / 96) * Math.sin(6 * mu);
+            const N1 = a / Math.sqrt(1 - e2 * Math.sin(phi1) * Math.sin(phi1)); const T1 = Math.tan(phi1) * Math.tan(phi1); const C1 = ep2 * Math.cos(phi1) * Math.cos(phi1); const R1 = a * (1 - e2) / Math.pow(1 - e2 * Math.sin(phi1) * Math.sin(phi1), 1.5); const D = (x - 500000.0) / (N1 * k0);
+            const latRad = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * Math.pow(D, 4) / 24 + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * Math.pow(D, 6) / 720);
+            const lonRad = (D - (1 + 2 * T1 + C1) * Math.pow(D, 3) / 6 + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * Math.pow(D, 5) / 120) / Math.cos(phi1); const lon0 = (zone - 1) * 6 - 180 + 3;
+            return { lat: latRad * 180 / Math.PI, lon: (lonRad * 180 / Math.PI) + lon0 };
+        }
+
+        function formatDMS(deg, isLat) { const abs = Math.abs(deg); const d = Math.floor(abs), m = Math.floor((abs - d) * 60), s = ((abs - d - m / 60) * 3600).toFixed(1); const ref = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W'); return `${d}°${m}'${s}"${ref}`; }
+
+        map.on('mousemove', (e) => {
+            const type = document.getElementById('gridType').value; let coords = `Lat: ${e.latlng.lat.toFixed(6)} | Lon: ${e.latlng.lng.toFixed(6)}`;
+            if (type === 'dms') coords = `${formatDMS(e.latlng.lat, true)} | ${formatDMS(e.latlng.lng, false)}`;
+            if (type === 'utm') { const u = latLonToUTM(e.latlng.lat, e.latlng.lng); coords = `Huso ${u.huso}${u.banda} | X: ${u.x.toFixed(0)} Y: ${u.y.toFixed(0)}`; }
+            if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((e.latlng.lng + 180) / step); let latIndex = Math.floor((e.latlng.lat + 90) / step); coords = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
+            document.getElementById('liveCoords').innerText = coords;
+        });
+
+        map.on('move', updateMtnInfo);
+
+        window.buscarLugar = async function () {
+            const q = document.getElementById('searchInput').value.trim(); if (!q) return;
+            const type = document.getElementById('gridType').value;
+            let foundLat = null, foundLon = null, popupText = "Búsqueda: " + q;
+
+            const decMatch = q.match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/);
+            const dmsMatch = q.match(/(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([NS])[,;\s]*(\d+)[°\s]+(\d+)['\s]+([\d\.]+)[s"''\s]*([EWO])/i);
+            const utmMatch = q.match(/^(\d{1,2})\s*([C-X]?)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/i);
+            const alphaMatch = q.toUpperCase().match(/^([A-Z]+)(\d+)$/);
+
+            if (decMatch) { const lat = parseFloat(decMatch[1]), lon = parseFloat(decMatch[2]); if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) { foundLat = lat; foundLon = lon; } }
+            else if (dmsMatch) { let lat = parseFloat(dmsMatch[1]) + parseFloat(dmsMatch[2]) / 60 + parseFloat(dmsMatch[3]) / 3600; if (dmsMatch[4].toUpperCase() === 'S') lat = -lat; let lon = parseFloat(dmsMatch[5]) + parseFloat(dmsMatch[6]) / 60 + parseFloat(dmsMatch[7]) / 3600; if (dmsMatch[8].toUpperCase() === 'W' || dmsMatch[8].toUpperCase() === 'O') lon = -lon; foundLat = lat; foundLon = lon; }
+            else if (utmMatch) { const zone = parseInt(utmMatch[1]); const band = utmMatch[2] ? utmMatch[2].toUpperCase() : 'N'; const x = parseFloat(utmMatch[3]); const y = parseFloat(utmMatch[4]); const isSouth = "CDEFGHJKLM".includes(band); const ll = utmToLatLon(zone, x, y, isSouth); if (ll && !isNaN(ll.lat) && !isNaN(ll.lon)) { foundLat = ll.lat; foundLon = ll.lon; } }
+            else if (type === 'alpha' && alphaMatch) { const letters = alphaMatch[1]; const latIndex = parseInt(alphaMatch[2]); let lngIndex = 0; for (let i = 0; i < letters.length; i++) { lngIndex = lngIndex * 26 + (letters.charCodeAt(i) - 64); } lngIndex -= 1; let step = getGridStep(map.getZoom()); foundLon = -180 + (lngIndex * step) + (step / 2); foundLat = -90 + (latIndex * step) + (step / 2); }
+
+            if (foundLat !== null && foundLon !== null) { addEditableMarkerFromSearch(foundLat, foundLon, popupText); return; }
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+                const data = await res.json();
+                if (data && data.length > 0 && data[0]) {
+                    foundLat = parseFloat(data[0].lat); foundLon = parseFloat(data[0].lon);
+                    popupText = data[0].display_name.split(',')[0];
+                    addEditableMarkerFromSearch(foundLat, foundLon, popupText);
+                } else {
+                    window.customAlert("Búsqueda", "No se encontró ningún lugar o coordenada con esa coincidencia.");
+                }
+            } catch (error) {
+                console.error("Error en la búsqueda", error);
+                window.customAlert("Error", "Fallo al conectar con el servidor de búsqueda. Revisa tu conexión.");
+            }
+        };
+
+        async function addEditableMarkerFromSearch(lat, lon, name) {
+            if (isZoomLocked) window.toggleZoomLock();
+            map.setView([lat, lon], 15);
+            const color = '#3498db'; const newMarker = L.marker([lat, lon], { icon: getMarkerIconObj(color, 'punto') }); const id = L.stamp(newMarker);
+            newMarker.feature = { type: 'Feature', properties: {} }; newMarker.feature.properties.layerName = name; newMarker.feature.properties.faction = window.projectName; newMarker.feature.properties.grupo = ""; newMarker.isHidden = false; newMarker.feature.properties.color = color; newMarker.feature.properties.iconType = 'punto'; newMarker.feature.properties.bufferRadius = 0; newMarker.feature.properties.showLabel = false; newMarker.feature.properties.coneEnabled = false; newMarker.feature.properties.coneAngle = 0; newMarker.feature.properties.coneSpread = 60; newMarker.feature.properties.coneDist = 100; newMarker.feature.properties.coneColor = color;
+
+            const type = document.getElementById('gridType').value; let coordText = `Lat: ${lat.toFixed(5)}<br>Lon: ${lon.toFixed(5)}`;
+            if (type === 'dms') coordText = `Lat: ${formatDMS(lat, true)}<br>Lon: ${formatDMS(lon, false)}`; else if (type === 'utm') { const u = latLonToUTM(lat, lon); coordText = `Huso: ${u.huso}${u.banda}<br>X: ${u.x.toFixed(0)}<br>Y: ${u.y.toFixed(0)}`; } else if (type === 'alpha') { let step = getGridStep(map.getZoom()); let lngIndex = Math.floor((lon + 180) / step); let latIndex = Math.floor((lat + 90) / step); coordText = `Celda Táctica: ${getAlphaFromNumber(lngIndex)}${latIndex}`; }
+
+            let actionBtns = `<div style="margin-top:8px; display:flex; gap:5px;flex-wrap:wrap;"><button onclick="window.startNavigation(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')" style="color:#9b59b6; cursor:pointer; border:1px solid #9b59b6; background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">🎯 Ir</button><button onclick="window.editLayerById(${id})" style="color:var(--ign-blue); cursor:pointer; border:1px solid var(--ign-blue); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;flex:1;">✏️ Editar</button><button onclick="window.removeLayerById(${id})" style="color:var(--danger); cursor:pointer; border:1px solid var(--danger); background:white; border-radius:4px; padding:3px 6px; font-weight:bold;">🗑️</button></div>`;
+            let baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Altitud: <i>...</i></div>`;
+            newMarker.bindPopup(baseText + actionBtns).openPopup(); newMarker.feature.properties.baseText = baseText; drawnItems.addLayer(newMarker); updateLayerTree();
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lon.toFixed(5)}`); const data = await res.json();
+                if (data && data.elevation && data.elevation.length > 0) { baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Alt: <b>${data.elevation[0]} m</b></div>`; newMarker.feature.properties.baseText = baseText; newMarker.setPopupContent(baseText + actionBtns); }
+            } catch (error) { baseText = `<div><b>📍 ${name}</b><br>${coordText}<br>Alt: Error</div>`; newMarker.feature.properties.baseText = baseText; newMarker.setPopupContent(baseText + actionBtns); }
+        }
+
+        function dragElement(elmnt) {
+            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; elmnt.onmousedown = dragMouseDown; elmnt.addEventListener('touchstart', dragTouchStart, { passive: false });
+            function fixPosition() { let startTop = elmnt.offsetTop; let startLeft = elmnt.offsetLeft; elmnt.style.bottom = 'auto'; elmnt.style.right = 'auto'; elmnt.style.top = startTop + "px"; elmnt.style.left = startLeft + "px"; }
+            function dragMouseDown(e) { e = e || window.event; if (['INPUT', 'BUTTON', 'SELECT', 'A', 'TEXTAREA'].includes(e.target.tagName)) return; e.stopPropagation(); e.preventDefault(); fixPosition(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+            function elementDrag(e) { e = e || window.event; e.stopPropagation(); e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
+            function dragTouchStart(e) { e = e || window.event; if (['INPUT', 'BUTTON', 'SELECT', 'A', 'TEXTAREA'].includes(e.target.tagName)) return; e.stopPropagation(); e.preventDefault(); fixPosition(); pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; document.ontouchend = closeDragElement; document.ontouchmove = elementDragTouch; }
+            function elementDragTouch(e) { e = e || window.event; e.stopPropagation(); e.preventDefault(); pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY; pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
+            function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
+        }
+        dragElement(document.getElementById("map-legend")); dragElement(document.getElementById("compass-rose")); dragElement(document.getElementById("numeric-scale-widget")); dragElement(document.getElementById("liveCoords"));
+
+        let isMobileMode = window.innerWidth <= 768;
+        function initMobileMode() { const btn = document.getElementById('modeToggleBtn'); if (isMobileMode) { document.body.classList.add('mobile-mode'); btn.innerText = '💻'; btn.title = 'Cambiar a modo escritorio'; } else { document.body.classList.remove('mobile-mode'); btn.innerText = '📱'; btn.title = 'Cambiar a modo móvil'; } }
+        window.toggleMobileMode = function () { isMobileMode = !isMobileMode; initMobileMode(); };
+        window.toggleTheme = function () { const body = document.body; const btnTheme = document.getElementById('themeToggleBtn'); body.classList.toggle('dark-mode'); if (body.classList.contains('dark-mode')) { btnTheme.innerHTML = '☀️'; btnTheme.title = 'Cambiar a Modo Claro'; } else { btnTheme.innerHTML = '🌙'; btnTheme.title = 'Cambiar a Modo Oscuro'; } };
+        initMobileMode();
+
+        window.toggleMenu = function () {
+            document.getElementById('panelLateral').classList.toggle('oculto');
+            document.getElementById('panelLive').classList.add('oculto');
+        };
+        window.toggleLiveMenu = function () {
+            const pLive = document.getElementById('panelLive'); pLive.classList.toggle('oculto');
+            document.getElementById('panelLateral').classList.add('oculto');
+            if (!pLive.classList.contains('oculto')) { window.unreadMsgCount = 0; const badge = document.getElementById('chat-badge'); if (badge) { badge.style.display = 'none'; badge.innerText = '0'; } }
+        };
+
+        window.toggleGroup = function (id) {
+            const container = document.getElementById(id); if (!container) return; const btn = document.querySelector(`button[onclick*="${id}"]`);
+            if (container.style.display === 'none' || container.style.display === '') { container.style.display = 'block'; if (btn) { const icon = btn.querySelector('span:last-child'); if (icon && icon.innerText.includes('▼')) icon.innerText = '▲'; } setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }
+            else { container.style.display = 'none'; if (btn) { const icon = btn.querySelector('span:last-child'); if (icon && icon.innerText.includes('▲')) icon.innerText = '▼'; } }
+        };
+
+        window.openManual = function () { document.getElementById('manual-modal').style.display = 'flex'; };
+        window.closeManual = function () { document.getElementById('manual-modal').style.display = 'none'; };
+
+        window.changeLayer = function () {
+            const bVal = document.getElementById('baseLayer').value; const oVal = document.getElementById('overlayLayer').value; const op = parseFloat(document.getElementById('overlayOpacity').value);
+            if (currentBase) map.removeLayer(currentBase); if (currentOverlay) map.removeLayer(currentOverlay);
+            currentBase = baseLayers[bVal]; map.addLayer(currentBase);
+            if (oVal !== 'none') { currentOverlay = baseLayers[oVal]; currentOverlay.setOpacity(op); map.addLayer(currentOverlay); } else { currentOverlay = null; }
+        };
+
+        window.isFollowingUser = false; window.currentDeviceHeading = 0; let locWatchId = null; let userLocMarker = null; let userLocCircle = null; let orientationHandlerActive = false;
+
+        let arStream = null; let arAnimationId = null;
+
+        function renderAROverlay() {
+            if (!window.userLocMarker || document.getElementById('ar-view-container').style.display === 'none') return;
+            const myPos = window.userLocMarker.getLatLng();
+            const heading = window.currentDeviceHeading || 0;
+            const overlay = document.getElementById('ar-overlay');
+            overlay.innerHTML = '';
+
+            const fov = 60;
+            const maxDist = 2000;
+
+            const arElements = [];
+
+            window.drawnItems.eachLayer(layer => {
+                if (layer instanceof L.Marker && !layer.isHidden) {
+                    const name = layer.feature?.properties?.layerName || 'Marcador';
+                    const color = layer.feature?.properties?.color || '#e74c3c';
+                    const dist = myPos.distanceTo(layer.getLatLng());
+                    if (dist <= maxDist) arElements.push({ pos: layer.getLatLng(), name, dist, color, type: 'marker' });
+                }
+            });
+
+            if (window.alliesLayer) {
+                window.alliesLayer.eachLayer(layer => {
+                    const popupStr = layer.getPopup()?.getContent() || '';
+                    const nameMatch = popupStr.match(/<b>(.*?)<\/b>/);
+                    const name = nameMatch ? nameMatch[1] : 'Aliado';
+                    const dist = myPos.distanceTo(layer.getLatLng());
+                    if (dist <= maxDist) arElements.push({ pos: layer.getLatLng(), name, dist, color: '#2ecc71', type: 'ally' });
+                });
+            }
+
+            arElements.forEach(el => {
+                const lat1 = myPos.lat * Math.PI / 180;
+                const lon1 = myPos.lng * Math.PI / 180;
+                const lat2 = el.pos.lat * Math.PI / 180;
+                const lon2 = el.pos.lng * Math.PI / 180;
+                const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+                const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+                let bearing = Math.atan2(y, x) * 180 / Math.PI;
+                bearing = (bearing + 360) % 360;
+
+                let angleDiff = bearing - heading;
+                angleDiff = ((angleDiff % 360) + 360) % 360;
+                if (angleDiff > 180) angleDiff -= 360;
+
+                if (Math.abs(angleDiff) < fov / 2) {
+                    const screenX = 50 + (angleDiff / (fov / 2)) * 50;
+
+                    const scale = Math.max(0.3, 1 - (el.dist / maxDist));
+                    const yOffset = 50 - (scale * 20);
+
+                    const distText = el.dist > 1000 ? (el.dist / 1000).toFixed(2) + "km" : Math.round(el.dist) + "m";
+                    const icon = el.type === 'ally' ? '👤' : '📍';
+
+                    const html = `<div style="position:absolute; left:${screenX}%; top:${yOffset}%; transform:translate(-50%, -50%) scale(${scale}); background:rgba(0,0,0,0.6); color:white; padding:4px 8px; border-radius:8px; border:2px solid ${el.color}; text-align:center; text-shadow:1px 1px 2px black;">
+                                <div style="font-size:24px;">${icon}</div>
+                                <div style="font-size:12px; font-weight:bold; white-space:nowrap;">${el.name}</div>
+                                <div style="font-size:10px;">${distText}</div>
+                              </div>`;
+                    overlay.insertAdjacentHTML('beforeend', html);
+                }
+            });
+
+            arAnimationId = requestAnimationFrame(renderAROverlay);
+        }
+
+        window.toggleARView = async function () {
+            const arContainer = document.getElementById('ar-view-container');
+            const video = document.getElementById('ar-video');
+
+            if (arContainer.style.display === 'none') {
+                try {
+                    arStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
+                    video.srcObject = arStream;
+                    arContainer.style.display = 'block';
+                    document.body.classList.add('hide-controls');
+                    renderAROverlay();
+                } catch (err) {
+                    console.error("Error al acceder a la cámara:", err);
+                    try {
+                        arStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        video.srcObject = arStream;
+                        arContainer.style.display = 'block';
+                        document.body.classList.add('hide-controls');
+                        renderAROverlay();
+                    } catch (e) {
+                        window.customAlert("Error de Cámara", "No se pudo acceder a la cámara. Revisa los permisos de tu navegador.");
+                    }
+                }
+            } else {
+                if (arStream) {
+                    arStream.getTracks().forEach(track => track.stop());
+                    arStream = null;
+                }
+                video.srcObject = null;
+                arContainer.style.display = 'none';
+                document.body.classList.remove('hide-controls');
+                if (arAnimationId) cancelAnimationFrame(arAnimationId);
+            }
+        };
+
+        function handleDeviceOrientation(event) {
+            let heading = null;
+
+            // 1. Detectar si la pantalla está en vertical (0) u horizontal (90 o -90)
+            let orientationAngle = 0;
+            if (screen.orientation && screen.orientation.angle !== undefined) {
+                orientationAngle = screen.orientation.angle;
+            } else if (window.orientation !== undefined) {
+                orientationAngle = window.orientation;
+            }
+
+            // 2. Leer sensor y compensar rotación de pantalla
+            if (event.webkitCompassHeading !== undefined) {
+                // iOS (iPhone/iPad)
+                heading = event.webkitCompassHeading + orientationAngle;
+            } else if (event.alpha !== null) {
+                // Android
+                heading = 360 - event.alpha;
+                heading = heading + orientationAngle;
+            }
+
+            if (heading !== null) {
+                // Normalizar para que siempre sea un valor entre 0 y 360
+                heading = (heading + 360) % 360;
+                window.currentDeviceHeading = heading;
+
+                // Flecha del jugador
+                const arrow = document.getElementById('user-dir-arrow');
+                if (arrow) { arrow.style.transform = `rotate(${heading}deg)`; arrow.style.display = 'block'; }
+
+                // Panel táctico de navegación
+                if (typeof window.updateNavigationUI === 'function') window.updateNavigationUI();
+
+                // 3. BRÚJULA DINÁMICA Y ROTACIÓN DEL MAPA
+                const cb = document.getElementById('compass-auto-rotate');
+                const mapEl = document.getElementById('map');
+
+                if (cb && cb.checked) {
+                    // Rotar icono de brújula superior
+                    const svg = document.getElementById('compass-rose').querySelector('svg');
+                    if (svg) {
+                        svg.style.transition = 'transform 0.1s ease-out';
+                        svg.style.transform = `rotate(${-heading}deg)`;
+                    }
+
+                    // Rotar el mapa SOLO si el GPS está bloqueado siguiéndote
+                    if (window.isFollowingUser && mapEl) {
+                        mapEl.style.transition = 'transform 0.1s ease-out';
+                        mapEl.style.transformOrigin = 'center center';
+                        // Ampliamos x1.5 para ocultar los bordes que quedan vacíos al rotar un cuadrado
+                        mapEl.style.transform = `scale(1.5) rotate(${-heading}deg)`;
+                    } else if (mapEl) {
+                        // Si arrastras el dedo, desactivamos el giro para que puedas moverte normal
+                        mapEl.style.transition = 'transform 0.2s ease-out';
+                        mapEl.style.transform = `scale(1) rotate(0deg)`;
+                    }
+                } else {
+                    // Brújula desactivada: restaurar todo a su sitio
+                    const svg = document.getElementById('compass-rose').querySelector('svg');
+                    if (svg) svg.style.transform = `rotate(0deg)`;
+                    if (mapEl) {
+                        mapEl.style.transition = 'transform 0.2s ease-out';
+                        mapEl.style.transform = `scale(1) rotate(0deg)`;
+                    }
+                }
+            }
+        }
+        // --- MOTOR DEL BOTÓN "🎯 IR" (NAVEGACIÓN TÁCTICA) ---
+        window.navTarget = null;
+
+        window.startNavigation = function (lat, lng, name) {
+            window.navTarget = L.latLng(lat, lng);
+            if (document.getElementById('nav-target-name')) document.getElementById('nav-target-name').innerText = name || 'Destino';
+            if (document.getElementById('nav-panel')) document.getElementById('nav-panel').style.display = 'block';
+
+            // Forzar encendido de GPS si no está activo
+            if (typeof locWatchId === 'undefined' || locWatchId === null) {
+                window.toggleLocation();
+            }
+
+            window.updateNavigationUI();
+            window.map.closePopup();
+        };
+
+        window.stopNavigation = function () {
+            window.navTarget = null;
+            if (document.getElementById('nav-panel')) document.getElementById('nav-panel').style.display = 'none';
+        };
+
+        window.updateNavigationUI = function () {
+            // Solo calcular si hay destino y el GPS ya encontró nuestra posición
+            if (!window.navTarget || !window.userLocMarker) return;
+
+            const myLoc = window.userLocMarker.getLatLng();
+            const dist = myLoc.distanceTo(window.navTarget);
+
+            // Actualizar el texto de los metros/km
+            let distText = dist > 1000 ? (dist / 1000).toFixed(2) + " km" : Math.round(dist) + " m";
+            if (document.getElementById('nav-dist')) document.getElementById('nav-dist').innerText = distText;
+
+            // Motor matemático: Calcular ángulo hacia el objetivo (Bearing)
+            const lat1 = myLoc.lat * Math.PI / 180;
+            const lon1 = myLoc.lng * Math.PI / 180;
+            const lat2 = window.navTarget.lat * Math.PI / 180;
+            const lon2 = window.navTarget.lng * Math.PI / 180;
+            const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+            let bearing = Math.atan2(y, x) * 180 / Math.PI;
+            bearing = (bearing + 360) % 360;
+
+            // Combinar con el giroscopio del móvil (hacia dónde miramos físicamente)
+            const heading = window.currentDeviceHeading || 0;
+            let relativeRotation = bearing - heading;
+
+            // Girar la flecha
+            const arrow = document.getElementById('nav-arrow');
+            if (arrow) {
+                arrow.style.transform = `rotate(${relativeRotation}deg)`;
+            }
+        };
+        // ----------------------------------------------------
+
+        window.toggleLocation = function () {
+            try {
+                const btn = document.querySelector('button[title="Mi Ubicación"]');
+                const arBtn = document.getElementById('ar-view-btn');
+                if (locWatchId !== null) {
+                    if (!window.isFollowingUser) { window.isFollowingUser = true; if (userLocMarker) map.flyTo(userLocMarker.getLatLng(), 17, { duration: 1.5 }); if (btn) { btn.innerHTML = "🚶‍♂️ Activar Seguimiento GPS"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; btn.style.opacity = "1"; } return; }
+                    else { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; window.isFollowingUser = false; if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; window.userLocMarker = null; } if (userLocCircle) { map.removeLayer(userLocCircle); userLocCircle = null; } try { window.removeEventListener('deviceorientation', handleDeviceOrientation, true); window.removeEventListener('deviceorientationabsolute', handleDeviceOrientation, true); } catch (e) { } orientationHandlerActive = false; if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.color = ''; btn.style.borderColor = 'var(--success)'; btn.style.opacity = '1'; btn.classList.remove('active'); } if (arBtn) arBtn.style.display = 'none'; window.stopNavigation(); return; }
+                }
+                if (!navigator.geolocation) { window.customAlert("Error", "Tu navegador no soporta la geolocalización."); return; }
+                if (btn) { btn.innerHTML = "⏳ Activando..."; btn.style.opacity = "0.7"; }
+                window.isFollowingUser = true;
+                if (!orientationHandlerActive) { try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { DeviceOrientationEvent.requestPermission().then(permissionState => { if (permissionState === 'granted') { window.addEventListener('deviceorientation', handleDeviceOrientation, true); orientationHandlerActive = true; } }).catch(err => { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); orientationHandlerActive = true; }); } else { window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true); window.addEventListener('deviceorientation', handleDeviceOrientation, true); orientationHandlerActive = true; } } catch (e) { } }
+                locWatchId = navigator.geolocation.watchPosition((pos) => {
+                    try {
+                        const lat = pos.coords.latitude; const lng = pos.coords.longitude; const acc = pos.coords.accuracy; const heading = pos.coords.heading; const speed = pos.coords.speed;
+                        if (window.isFollowingUser) { map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom()); }
+                        if (btn && btn.innerHTML.includes("⏳")) { btn.innerHTML = "🚶‍♂️ Seguimiento GPS Activo"; btn.style.opacity = "1"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; if (arBtn) arBtn.style.display = 'block'; }
+                        if (!userLocMarker) { const userIcon = L.divIcon({ className: 'custom-user-marker', html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 14px solid rgba(13,110,253,0.8); transform-origin: 50% 100%; margin-left: -6px; margin-top: -14px; transform: rotate(${window.currentDeviceHeading || 0}deg);"></div></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }); userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map); window.userLocMarker = userLocMarker; } else { userLocMarker.setLatLng([lat, lng]); }
+                        window.updateNavigationUI();
+                    } catch (e) { console.error(e); }
+                }, (err) => { window.customAlert("Error GPS", err.message); if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.opacity = "1"; } }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
+            } catch (e) { }
+        };
+
+        map.on('dragstart', () => { if (locWatchId !== null) { window.isFollowingUser = false; const btn = document.querySelector('button[title="Mi Ubicación"]'); if (btn) { btn.innerHTML = '🚶‍♂️ Centrar GPS'; btn.style.color = 'var(--ign-gold)'; btn.style.borderColor = 'var(--ign-gold)'; btn.style.opacity = "1"; } } });
+
+        // PWA: Convertir en App Instalable (Conversión de icono de .ico a .png dinámica)
+        (function () {
+            try {
+                function buildManifest(icon192, icon512) {
+                    const manifestJSON = { "name": "AirsoftMaps", "short_name": "AirsoftMaps", "start_url": window.location.href.split('?')[0] || ".", "display": "standalone", "background_color": "#003366", "theme_color": "#003366", "icons": [{ "src": icon192, "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }, { "src": icon512, "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }] };
+                    const manifestStr = JSON.stringify(manifestJSON); const manifestData = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(manifestStr);
+                    const link = document.createElement('link'); link.rel = 'manifest'; link.href = manifestData; document.head.appendChild(link);
+                }
+                const img = new Image(); img.crossOrigin = "anonymous";
+                img.onload = function () {
+                    const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d'); cvs.width = 192; cvs.height = 192; ctx.drawImage(img, 0, 0, 192, 192); const icon192 = cvs.toDataURL('image/png');
+                    cvs.width = 512; cvs.height = 512; ctx.clearRect(0, 0, 512, 512); ctx.drawImage(img, 0, 0, 512, 512); const icon512 = cvs.toDataURL('image/png'); buildManifest(icon192, icon512);
+                };
+                img.onerror = function () {
+                    const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d');
+                    cvs.width = 192; cvs.height = 192; ctx.fillStyle = '#003366'; ctx.fillRect(0, 0, 192, 192); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('AM', 96, 96); const i192 = cvs.toDataURL('image/png');
+                    cvs.width = 512; cvs.height = 512; ctx.fillStyle = '#003366'; ctx.fillRect(0, 0, 512, 512); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 200px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('AM', 256, 256); const i512 = cvs.toDataURL('image/png');
+                    buildManifest(i192, i512);
+                };
+                img.src = 'AirsoftMaps.ico';
+            } catch (e) { console.error("Error PWA:", e); }
+        })();
+
+        window.openGoogleEarth = function () {
+            if (!navigator.onLine) {
+                window.customAlert("📡 Sin Conexión", "Google Earth requiere conexión a internet para descargar el terreno satelital.\n\nNo puedes usar esta función si estás offline o en modo avión.");
+                return;
+            }
+            const modal = document.getElementById('confirm-modal');
+            modal.querySelector('h3').innerText = "🛰️ Google Earth 3D";
+            modal.querySelector('p').innerText = "Se va a abrir Google Earth en tu navegador externo para explorar el terreno en 3D real.\n\nAl terminar, vuelve a esta app.";
+            modal.style.display = 'flex';
+            
+            window.acceptConfirmModal = function () {
+                modal.style.display = 'none';
+                const center = window.map.getCenter();
+                const lat = center.lat.toFixed(6);
+                const lng = center.lng.toFixed(6);
+                const url = `https://earth.google.com/web/@${lat},${lng},1000a,500d,60y,0h,0t,0r`;
+                window.open(url, '_blank');
+                window.toggleMenu(); 
+            };
+            window.closeConfirmModal = function () { modal.style.display = 'none'; };
+        };
+
+        window.translations = {
+            es: {
+                manual_btn: "📖 Manual de Usuario", search_title: "🔍 Buscador", search_placeholder: "Ciudad o coordenadas...", search_go: "Ir",
+                proj_menu: "📁 Gestión de Proyecto", mtn_menu: "🗺️ Información MTN", mixer_menu: "🌍 Mezclador de Mapas", grid_menu: "📍 Sistema y Cuadrícula",
+                edit_menu: "✏️ Edición de Mapa", layer_menu: "🗂️ Gestor de Capas", gallery_menu: "📸 Galería Capturas", about_menu: "ℹ️ Acerca de la App",
+                delete_btn: "🗑️ Borrar Individual", login_btn: "Guardar cuenta", logout_btn: "Cerrar sesión", new_proj: "📄 Nuevo", rename_proj: "✏️ Renombrar",
+                cloud_save: "☁️ Guardar Nube", cloud_load: "☁️ Cargar Nube", local_save: "💾 Guardar Local", local_load: "📂 Cargar Local",
+                live_title: "Operaciones & GPS", live_gps: "🎯 Activar Seguimiento GPS", live_ar: "👁️ Visor AR", live_menu: "📡 Sala de Operaciones",
+                import_export_lbl: "Importar / Exportar (KML/GPX)", export_kml_btn: "⬇️ Exportar KML", export_gpx_btn: "⬇️ Exportar GPX", import_file_btn: "⬆️ Importar Archivo",
+                sync_offgrid_lbl: "📡 Sincronización Sin Internet", share_offgrid_btn: "Compartir Off-Grid",
+                mtn_grid_btn: "Ver Cuadrículas MTN", identifying_leaf: "Identificando hoja...", weather_btn: "🌬️ Reporte Meteorológico",
+                base_layer_lbl: "Capa Principal (Fondo)", overlay_layer_lbl: "Capa Secundaria", overlay_opacity_lbl: "Opacidad Secundaria",
+                offline_mode_lbl: "Modo Offline", offline_current_btn: "⬇️ Visión Actual", offline_zone_btn: "🔲 Marcar Zona",
+                tools_3d_lbl: "Herramientas 3D In-App", drone_3d_btn: "🛰️ Dron de Reconocimiento 3D",
+                thickness_lbl: "Grosor", color_lbl: "Color", lock_zoom_btn: "🔓 Bloquear Zoom", grid_toggle_btn: "Activar Cuadrícula", scale_toggle_btn: "Mostrar Escala", numscale_toggle_btn: "Ocultar Numérica",
+                line_thickness_lbl: "Grosor Línea", line_color_lbl: "Color Línea", marker_color_lbl: "Color Marcador", compass_style_lbl: "Estilo Brújula", dynamic_lbl: "🔄 Dinámica",
+                marker_tool: "📍 Marcador", path_tool: "📏 Ruta Manual", ruler_tool: "📐 Regla Rápida", smart_route_tool: "🗺️ Ruta Inteligente", field_map_tool: "🗺️ Solapar Mapa Campo", area_tool: "🔲 Área", compass_tool: "🧭 Brújula", legend_tool: "📋 Leyenda",
+                take_screenshot_btn: "📸 Tomar Captura", latest_changes: "Últimos cambios:", room_members: "👥 Miembros en sala:",
+                opt_dd: "Grados Decimales (DD)", opt_dms: "G. M. S. (DMS)", opt_utm: "UTM (Métricas)", opt_alpha: "Táctica Alfanumérica (A1)",
+                opt_low: "Baja", opt_med: "Media", opt_high: "Gruesa",
+                opt_red: "Rojo", opt_blue: "Azul", opt_green: "Verde", opt_black: "Negro", opt_yellow: "Amarillo",
+                opt_free_scale: "Escala Libre",
+                opt_mtn: "Mapa Topográfico (MTN España)", opt_pnoa: "Satélite (PNOA España)", opt_base: "Callejero IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Sombreado 3D (Relieve España)", opt_none: "Ninguna (Sin capa)",
+                opt_esri: "Satélite Global (ESRI)", opt_opentopo: "Topográfico Global (OpenTopoMap)",
+                opt_thin: "Fina", opt_normal: "Normal", opt_thick: "Gruesa",
+                opt_modern: "Moderna", opt_classic: "Clásica", opt_military: "Militar", opt_minimal: "Minimalista",
+                opt_blue_side: "🔵 Bando Azul", opt_red_side: "🔴 Bando Rojo", opt_green_side: "🟢 Bando Verde", opt_yellow_side: "🟡 Bando Amarillo", opt_pmc: "⚫ PMC / Mercenarios", opt_marine: "💀 Marine Raider bcn",
+                opt_assault: "🔫 Asalto", opt_sniper: "🔭 Francotirador", opt_medic: "🏥 Médico", opt_support: "🛡️ Apoyo", opt_leader: "⭐ Líder", opt_nav: "🧭 Navegante", opt_radio: "📻 Radio Operador",
+                room_name_ph: "Nombre de la Sala", room_pass_ph: "Contraseña de la Sala", user_alias_ph: "Tu indicativo (Ej. Escuadra Alfa)",
+                enter_room_btn: "🚪 Entrar / Crear Sala", share_map_btn: "🔄 Compartir Mapa", delete_room_btn: "🗑️ Eliminar Sala", chat_ph: "Mensaje...", exit_room_btn: "🚪 Salir de la Sala",
+                msg_enemy: "⚠️ Enemigo", msg_medic: "🏥 Médico", msg_defend: "🛡️ Defensa", msg_move: "🏃 Avanzando", msg_down: "💀 ESTOY ELIMINADO",
+                modal_name_title: "Nombrar elemento", modal_cancel: "Cancelar", modal_accept: "Aceptar", modal_alert_title: "Notificación", modal_cloud_title: "☁️ Mis Proyectos", modal_close: "Cerrar", modal_drone_title: "🛰️ SEÑAL DE DRON TÁCTICO 3D", modal_drone_close: "✕ Desconectar", modal_ar_close: "✕ Cerrar AR", modal_confirm_title: "⚠️ Confirmación", modal_confirm: "Confirmar", edit_title: "✏️ Editar Elemento", edit_name: "Nombre", edit_faction: "Bando", edit_group: "Grupo", edit_notes: "📝 Notas / Comentarios", edit_color: "Color", edit_icon: "Icono Militar", edit_show_name: "Mostrar nombre", edit_radius: "⭕ Radio de Acción (m)", edit_show_cone: "🔦 Mostrar Cono", edit_cone_color: "Color", edit_orientation: "Orientación", edit_spread: "Apertura", edit_range: "Alcance (m)", edit_thickness: "Grosor", edit_route_mode: "Modo de Ruta", modal_save: "Guardar", modal_rename_title: "✏️ Renombrar Carpeta", modal_rename_btn: "Renombrar", offgrid_title: "📡 Sync Off-Grid", offgrid_desc: "Comparte el mapa o envía coordenadas a tus compañeros cuando <b>no hay cobertura de internet</b>.", offgrid_btn_share: "📲 Enviar Mapa por Bluetooth", offgrid_lbl_export: "Exportar a Radio / SMS (Solo Marcadores):", offgrid_btn_copy: "Copiar", offgrid_lbl_import: "Recibir código Táctico:", offgrid_ph_import: "Pega el código AM:...", offgrid_btn_load: "Cargar", manual_title: "📖 Manual de Usuario", manual_understood: "Entendido", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Bando Rojo", edit_fact_blue: "🔵 Bando Azul", edit_fact_org: "⚙️ Organización", edit_fact_neu: "⚪ Neutral / Civil", edit_group_ph: "Ej: Escuadra Alfa", edit_notes_ph: "Instrucciones, detalles, información táctica...", opt_purple: "Morado", opt_dark: "Oscuro", opt_white: "Blanco", icon_dot: "🔴 Punto normal", icon_base: "⛺ Base / Campamento", icon_target: "🎯 Objetivo", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combate", icon_defend: "🛡️ Defensa", icon_heli: "🚁 Extracción", icon_medic: "🏥 Médico", icon_radio: "📡 Comunicaciones", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️ A pie", route_drive: "🚗 En coche", route_bike: "🚲 En bici", btn_undo: "↩️ Deshacer", btn_finish: "✅ Finalizar", btn_cancel_action: "✕ Cancelar", nav_target: "Destino", btn_stop_nav: "✕ Detener",
+                edit_recon_photo: "📸 Foto Reconocimiento", edit_recon_ph: "URL o subir...", edit_recon_upload: "📷 Cargar",
+                update_title: "🚀 Nueva versión disponible", update_desc: "⚠️ Tras pulsar actualizar, cierra la app por completo y vuelve a entrar.", update_btn: "Actualizar", offline_banner: "⚠️ Estás en modo sin conexión", edit_recon_photo: "📸 Foto Reconocimiento", edit_recon_ph: "URL o subir...", edit_recon_upload: "📷 Cargar",
+                manual_p1: "<b>📍 Marcadores, Áreas y Notas:</b> Usa las herramientas de edición para añadir puntos, rutas o zonas. Si tocas un elemento ya creado en el mapa, pulsa <b>\"✏️ Editar\"</b> para cambiar su color, bando, añadir un radio de acción, un cono de visión direccional, o escribir <b>Notas y Comentarios</b> tácticos que todos podrán leer.",
+                manual_p2: "<b>📐 Regla Rápida:</b> Herramienta para medir distancias al vuelo. Haz clics en el mapa para trazar una línea temporal y ver la distancia exacta paso a paso sin ensuciar tu proyecto.",
+                manual_p3: "<b>🗺️ Ruta Inteligente:</b> Al seleccionar esta herramienta, el mapa calculará automáticamente el camino por calles o pistas forestales. Generará una gráfica de desnivel y el tiempo estimado a pie o en vehículo.",
+                manual_p4: "<b>🎯 GPS y Brújula:</b> Pulsa la antena (📡) para abrir el panel de Operaciones y activar tu GPS. Un círculo mostrará tu posición en vivo, y una flecha proyectará tu rumbo físico real basándose en hacia dónde apuntas el móvil.",
+                manual_p5: "<b>📡 Salas de Operaciones (Live):</b> Crea una sala privada con contraseña. Tú y tu equipo os veréis en el mapa en tiempo real. Usa los <b>Comandos Rápidos</b> (⚠️ Enemigo, ✋ ¡BAJA!) para hacer parpadear tu posición con una alerta o marcarte como eliminado (gris con calavera). Usa el botón <b>\"🔄 Compartir Mapa\"</b> para enviar al instante todos tus dibujos a las pantallas del resto de la escuadra.",
+                manual_p6: "<b>🌍 Mapas Offline:</b> ¿Voy a una zona sin cobertura? En la pestaña \"Mezclador\", pulsa <b>\"🔲 Marcar Zona\"</b>, dibuja un recuadro y el mapa se guardará directamente en la memoria caché de tu dispositivo para funcionar sin internet.",
+                manual_p7: "<b>📡 Sync Off-Grid:</b> Si no tienes internet pero quieres pasarle tu mapa al compañero, ve a Gestión de Proyecto y usa <b>\"Compartir Off-Grid\"</b>. Podrás enviar el proyecto completo por Bluetooth, o generar un \"código de texto táctico\" súper ligero para copiar y pegar por SMS o redes de radio como Meshtastic.",
+                manual_p8: "<b>🖨️ Advanced Printing:</b> Use the \"Advanced Print Mode\" button to turn the map into a dynamic viewfinder. Move the paper freely, drag the legend, and export an exact topographic PDF (A4/A3). You can also save quick screenshots in the \"Capture Gallery\".",
+                manual_p9: "<b>🔍 Coordenadas y Cuadrícula:</b> El buscador admite nombres de lugares o coordenadas exactas. En el menú \"Sistema\", puedes activar la cuadrícula en formato Decimal, DMS, UTM o Táctica Alfanumérica (Ej: Cuadrante A1).",
+                manual_p10: "<b>🎯 Navegación Táctica (Ir a):</b> Al tocar cualquier marcador, pulsa el botón \"🎯 Ir\". Se mostrará un panel superior con la distancia restante y una flecha que girará con tu móvil para guiarte en línea recta al objetivo (requiere GPS activo).",
+                manual_p11: "<b>👥 Lista de Escuadra:</b> Dentro de la Sala de Operaciones, verás una lista en tiempo real de tus compañeros conectados, indicando su rol y si están activos o marcados como baja. Si un compañero pierde la conexión, su icono se atenuará y aparecerá un contador (⏳) mostrando el tiempo que lleva sin señal.",
+                manual_p12: "<b>👁️ Visor AR (Realidad Aumentada):</b> (Requiere GPS activo) Activa la cámara desde el menú de Operaciones para ver marcadores del mapa y compañeros superpuestos en el entorno real flotando según tu orientación y distancia.",
+                manual_p13: "<b>📸 Inteligencia y Reconocimiento:</b> En la ventana de <b>\"✏️ Editar\"</b> de cualquier marcador, puedes añadir la URL de una imagen o tomar/subir una foto directamente. La imagen se comprimirá y se mostrará al tocar el marcador para que el equipo pueda visualizar el objetivo.",
+                manual_p14: "<b>🌬️ Clima Táctico:</b> En el menú de \"Información MTN\", pulsa en \"Reporte Meteorológico\" para obtener en tiempo real la temperatura, velocidad/dirección del viento y horas de alba/ocaso de la zona que estás visualizando.",
+                manual_p15: "<b>🗺️ Solapar Mapa de Campo:</b> En la pestaña \"Edición de Mapa\", usa esta herramienta para subir una imagen de tu campo de airsoft. Aparecerá en el mapa con marcadores dorados que puedes arrastrar para ajustar tamaño y posición. Desde \"✏️ Editar\" puedes modificar su transparencia para cuadrarlo con el satélite.",
+                manual_p16: "<b>🖍️ Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones.",
+                manual_p17: "<b>🕒 Historial de Salas:</b> Al entrar o crear una sala, se guardará automáticamente en un desplegable para que puedas volver a entrar rápidamente sin tener que escribir de nuevo la contraseña.",
+                manual_p18: "<b>🌍 Mapas Globales (NUEVO):</b> Utiliza el Gestor de Capas para seleccionar mapas mundiales como el Satélite ESRI o OpenTopoMap si juegas fuera de España."
+            },
+            en: {
+                manual_btn: "📖 User Manual", search_title: "🔍 Search", search_placeholder: "City or coordinates...", search_go: "Go",
+                proj_menu: "📁 Project Management", mtn_menu: "🗺️ MTN Info", mixer_menu: "🌍 Map Mixer", grid_menu: "📍 System & Grid",
+                edit_menu: "✏️ Map Editing", layer_menu: "🗂️ Layer Manager", gallery_menu: "📸 Screenshots", about_menu: "ℹ️ About App",
+                delete_btn: "🗑️ Delete Single", login_btn: "Save account", logout_btn: "Log out", new_proj: "📄 New", rename_proj: "✏️ Rename",
+                cloud_save: "☁️ Save Cloud", cloud_load: "☁️ Load Cloud", local_save: "💾 Save Local", local_load: "📂 Load Local",
+                live_title: "Operations & GPS", live_gps: "🎯 Enable GPS Tracking", live_ar: "👁️ AR Viewer", live_menu: "📡 Operations Room",
+                import_export_lbl: "Import / Export (KML/GPX)", export_kml_btn: "⬇️ Export KML", export_gpx_btn: "⬇️ Export GPX", import_file_btn: "⬆️ Import File",
+                sync_offgrid_lbl: "📡 Off-Grid Sync", share_offgrid_btn: "Share Off-Grid",
+                mtn_grid_btn: "Show MTN Grids", identifying_leaf: "Identifying leaf...", weather_btn: "🌬️ Weather Report",
+                base_layer_lbl: "Base Layer (Background)", overlay_layer_lbl: "Overlay Layer", overlay_opacity_lbl: "Overlay Opacity",
+                offline_mode_lbl: "Offline Mode", offline_current_btn: "⬇️ Current View", offline_zone_btn: "🔲 Mark Zone",
+                tools_3d_lbl: "In-App 3D Tools", drone_3d_btn: "🛰️ 3D Recon Drone",
+                thickness_lbl: "Thickness", color_lbl: "Color", lock_zoom_btn: "🔓 Lock Zoom", grid_toggle_btn: "Enable Grid", scale_toggle_btn: "Show Scale", numscale_toggle_btn: "Hide Numeric",
+                line_thickness_lbl: "Line Thickness", line_color_lbl: "Line Color", marker_color_lbl: "Marker Color", compass_style_lbl: "Compass Style", dynamic_lbl: "🔄 Dynamic",
+                marker_tool: "📍 Marker", path_tool: "📏 Manual Route", ruler_tool: "📐 Quick Ruler", smart_route_tool: "🗺️ Smart Route", field_map_tool: "🗺️ Overlay Field Map", area_tool: "🔲 Area", compass_tool: "🧭 Compass", legend_tool: "📋 Legend",
+                take_screenshot_btn: "📸 Take Screenshot", latest_changes: "Latest changes:", room_members: "👥 Room members:",
+                opt_dd: "Decimal Degrees (DD)", opt_dms: "D. M. S. (DMS)", opt_utm: "UTM (Metric)", opt_alpha: "Alphanumeric Tactical (A1)",
+                opt_low: "Low", opt_med: "Medium", opt_high: "Thick",
+                opt_red: "Red", opt_blue: "Blue", opt_green: "Green", opt_black: "Black", opt_yellow: "Yellow",
+                opt_free_scale: "Free Scale",
+                opt_mtn: "Topographic Map (MTN Spain)", opt_pnoa: "Satellite (PNOA Spain)", opt_base: "IGN Street Map", opt_osm: "OpenStreetMap (Global)", opt_relieve: "3D Shading (Relief Spain)", opt_none: "None",
+                opt_esri: "Global Satellite (ESRI)", opt_opentopo: "Global Topo (OpenTopoMap)",
+                opt_thin: "Thin", opt_normal: "Normal", opt_thick: "Thick",
+                opt_modern: "Modern", opt_classic: "Classic", opt_military: "Military", opt_minimal: "Minimalist",
+                opt_blue_side: "🔵 Blue Faction", opt_red_side: "🔴 Red Faction", opt_green_side: "🟢 Green Faction", opt_yellow_side: "🟡 Yellow Faction", opt_pmc: "⚫ PMC / Mercenaries", opt_marine: "💀 Marine Raider bcn",
+                opt_assault: "🔫 Assault", opt_sniper: "🔭 Sniper", opt_medic: "🏥 Medic", opt_support: "🛡️ Support", opt_leader: "⭐ Leader", opt_nav: "🧭 Navigator", opt_radio: "📻 Radio Operator",
+                room_name_ph: "Room Name", room_pass_ph: "Room Password", user_alias_ph: "Your callsign (e.g. Alpha Squad)",
+                enter_room_btn: "🚪 Enter / Create Room", share_map_btn: "🔄 Share Map", delete_room_btn: "🗑️ Delete Room", chat_ph: "Message...", exit_room_btn: "🚪 Leave Room",
+                msg_enemy: "⚠️ Enemy", msg_medic: "🏥 Medic", msg_defend: "🛡️ Defending", msg_move: "🏃 Moving", msg_down: "💀 I'M DOWN",
+                modal_name_title: "Name item", modal_cancel: "Cancel", modal_accept: "Accept", modal_alert_title: "Notification", modal_cloud_title: "☁️ My Projects", modal_close: "Close", modal_drone_title: "🛰️ 3D TACTICAL DRONE SIGNAL", modal_drone_close: "✕ Disconnect", modal_ar_close: "✕ Close AR", modal_confirm_title: "⚠️ Confirmation", modal_confirm: "Confirm", edit_title: "✏️ Edit Item", edit_name: "Name", edit_faction: "Faction", edit_group: "Group", edit_notes: "📝 Notes / Comments", edit_color: "Color", edit_icon: "Military Icon", edit_show_name: "Show name", edit_radius: "⭕ Action Radius (m)", edit_show_cone: "🔦 Show Cone", edit_cone_color: "Color", edit_orientation: "Orientation", edit_spread: "Spread", edit_range: "Range (m)", edit_thickness: "Thickness", edit_route_mode: "Route Mode", modal_save: "Save", modal_rename_title: "✏️ Rename Folder", modal_rename_btn: "Rename", offgrid_title: "📡 Off-Grid Sync", offgrid_desc: "Share the map or send coordinates to your teammates when <b>there is no internet coverage</b>.", offgrid_btn_share: "📲 Send Map via Bluetooth", offgrid_lbl_export: "Export to Radio / SMS (Markers Only):", offgrid_btn_copy: "Copy", offgrid_lbl_import: "Receive Tactical code:", offgrid_ph_import: "Paste AM: code...", offgrid_btn_load: "Load", manual_title: "📖 User Manual", manual_understood: "Understood", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Red Faction", edit_fact_blue: "🔵 Blue Faction", edit_fact_org: "⚙️ Organization", edit_fact_neu: "⚪ Neutral / Civilian", edit_group_ph: "Ex: Alpha Squad", edit_notes_ph: "Instructions, details, tactical info...", opt_purple: "Purple", opt_dark: "Dark", opt_white: "White", icon_dot: "🔴 Normal dot", icon_base: "⛺ Base / Camp", icon_target: "🎯 Target", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defense", icon_heli: "🚁 Extraction", icon_medic: "🏥 Medic", icon_radio: "📡 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️ On foot", route_drive: "🚗 By car", route_bike: "🚲 By bike", btn_undo: "↩️ Undo", btn_finish: "✅ Finish", btn_cancel_action: "✕ Cancel", nav_target: "Destination", btn_stop_nav: "✕ Stop",
+                edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+                update_title: "🚀 New version available", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+                update_title: "🚀 New version available (v2.01)", update_desc: "⚠️ After updating, please close the app completely and open it again.", update_btn: "Update", offline_banner: "⚠️ You are offline", edit_recon_photo: "📸 Recon Photo", edit_recon_ph: "URL or upload...", edit_recon_upload: "📷 Upload",
+                manual_p1: "<b>📍 Markers, Areas and Notes:</b> Use editing tools to add points, routes, or zones. If you tap an existing element, press <b>\"✏️ Edit\"</b> to change its color, faction, add an action radius, a directional vision cone, or write tactical <b>Notes and Comments</b> that everyone can read.",
+                manual_p2: "<b>📐 Quick Ruler:</b> Tool to measure distances on the fly. Click on the map to draw a temporary line and see the exact distance step by step without cluttering your project.",
+                manual_p3: "<b>🗺️ Smart Route:</b> By selecting this tool, the map will automatically calculate the path through streets or forest trails. It will generate an elevation graph and the estimated time on foot or in a vehicle.",
+                manual_p4: "<b>🎯 GPS and Compass:</b> Tap the antenna (📡) to open the Operations panel and activate your GPS. A circle will show your live position, and an arrow will project your physical heading based on where you point the phone.",
+                manual_p5: "<b>📡 Operations Rooms (Live):</b> Create a private room with a password. You and your team will see each other on the map in real-time. Use <b>Quick Commands</b> (⚠️ Enemy, ✋ I'm DOWN!) to flash your position with an alert or mark yourself as eliminated (grey with skull). Use the <b>\"🔄 Share Map\"</b> button to instantly send all your drawings to the rest of the squad's screens.",
+                manual_p6: "<b>🌍 Offline Maps:</b> Going to an area with no coverage? In the \"Mixer\" tab, tap <b>\"🔲 Mark Zone\"</b>, draw a rectangle and the map will be saved directly into your device's cache to work without internet.",
+                manual_p7: "<b>📡 Off-Grid Sync:</b> If you don't have internet but want to pass your map to a teammate, go to Project Management and use <b>\"Share Off-Grid\"</b>. You can send the entire project via Bluetooth, or generate a super light \"tactical text code\" to copy and paste via SMS or radio networks like Meshtastic.",
+                manual_p8: "<b>🖨️ Advanced Printing:</b> Use the \"Advanced Print Mode\" button to turn the map into a dynamic viewfinder. Move the paper freely, drag the legend, and export an exact topographic PDF (A4/A3). You can also save quick screenshots in the \"Capture Gallery\".",
+                manual_p9: "<b>🔍 Coordinates and Grid:</b> The search engine accepts place names or exact coordinates. In the \"System\" menu, you can activate the grid in Decimal, DMS, UTM, or Alphanumeric Tactical format (Ex: Quadrant A1).",
+                manual_p10: "<b>🎯 Tactical Navigation (Go to):</b> By tapping any marker, press the \"🎯 Go\" button. A top panel will show the remaining distance and an arrow that will rotate with your phone to guide you in a straight line to the target (requires active GPS).",
+                manual_p11: "<b>👥 Squad List:</b> Inside the Operations Room, you will see a real-time list of your connected teammates, indicating their role and if they are active or marked as down. If a teammate loses connection, their icon will dim and a counter (⏳) will appear showing the time without signal.",
+                manual_p12: "<b>👁️ AR Viewer (Augmented Reality):</b> (Requires active GPS) Activate the camera from the Operations menu to see map markers and overlaid teammates in the real environment floating according to your orientation and distance.",
+                manual_p13: "<b>📸 Intelligence & Reconnaissance:</b> In the <b>\"✏️ Edit\"</b> window of any marker, you can add an image URL or take/upload a photo directly. The image will be compressed and displayed when tapping the marker so the team can visualize the target.",
+                manual_p14: "<b>🌬️ Tactical Weather:</b> In the \"MTN Info\" menu, tap \"Weather Report\" to get real-time temperature, wind speed/direction, and sunrise/sunset times for the area you are viewing.",
+                manual_p15: "<b>🗺️ Overlay Field Map:</b> In the \"Map Editing\" tab, use this tool to upload an image of your airsoft field map. It will appear on the map with golden markers at the corners that you can drag to adjust its size and position. From \"✏️ Edit\" you can change its opacity to match the satellite view.",
+                manual_p16: "<b>🖍️ Tactical Whiteboard (Live):</b> Draw freely on the map from the Edit menu. Your strokes are sent in real time to the Operations Room.",
+                manual_p17: "<b>🕒 Recent Rooms History:</b> When you join or create a room, it will be automatically saved in a dropdown menu so you can rejoin quickly without retyping the password."
+            },
+            ca: {
+                manual_btn: "📖 Manual d'Usuari", search_title: "🔍 Cercador", search_placeholder: "Ciutat o coordenades...", search_go: "Anar",
+                proj_menu: "📁 Gestió de Projecte", mtn_menu: "🗺️ Informació MTN", mixer_menu: "🌍 Mesclador de Mapes", grid_menu: "📍 Sistema i Quadrícula",
+                edit_menu: "✏️ Edició de Mapa", layer_menu: "🗂️ Gestor de Capes", gallery_menu: "📸 Galeria de Captures", about_menu: "ℹ️ Sobre l'App",
+                delete_btn: "🗑️ Esborrar Individual", login_btn: "Desar compte", logout_btn: "Tancar sessió", new_proj: "📄 Nou", rename_proj: "✏️ Reanomenar",
+                cloud_save: "☁️ Desar Núvol", cloud_load: "☁️ Carregar Núvol", local_save: "💾 Desar Local", local_load: "📂 Carregar Local",
+                live_title: "Operacions i GPS", live_gps: "🎯 Activar Seguiment GPS", live_ar: "👁️ Visor AR", live_menu: "📡 Sala d'Operacions",
+                import_export_lbl: "Importar / Exportar (KML/GPX)", export_kml_btn: "⬇️ Exportar KML", export_gpx_btn: "⬇️ Exportar GPX", import_file_btn: "⬆️ Importar Fitxer",
+                sync_offgrid_lbl: "📡 Sincronització Sense Internet", share_offgrid_btn: "Compartir Off-Grid",
+                mtn_grid_btn: "Veure Quadrícules MTN", identifying_leaf: "Identificant fulla...", weather_btn: "🌬️ Report Meteorològic",
+                base_layer_lbl: "Capa Principal (Fons)", overlay_layer_lbl: "Capa Secundària", overlay_opacity_lbl: "Opacitat Secundària",
+                offline_mode_lbl: "Mode Offline", offline_current_btn: "⬇️ Visió Actual", offline_zone_btn: "🔲 Marcar Zona",
+                tools_3d_lbl: "Eines 3D In-App", drone_3d_btn: "🛰️ Dron de Reconeixement 3D",
+                thickness_lbl: "Gruix", color_lbl: "Color", lock_zoom_btn: "🔓 Bloquejar Zoom", grid_toggle_btn: "Activar Quadrícula", scale_toggle_btn: "Mostrar Escala", numscale_toggle_btn: "Ocultar Numèrica",
+                line_thickness_lbl: "Gruix Línia", line_color_lbl: "Color Línia", marker_color_lbl: "Color Marcador", compass_style_lbl: "Estil Brúixola", dynamic_lbl: "🔄 Dinàmica",
+                marker_tool: "📍 Marcador", path_tool: "📏 Ruta Manual", ruler_tool: "📐 Regle Ràpid", smart_route_tool: "🗺️ Ruta Intel·ligent", field_map_tool: "🗺️ Solapar Mapa Camp", area_tool: "🔲 Àrea", compass_tool: "🧭 Brúixola", legend_tool: "📋 Llegenda",
+                take_screenshot_btn: "📸 Fer Captura", latest_changes: "Últims canvis:", room_members: "👥 Membres a la sala:",
+                opt_dd: "Graus Decimals (DD)", opt_dms: "G. M. S. (DMS)", opt_utm: "UTM (Mètric)", opt_alpha: "Tàctica Alfanumèrica (A1)",
+                opt_low: "Baixa", opt_med: "Mitjana", opt_high: "Gruixuda",
+                opt_red: "Vermell", opt_blue: "Blau", opt_green: "Verd", opt_black: "Negre", opt_yellow: "Groc",
+                opt_free_scale: "Escala Lliure",
+                opt_mtn: "Mapa Topogràfic (MTN Espanya)", opt_pnoa: "Satèl·lit (PNOA Espanya)", opt_base: "Llista de Carrers IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Ombrejat 3D (Relleu Espanya)", opt_none: "Cap (Sense capa)",
+                opt_esri: "Satèl·lit Global (ESRI)", opt_opentopo: "Topogràfic Global (OpenTopoMap)",
+                opt_thin: "Fina", opt_normal: "Normal", opt_thick: "Gruixuda",
+                opt_modern: "Moderna", opt_classic: "Clàssica", opt_military: "Militar", opt_minimal: "Minimalista",
+                opt_blue_side: "🔵 Bàndol Blau", opt_red_side: "🔴 Bàndol Vermell", opt_green_side: "🟢 Bàndol Verd", opt_yellow_side: "🟡 Bàndol Groc", opt_pmc: "⚫ PMC / Mercenaris", opt_marine: "💀 Marine Raider bcn",
+                opt_assault: "🔫 Assalt", opt_sniper: "🔭 Franctirador", opt_medic: "🏥 Metge", opt_support: "🛡️ Suport", opt_leader: "⭐ Líder", opt_nav: "🧭 Navegant", opt_radio: "📻 Operador de Ràdio",
+                room_name_ph: "Nom de la Sala", room_pass_ph: "Contrasenya de la Sala", user_alias_ph: "El teu indicatiu (Ex. Esquadra Alfa)",
+                enter_room_btn: "🚪 Entrar / Crear Sala", share_map_btn: "🔄 Compartir Mapa", delete_room_btn: "🗑️ Eliminar Sala", chat_ph: "Missatge...", exit_room_btn: "🚪 Sortir de la Sala",
+                msg_enemy: "⚠️ Enemic", msg_medic: "🏥 Metge", msg_defend: "🛡️ Defensa", msg_move: "🏃 Avançant", msg_down: "💀 ESTIC ELIMINAT",
+                modal_name_title: "Anomenar element", modal_cancel: "Cancel·lar", modal_accept: "Acceptar", modal_alert_title: "Notificació", modal_cloud_title: "☁️ Els meus projectes", modal_close: "Tancar", modal_drone_title: "🛰️ SENYAL DE DRON TÀCTIC 3D", modal_drone_close: "✕ Desconnectar", modal_ar_close: "✕ Tancar AR", modal_confirm_title: "⚠️ Confirmació", modal_confirm: "Confirmar", edit_title: "✏️ Editar Element", edit_name: "Nom", edit_faction: "Bàndol", edit_group: "Grup", edit_notes: "📝 Notes / Comentaris", edit_color: "Color", edit_icon: "Icona Militar", edit_show_name: "Mostrar nom", edit_radius: "⭕ Radi d'Acció (m)", edit_show_cone: "🔦 Mostrar Con", edit_cone_color: "Color", edit_orientation: "Orientació", edit_spread: "Obertura", edit_range: "Abast (m)", edit_thickness: "Gruix", edit_route_mode: "Mode de Ruta", modal_save: "Desar", modal_rename_title: "✏️ Reanomenar Carpeta", modal_rename_btn: "Reanomenar", offgrid_title: "📡 Sync Off-Grid", offgrid_desc: "Comparteix el mapa o envia coordenades als teus companys quan <b>no hi ha cobertura d'internet</b>.", offgrid_btn_share: "📲 Enviar Mapa per Bluetooth", offgrid_lbl_export: "Exportar a Ràdio / SMS (Només Marcadors):", offgrid_btn_copy: "Copiar", offgrid_lbl_import: "Rebre codi Tàctic:", offgrid_ph_import: "Enganxa el codi AM:...", offgrid_btn_load: "Carregar", manual_title: "📖 Manual d'Usuari", manual_understood: "Entès", edit_fact_gen: "🏳️ General", edit_fact_red: "🔴 Bàndol Vermell", edit_fact_blue: "🔵 Bàndol Blau", edit_fact_org: "⚙️ Organització", edit_fact_neu: "⚪ Neutral / Civil", edit_group_ph: "Ex: Esquadra Alfa", edit_notes_ph: "Instruccions, detalls, informació tàctica...", opt_purple: "Morat", opt_dark: "Fosc", opt_white: "Blanc", icon_dot: "🔴 Punt normal", icon_base: "⛺ Base / Campament", icon_target: "🎯 Objectiu", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Defensa", icon_heli: "🚁 Extracció", icon_medic: "🏥 Metge", icon_radio: "📡 Comunicacions", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️ A peu", route_drive: "🚗 En cotxe", route_bike: "🚲 En bici", btn_undo: "↩️ Desfer", btn_finish: "✅ Finalitzar", btn_cancel_action: "✕ Cancel·lar", nav_target: "Destí", btn_stop_nav: "✕ Detenir",
+                edit_recon_photo: "📸 Foto Reconeixement", edit_recon_ph: "URL o pujar...", edit_recon_upload: "📷 Carregar",
+                update_title: "🚀 Nova versió disponible", update_desc: "⚠️ Després d'actualitzar, tanca l'aplicació completament i torna-hi a entrar.", update_btn: "Actualitzar", offline_banner: "⚠️ Estàs en mode sense connexió", edit_recon_photo: "📸 Foto Reconeixement", edit_recon_ph: "URL o pujar...", edit_recon_upload: "📷 Carregar",
+                manual_p1: "<b>📍 Marcadors, Àrees i Notes:</b> Utilitza les eines d'edició per afegir punts, rutes o zones. Si toques un element ja creat al mapa, prem <b>\"✏️ Editar\"</b> per canviar el seu color, bàndol, afegir un radi d'acció, un con de visió direccional, o escriure <b>Notes i Comentaris</b> tàctics que tots podran llegir.",
+                manual_p2: "<b>📐 Regle Ràpid:</b> Eina per mesurar distàncies al vol. Fes clics al mapa per traçar una línia temporal i veure la distància exacta pas a pas sense embrutar el teu projecte.",
+                manual_p3: "<b>🗺️ Ruta Intel·ligent:</b> En seleccionar aquesta eina, el mapa calcularà automàticament el camí per carrers o pistes forestals. Generarà una gràfica de desnivell i el temps estimat a peu o en vehicle.",
+                manual_p4: "<b>🎯 GPS i Brúixola:</b> Prem l'antena (📡) per obrir el panell d'Operacions i activar el teu GPS. Un cercle mostrarà la teva posició en viu, i una fletxa projectarà el teu rumb físic real basant-se en cap a on apuntes el mòbil.",
+                manual_p5: "<b>📡 Sales d'Operacions (Live):</b> Crea una sala privada amb contrasenya. Tu i el teu equip us veureu al mapa en temps real. Utilitza els <b>Comandaments Ràpids</b> (⚠️ Enemic, ✋ ESTIC ELIMINAT!) per fer parpellejar la teva posició amb una alerta o marcar-te com a eliminat (gris amb calavera). Utilitza el botó <b>\"🔄 Compartir Mapa\"</b> per enviar a l'instant tots els teus dibuixos a les pantalles de la resta de l'esquadra.",
+                manual_p6: "<b>🌍 Mapes Offline:</b> Vaig a una zona sense cobertura? A la pestanya \"Mesclador\", prem <b>\"🔲 Marcar Zona\"</b>, dibuixa un requadre i el mapa es desarà directament a la memòria cau del teu dispositiu per funcionar sense internet.",
+                manual_p7: "<b>📡 Sync Off-Grid:</b> Si no tens internet però vols passar-li el teu mapa al company, ves a Gestió de Projecte i utilitza <b>\"Compartir Off-Grid\"</b>. Podràs enviar el projecte complet per Bluetooth, o generar un \"codi de text tàctic\" súper lleuger per copiar i enganxar per SMS o xarxes de ràdio com Meshtastic.",
+                manual_p8: "<b>🖨️ Impressió Avançada:</b> Utilitza el botó \"Mode Impressió Avançat\" al menú per convertir el mapa en un enquadrament dinàmic. Podràs moure el paper lliurement sobre el mapa, arrossegar la llegenda i exportar un PDF topogràfic exacte (A4/A3). A més, pots desar fotos ràpides a la \"Galeria de Captures\".",
+                manual_p9: "<b>🔍 Coordenades i Quadrícula:</b> El cercador admet noms de llocs o coordenades exactes. Al menú \"Sistema\", pots activar la quadrícula en format Decimal, DMS, UTM o Tàctica Alfanumèrica (Ex: Quadrant A1).",
+                manual_p10: "<b>🎯 Navegació Tàctica (Anar a):</b> En tocar qualsevol marcador, prem el botó \"🎯 Anar\". Es mostrarà un panell superior amb la distància restant i una fletxa que girarà amb el teu mòbil per guiar-te en línia recta a l'objectiu (requereix GPS actiu).",
+                manual_p11: "<b>👥 Llista d'Esquadra:</b> Dins de la Sala d'Operacions, veuràs una llista en temps real dels teus companys connectats, indicant el seu rol i si estan actius o marcats com a baixa. Si un company perd la connexió, la seva icona s'atenuarà i apareixerà un comptador (⏳) mostrant el temps que porta sense senyal.",
+                manual_p12: "<b>👁️ Visor AR (Realitat Augmentada):</b> (Requereix GPS actiu) Activa la càmera des del menú d'Operacions per veure marcadors del mapa i companys superposats en l'entorn real surant segons la teva orientació i distància.",
+                manual_p13: "<b>📸 Intel·ligència i Reconeixement:</b> A la finestra de <b>\"✏️ Editar\"</b> de qualsevol marcador, pots afegir la URL d'una imatge o fer/pujar una foto directament. La imatge es comprimirà i es mostrarà en tocar el marcador perquè l'equip pugui visualitzar l'objectiu.",
+                manual_p14: "<b>🌬️ Clima Tàctic:</b> Al menú d'\"Informació MTN\", prem \"Report Meteorològic\" per obtenir en temps real la temperatura, velocitat/direcció del vent i hores d'alba/ocàs de la zona que estàs visualitzant.",
+                manual_p15: "<b>🗺️ Solapar Mapa de Camp:</b> A la pestanya \"Edició de Mapa\", utilitza aquesta eina per pujar una imatge del plànol del teu camp d'airsoft. Apareixerà al mapa amb uns marcadors daurats a les cantonades que pots arrossegar per ajustar la seva mida i posició. Des de \"✏️ Editar\" pots modificar la seva transparència per quadrar-lo amb el satèl·lit.",
+                manual_p16: "<b>🖍️ Pissarra Tàctica (En Viu):</b> Dibuixa lliurement al mapa des del menú Editar. Els teus traços s'envien en temps real a la Sala d'Operacions.",
+                manual_p17: "<b>🕒 Historial de Sales:</b> En entrar o crear una sala, es desarà automàticament en un desplegable perquè puguis tornar a entrar ràpidament sense haver d'escriure de nou la contrasenya."
+            },
+            fr: {
+                manual_btn: "📖 Manuel Utilisateur", search_title: "🔍 Recherche", search_placeholder: "Ville ou coordonnées...", search_go: "Aller",
+                proj_menu: "📁 Gestion de Projet", mtn_menu: "🗺️ Informations MTN", mixer_menu: "🎛️ Mixeur de Cartes", grid_menu: "🌐 Système et Grille",
+                edit_menu: "✍️ Édition de Carte", layer_menu: "🗂️ Gestionnaire de Couches", gallery_menu: "📸 Galerie Captures", about_menu: "ℹ️ À Propos",
+                delete_btn: "🗑️ Supprimer Individuel", login_btn: "Enregistrer compte", logout_btn: "Déconnexion", new_proj: "✨ Nouveau", rename_proj: "✏️ Renommer",
+                cloud_save: "☁️ Sauvegarde Cloud", cloud_load: "☁️ Charger Cloud", local_save: "💾 Sauvegarde Locale", local_load: "📂 Charger Local",
+                live_title: "Opérations et GPS", live_gps: "📡 Activer Suivi GPS", live_ar: "👁️ Vision AR", live_menu: "📡 Salle d'Opérations",
+                import_export_lbl: "Importer / Exporter (KML/GPX)", export_kml_btn: "⬇️ Exporter KML", export_gpx_btn: "⬇️ Exporter GPX", import_file_btn: "⬆️ Importer Fichier",
+                sync_offgrid_lbl: "📡 Sync Sans Internet", share_offgrid_btn: "Partager Off-Grid",
+                mtn_grid_btn: "Voir Grilles MTN", identifying_leaf: "Identification feuille...", weather_btn: "🌦️ Bulletin Météo",
+                base_layer_lbl: "Couche Principale", overlay_layer_lbl: "Couche Secondaire", overlay_opacity_lbl: "Opacité Secondaire",
+                offline_mode_lbl: "Mode Hors Ligne", offline_current_btn: "📥 Vue Actuelle", offline_zone_btn: "🔲 Marquer Zone",
+                tools_3d_lbl: "Outils 3D In-App", drone_3d_btn: "🚁 Drone Recon 3D",
+                modal_proj_title: "📁 Gestion de Projet", modal_mtn_title: "🗺️ Informations MTN", modal_mixer_title: "🎛️ Mixeur de Cartes", modal_grid_title: "🌐 Système et Grille", modal_live_title: "📡 Salle d'Opérations Live",
+                modal_edit_title: "✍️ Éditer Carte", modal_layer_title: "🗂️ Gest. Couches", modal_about_title: "ℹ️ À Propos", modal_gallery_title: "📸 Galerie", modal_weather_title: "🌦️ Météo Tactique", modal_recon_title: "🚁 Drone Recon 3D",
+                live_pass_ph: "Mot de passe de la salle...", live_nick_ph: "Votre Indicatif / Alias", live_join_btn: "Rejoindre Salle",
+                live_status: "Statut: Hors ligne", live_role_lbl: "Rôle/Faction:",
+                opt_low: "Basse", opt_med: "Moyenne", opt_high: "Épaisse",
+                opt_red: "Rouge", opt_blue: "Bleu", opt_green: "Vert", opt_black: "Noir", opt_yellow: "Jaune",
+                opt_free_scale: "Échelle Libre",
+                opt_mtn: "Carte Topographique (MTN Esp)", opt_pnoa: "Satellite (PNOA Esp)", opt_base: "Rues IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Ombrage 3D (Relief Esp)", opt_none: "Aucune",
+                opt_esri: "Satellite Global (ESRI)", opt_opentopo: "Topo Global (OpenTopoMap)",
+                opt_thin: "Fine", opt_normal: "Normale", opt_thick: "Épaisse",
+                opt_modern: "Moderne", opt_classic: "Classique", opt_military: "Militaire", opt_minimal: "Minimaliste",
+                opt_blue_side: "🔵 Faction Bleue", opt_red_side: "🔴 Faction Rouge", opt_green_side: "🟢 Faction Verte", opt_yellow_side: "🟡 Faction Jaune", opt_pmc: "⚫ PMC / Mercenaires", opt_marine: "💀 Marine Raider bcn",
+                offgrid_title: "📡 Partage Off-Grid", offgrid_desc: "Utilisez ces options pour envoyer la carte ou les coordonnées à vos coéquipiers quand <b>il n'y a pas d'internet</b>.", offgrid_btn_share: "📱 Envoyer Carte par Bluetooth", offgrid_lbl_export: "Exporter Radio / SMS:", offgrid_btn_copy: "Copier", offgrid_lbl_import: "Recevoir code Tactique:", offgrid_ph_import: "Collez le code AM:...", offgrid_btn_load: "Charger",
+                manual_title: "📖 Manuel Utilisateur", manual_understood: "Compris", edit_fact_gen: "🏳️ Général", edit_fact_red: "🔴 Faction Rouge", edit_fact_blue: "🔵 Faction Bleue", edit_fact_org: "⭐ Organisation", edit_fact_neu: "⚪ Neutre / Civil", edit_group_ph: "Ex: Escouade Alpha", edit_notes_ph: "Instructions, détails tactiques...", opt_purple: "Violet", opt_dark: "Sombre", opt_white: "Blanc", icon_dot: "📍 Point normal", icon_base: "⛺ Base / Camp", icon_target: "🎯 Objectif", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combat", icon_defend: "🛡️ Défense", icon_heli: "🚁 Extraction", icon_medic: "➕ Médecin", icon_radio: "📻 Comms", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️🏃‍♂️ À pied", route_drive: "🚙 En voiture", route_bike: "🚲 À vélo", btn_undo: "↩️ Annuler", btn_finish: "✅ Terminer", btn_cancel_action: "❌ Annuler", nav_target: "Dest", btn_stop_nav: "⏹ Arrêter",
+                edit_recon_photo: "📸 Photo Recon", edit_recon_ph: "URL ou uploader...", edit_recon_upload: "⬆️ Uploader",
+                update_title: "🔄 Nouvelle version dispo", update_desc: "Après MAJ, fermez l'app complètement et relancez.", update_btn: "Mettre à jour", offline_banner: "📡 Vous êtes hors ligne",
+                manual_p1: "<b>✍️ Marqueurs et Notes:</b> Utilisez l'édition pour ajouter des points, routes ou zones. Appuyez sur <b>\"✍️ Éditer\"</b> pour changer couleur, faction, ou écrire des notes tactiques.",
+                manual_p2: "<b>📏 Règle Rapide:</b> Mesurez les distances. Cliquez sur la carte pour tracer une ligne et voir la distance exacte.",
+                manual_p3: "<b>🗺️ Route Intelligente:</b> Calcule automatiquement le chemin, avec profil d'élévation et temps estimé.",
+                manual_p4: "<b>🎯 GPS et Boussole:</b> Activez votre GPS (📡). Un cercle affiche votre position, une flèche indique votre cap.",
+                manual_p5: "<b>📡 Salles Live:</b> Créez une salle privée. Voyez votre équipe en temps réel. Utilisez <b>\"🔄 Partager Carte\"</b> pour envoyer vos dessins.",
+                manual_p6: "<b>🌍 Cartes Offline:</b> Sauvegardez une zone dans le cache de votre appareil pour jouer sans internet.",
+                manual_p7: "<b>📡 Sync Off-Grid:</b> Partagez le projet entier via Bluetooth ou un code tactique par SMS/radio.",
+                manual_p8: "<b>🖨️ Impression Avancée:</b> Utilisez le \"Mode Impression\" pour convertir la carte en viseur dynamique et exporter un PDF topographique (A4/A3).",
+                manual_p9: "<b>🔍 Coordonnées/Grille:</b> Cherchez par lieu ou coordonnées. Activez la grille UTM ou Tactique.",
+                manual_p10: "<b>🎯 Nav Tactique:</b> Touchez un marqueur puis \"🎯 Aller\" pour un guidage en ligne droite.",
+                manual_p11: "<b>👥 Liste d'Escouade:</b> Voyez les statuts de vos coéquipiers en temps réel.",
+                manual_p12: "<b>👁️ Visuel AR:</b> Superposez les marqueurs et alliés sur la réalité via la caméra (GPS requis).",
+                manual_p13: "<b>📸 Reconnaissance:</b> Ajoutez des photos aux marqueurs pour visualiser les cibles.",
+                manual_p14: "<b>🌦️ Météo Tactique:</b> Obtenez vent, température et heures lever/coucher du soleil.",
+                manual_p15: "<b>🗺️ Superposer Carte:</b> Uploadez l'image de votre terrain et ajustez-la sur le satellite.",
+                manual_p16: "<b>✍️ Tableau Tactique Live:</b> Dessinez librement, partagé en temps réel.",
+                manual_p17: "<b>🕒 Historique Salles:</b> Sauvegarde automatique de vos salles pour reconnexion rapide."
+            },
+            pt: {
+                manual_btn: "📖 Manual de Usuário", search_title: "🔍 Busca", search_placeholder: "Cidade ou coordenadas...", search_go: "Ir",
+                proj_menu: "📁 Gestão de Projeto", mtn_menu: "🗺️ Info MTN", mixer_menu: "🎛️ Mixer de Mapas", grid_menu: "🌐 Sistema e Grade",
+                edit_menu: "✍️ Edição de Mapa", layer_menu: "🗂️ Gestor de Camadas", gallery_menu: "📸 Galeria Capturas", about_menu: "ℹ️ Sobre",
+                delete_btn: "🗑️ Apagar Individual", login_btn: "Salvar conta", logout_btn: "Sair", new_proj: "✨ Novo", rename_proj: "✏️ Renomear",
+                cloud_save: "☁️ Salvar Cloud", cloud_load: "☁️ Carregar Cloud", local_save: "💾 Salvar Local", local_load: "📂 Carregar Local",
+                live_title: "Operações e GPS", live_gps: "📡 Ativar GPS", live_ar: "👁️ Visor AR", live_menu: "📡 Sala de Operações",
+                import_export_lbl: "Importar / Exportar (KML/GPX)", export_kml_btn: "⬇️ Exportar KML", export_gpx_btn: "⬇️ Exportar GPX", import_file_btn: "⬆️ Importar Arquivo",
+                sync_offgrid_lbl: "📡 Sincronização Off-Grid", share_offgrid_btn: "Compartilhar Off-Grid",
+                mtn_grid_btn: "Ver Grades MTN", identifying_leaf: "Identificando folha...", weather_btn: "🌦️ Relatório do Clima",
+                base_layer_lbl: "Camada Principal", overlay_layer_lbl: "Camada Secundária", overlay_opacity_lbl: "Opacidade Secundária",
+                offline_mode_lbl: "Modo Offline", offline_current_btn: "📥 Visão Atual", offline_zone_btn: "🔲 Marcar Zona",
+                tools_3d_lbl: "Ferramentas 3D In-App", drone_3d_btn: "🚁 Drone Recon 3D",
+                modal_proj_title: "📁 Gestão de Projeto", modal_mtn_title: "🗺️ Info MTN", modal_mixer_title: "🎛️ Mixer de Mapas", modal_grid_title: "🌐 Sistema e Grade", modal_live_title: "📡 Sala de Operações Live",
+                modal_edit_title: "✍️ Editar Mapa", modal_layer_title: "🗂️ Gestor Camadas", modal_about_title: "ℹ️ Sobre", modal_gallery_title: "📸 Galeria", modal_weather_title: "🌦️ Clima Tático", modal_recon_title: "🚁 Drone Recon 3D",
+                live_pass_ph: "Senha da sala...", live_nick_ph: "Seu Indicativo / Alias", live_join_btn: "Entrar na Sala",
+                live_status: "Status: Offline", live_role_lbl: "Função/Facção:",
+                opt_low: "Baixa", opt_med: "Média", opt_high: "Grossa",
+                opt_red: "Vermelho", opt_blue: "Azul", opt_green: "Verde", opt_black: "Preto", opt_yellow: "Amarelo",
+                opt_free_scale: "Escala Livre",
+                opt_mtn: "Mapa Topográfico (MTN Esp)", opt_pnoa: "Satélite (PNOA Esp)", opt_base: "Ruas IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Sombreamento 3D (Relevo Esp)", opt_none: "Nenhuma",
+                opt_esri: "Satélite Global (ESRI)", opt_opentopo: "Topo Global (OpenTopoMap)",
+                opt_thin: "Fina", opt_normal: "Normal", opt_thick: "Grossa",
+                opt_modern: "Moderna", opt_classic: "Clássica", opt_military: "Militar", opt_minimal: "Minimalista",
+                opt_blue_side: "🔵 Facção Azul", opt_red_side: "🔴 Facção Vermelha", opt_green_side: "🟢 Facção Verde", opt_yellow_side: "🟡 Facção Amarela", opt_pmc: "⚫ PMC / Mercenários", opt_marine: "💀 Marine Raider bcn",
+                offgrid_title: "📡 Compartilhar Off-Grid", offgrid_desc: "Envie o projeto para sua equipe quando <b>não houver internet</b>.", offgrid_btn_share: "📱 Enviar Mapa via Bluetooth", offgrid_lbl_export: "Exportar Rádio / SMS:", offgrid_btn_copy: "Copiar", offgrid_lbl_import: "Receber código Tático:", offgrid_ph_import: "Cole o código AM:...", offgrid_btn_load: "Carregar",
+                manual_title: "📖 Manual de Usuário", manual_understood: "Entendido", edit_fact_gen: "🏳️ Geral", edit_fact_red: "🔴 Facção Vermelha", edit_fact_blue: "🔵 Facção Azul", edit_fact_org: "⭐ Organização", edit_fact_neu: "⚪ Neutro / Civil", edit_group_ph: "Ex: Esquadrão Alpha", edit_notes_ph: "Instruções, detalhes táticos...", opt_purple: "Roxo", opt_dark: "Escuro", opt_white: "Branco", icon_dot: "📍 Ponto normal", icon_base: "⛺ Base / Acampamento", icon_target: "🎯 Objetivo", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combate", icon_defend: "🛡️ Defesa", icon_heli: "🚁 Extração", icon_medic: "➕ Médico", icon_radio: "📻 Comunicação", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️🏃‍♂️ A pé", route_drive: "🚙 De carro", route_bike: "🚲 De bicicleta", btn_undo: "↩️ Desfazer", btn_finish: "✅ Finalizar", btn_cancel_action: "❌ Cancelar", nav_target: "Dest", btn_stop_nav: "⏹ Parar",
+                edit_recon_photo: "📸 Foto Recon", edit_recon_ph: "URL ou upload...", edit_recon_upload: "⬆️ Carregar",
+                update_title: "🔄 Nova versão", update_desc: "Após atualizar, feche e abra o app novamente.", update_btn: "Atualizar", offline_banner: "📡 Você está offline",
+                manual_p1: "<b>✍️ Marcadores e Notas:</b> Adicione pontos ou zonas. Clique em <b>\"✍️ Editar\"</b> para mudar cor, facção ou escrever notas táticas.",
+                manual_p2: "<b>📏 Régua Rápida:</b> Meça distâncias diretamente no mapa sem sujar o projeto.",
+                manual_p3: "<b>🗺️ Rota Inteligente:</b> Calcula caminhos e exibe o gráfico de elevação e o tempo estimado.",
+                manual_p4: "<b>🎯 GPS e Bússola:</b> Ative o GPS. Um círculo mostra sua posição e uma seta indica sua direção real.",
+                manual_p5: "<b>📡 Salas Live:</b> Crie uma sala privada para ver sua equipe. Envie seus desenhos em tempo real.",
+                manual_p6: "<b>🌍 Mapas Offline:</b> Salve zonas no cache do dispositivo para jogar sem internet.",
+                manual_p7: "<b>📡 Sync Off-Grid:</b> Compartilhe via Bluetooth ou códigos de texto por rádio.",
+                manual_p8: "<b>🖨️ Impressão Avançada:</b> Exporte PDFs topográficos a partir de um enquadramento dinâmico.",
+                manual_p9: "<b>🔍 Grade e Coordenadas:</b> Ative a grade UTM ou tática e busque locais.",
+                manual_p10: "<b>🎯 Nav Tática:</b> Pressione \"🎯 Ir\" num marcador para guia em linha reta.",
+                manual_p11: "<b>👥 Lista de Esquadrão:</b> Veja em tempo real quem está ativo ou abatido.",
+                manual_p12: "<b>👁️ Visor AR:</b> Veja os marcadores sobrepostos na câmera do celular (realidade aumentada).",
+                manual_p13: "<b>📸 Reconhecimento:</b> Adicione fotos a marcadores de objetivo.",
+                manual_p14: "<b>🌦️ Clima Tático:</b> Obtenha relatórios de clima locais instantâneos.",
+                manual_p15: "<b>🗺️ Sobrepor Mapa:</b> Envie a imagem do seu campo e alinhe-a ao mapa via satélite.",
+                manual_p16: "<b>✍️ Lousa Tática:</b> Desenhe na tela em tempo real para a sua equipe.",
+                manual_p17: "<b>🕒 Histórico de Salas:</b> O app salva as salas para rápido acesso posterior."
+            },
+            it: {
+                manual_btn: "📖 Manuale Utente", search_title: "🔍 Ricerca", search_placeholder: "Città o coordinate...", search_go: "Vai",
+                proj_menu: "📁 Gestione Progetto", mtn_menu: "🗺️ Info MTN", mixer_menu: "🎛️ Mixer Mappe", grid_menu: "🌐 Sistema e Griglia",
+                edit_menu: "✍️ Modifica Mappa", layer_menu: "🗂️ Gestore Livelli", gallery_menu: "📸 Galleria", about_menu: "ℹ️ Info",
+                delete_btn: "🗑️ Elimina Singolo", login_btn: "Salva account", logout_btn: "Esci", new_proj: "✨ Nuovo", rename_proj: "✏️ Rinomina",
+                cloud_save: "☁️ Salva Cloud", cloud_load: "☁️ Carica Cloud", local_save: "💾 Salva Locale", local_load: "📂 Carica Locale",
+                live_title: "Operazioni e GPS", live_gps: "📡 Attiva GPS", live_ar: "👁️ Visore AR", live_menu: "📡 Sala Operativa",
+                import_export_lbl: "Importa / Esporta (KML/GPX)", export_kml_btn: "⬇️ Esporta KML", export_gpx_btn: "⬇️ Esporta GPX", import_file_btn: "⬆️ Importa File",
+                sync_offgrid_lbl: "📡 Sincronizzazione Off-Grid", share_offgrid_btn: "Condividi Off-Grid",
+                mtn_grid_btn: "Vedi Griglia MTN", identifying_leaf: "Identificazione foglio...", weather_btn: "🌦️ Bollettino Meteo",
+                base_layer_lbl: "Livello Principale", overlay_layer_lbl: "Livello Secondario", overlay_opacity_lbl: "Opacità Secondaria",
+                offline_mode_lbl: "Modalità Offline", offline_current_btn: "📥 Vista Attuale", offline_zone_btn: "🔲 Marca Zona",
+                tools_3d_lbl: "Strumenti 3D In-App", drone_3d_btn: "🚁 Drone Recon 3D",
+                modal_proj_title: "📁 Gestione Progetto", modal_mtn_title: "🗺️ Info MTN", modal_mixer_title: "🎛️ Mixer Mappe", modal_grid_title: "🌐 Sistema e Griglia", modal_live_title: "📡 Sala Operativa Live",
+                modal_edit_title: "✍️ Modifica Mappa", modal_layer_title: "🗂️ Gestore Livelli", modal_about_title: "ℹ️ Informazioni", modal_gallery_title: "📸 Galleria", modal_weather_title: "🌦️ Meteo Tattico", modal_recon_title: "🚁 Drone Recon 3D",
+                live_pass_ph: "Password della stanza...", live_nick_ph: "Tuo Nominativo / Alias", live_join_btn: "Entra nella Stanza",
+                live_status: "Stato: Offline", live_role_lbl: "Ruolo/Fazione:",
+                opt_low: "Bassa", opt_med: "Media", opt_high: "Spessa",
+                opt_red: "Rosso", opt_blue: "Blu", opt_green: "Verde", opt_black: "Nero", opt_yellow: "Giallo",
+                opt_free_scale: "Scala Libera",
+                opt_mtn: "Mappa Topografica (MTN Esp)", opt_pnoa: "Satellite (PNOA Esp)", opt_base: "Strade IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "Ombreggiatura 3D (Rilievo Esp)", opt_none: "Nessuno",
+                opt_esri: "Satellite Globale (ESRI)", opt_opentopo: "Topo Globale (OpenTopoMap)",
+                opt_thin: "Fine", opt_normal: "Normale", opt_thick: "Spessa",
+                opt_modern: "Moderna", opt_classic: "Classica", opt_military: "Militare", opt_minimal: "Minimalista",
+                opt_blue_side: "🔵 Fazione Blu", opt_red_side: "🔴 Fazione Rossa", opt_green_side: "🟢 Fazione Verde", opt_yellow_side: "🟡 Fazione Gialla", opt_pmc: "⚫ PMC / Mercenari", opt_marine: "💀 Marine Raider bcn",
+                offgrid_title: "📡 Condividi Off-Grid", offgrid_desc: "Invia il progetto quando <b>non c'è internet</b>.", offgrid_btn_share: "📱 Invia Mappa via Bluetooth", offgrid_lbl_export: "Esporta Radio / SMS:", offgrid_btn_copy: "Copia", offgrid_lbl_import: "Ricevi codice Tattico:", offgrid_ph_import: "Incolla il codice AM:...", offgrid_btn_load: "Carica",
+                manual_title: "📖 Manuale Utente", manual_understood: "Capito", edit_fact_gen: "🏳️ Generale", edit_fact_red: "🔴 Fazione Rossa", edit_fact_blue: "🔵 Fazione Blu", edit_fact_org: "⭐ Organizzazione", edit_fact_neu: "⚪ Neutrale / Civile", edit_group_ph: "Es: Squadra Alpha", edit_notes_ph: "Istruzioni, dettagli tattici...", opt_purple: "Viola", opt_dark: "Scuro", opt_white: "Bianco", icon_dot: "📍 Punto normale", icon_base: "⛺ Base / Accampamento", icon_target: "🎯 Obiettivo", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Combattimento", icon_defend: "🛡️ Difesa", icon_heli: "🚁 Estrazione", icon_medic: "➕ Medico", icon_radio: "📻 Comunicazioni", icon_raider: "💀 Logo Raider", route_foot: "🚶‍♂️🏃‍♂️ A piedi", route_drive: "🚙 In auto", route_bike: "🚲 In bici", btn_undo: "↩️ Annulla", btn_finish: "✅ Termina", btn_cancel_action: "❌ Cancella", nav_target: "Dest", btn_stop_nav: "⏹ Ferma",
+                edit_recon_photo: "📸 Foto Recon", edit_recon_ph: "URL o upload...", edit_recon_upload: "⬆️ Carica",
+                update_title: "🔄 Nuova versione", update_desc: "Dopo l'aggiornamento, riavvia l'app.", update_btn: "Aggiorna", offline_banner: "📡 Sei offline",
+                manual_p1: "<b>✍️ Marcatori e Note:</b> Aggiungi punti o zone. Tocca <b>\"✍️ Modifica\"</b> per cambiare colore, fazione o inserire note tattiche.",
+                manual_p2: "<b>📏 Righello Rapido:</b> Misura distanze cliccando sulla mappa senza sporcare il progetto.",
+                manual_p3: "<b>🗺️ Percorso Intelligente:</b> Calcola percorsi con profilo altimetrico e tempo stimato.",
+                manual_p4: "<b>🎯 GPS e Bussola:</b> Attiva il GPS. Un cerchio mostra la posizione e una freccia l'orientamento.",
+                manual_p5: "<b>📡 Sale Live:</b> Crea una sala privata. Condividi disegni in tempo reale con la squadra.",
+                manual_p6: "<b>🌍 Mappe Offline:</b> Salva zone per giocare senza connessione internet.",
+                manual_p7: "<b>📡 Sync Off-Grid:</b> Condividi tramite Bluetooth o codice tattico.",
+                manual_p8: "<b>🖨️ Stampa Avanzata:</b> Esporta PDF topografici in formato A4/A3.",
+                manual_p9: "<b>🔍 Griglia e Coordinate:</b> Cerca luoghi e attiva la griglia UTM.",
+                manual_p10: "<b>🎯 Navigazione Tattica:</b> Usa \"🎯 Vai\" per la guida in linea d'aria verso un punto.",
+                manual_p11: "<b>👥 Lista Squadra:</b> Controlla chi è attivo e chi è stato colpito in tempo reale.",
+                manual_p12: "<b>👁️ Visore AR:</b> Vedi i marcatori sovrapposti tramite la fotocamera.",
+                manual_p13: "<b>📸 Ricognizione:</b> Aggiungi foto ai marcatori per visualizzare l'obiettivo.",
+                manual_p14: "<b>🌦️ Meteo Tattico:</b> Controlla il vento e la temperatura della zona.",
+                manual_p15: "<b>🗺️ Sovrapponi Mappa:</b> Carica l'immagine del campo di gioco.",
+                manual_p16: "<b>✍️ Lavagna Live:</b> Disegna in tempo reale per la tua squadra.",
+                manual_p17: "<b>🕒 Cronologia Sale:</b> Salvataggio automatico delle sale per riconnessione veloce."
+            },
+            de: {
+                manual_btn: "📖 Benutzerhandbuch", search_title: "🔍 Suche", search_placeholder: "Stadt oder Koordinaten...", search_go: "Los",
+                proj_menu: "📁 Projektverwaltung", mtn_menu: "🗺️ MTN Info", mixer_menu: "🎛️ Karten-Mixer", grid_menu: "🌐 System & Gitter",
+                edit_menu: "✍️ Kartenbearbeitung", layer_menu: "🗂️ Ebenen-Manager", gallery_menu: "📸 Galerie", about_menu: "ℹ️ Über",
+                delete_btn: "🗑️ Einzeln Löschen", login_btn: "Konto speichern", logout_btn: "Abmelden", new_proj: "✨ Neu", rename_proj: "✏️ Umbenennen",
+                cloud_save: "☁️ Cloud Speichern", cloud_load: "☁️ Cloud Laden", local_save: "💾 Lokal Speichern", local_load: "📂 Lokal Laden",
+                live_title: "Operationen & GPS", live_gps: "📡 GPS Aktivieren", live_ar: "👁️ AR Viewer", live_menu: "📡 Einsatzzentrale",
+                import_export_lbl: "Import / Export (KML/GPX)", export_kml_btn: "⬇️ KML Exportieren", export_gpx_btn: "⬇️ GPX Exportieren", import_file_btn: "⬆️ Datei Importieren",
+                sync_offgrid_lbl: "📡 Off-Grid Sync", share_offgrid_btn: "Off-Grid Teilen",
+                mtn_grid_btn: "MTN Gitter", identifying_leaf: "Blatt wird identifiziert...", weather_btn: "🌦️ Wetterbericht",
+                base_layer_lbl: "Haupt-Ebene", overlay_layer_lbl: "Überlagerung", overlay_opacity_lbl: "Deckkraft",
+                offline_mode_lbl: "Offline-Modus", offline_current_btn: "📥 Aktuelle Ansicht", offline_zone_btn: "🔲 Zone Markieren",
+                tools_3d_lbl: "3D-Tools", drone_3d_btn: "🚁 3D Recon Drohne",
+                modal_proj_title: "📁 Projektverwaltung", modal_mtn_title: "🗺️ MTN Info", modal_mixer_title: "🎛️ Karten-Mixer", modal_grid_title: "🌐 System & Gitter", modal_live_title: "📡 Live Einsatzzentrale",
+                modal_edit_title: "✍️ Karte Bearbeiten", modal_layer_title: "🗂️ Ebenen", modal_about_title: "ℹ️ Über", modal_gallery_title: "📸 Galerie", modal_weather_title: "🌦️ Taktisches Wetter", modal_recon_title: "🚁 3D Drohne",
+                live_pass_ph: "Raumpasswort...", live_nick_ph: "Dein Rufzeichen", live_join_btn: "Raum Beitreten",
+                live_status: "Status: Offline", live_role_lbl: "Rolle/Fraktion:",
+                opt_low: "Niedrig", opt_med: "Mittel", opt_high: "Dick",
+                opt_red: "Rot", opt_blue: "Blau", opt_green: "Grün", opt_black: "Schwarz", opt_yellow: "Gelb",
+                opt_free_scale: "Freier Maßstab",
+                opt_mtn: "Topografische Karte (MTN Esp)", opt_pnoa: "Satellit (PNOA Esp)", opt_base: "Straßen IGN", opt_osm: "OpenStreetMap (Global)", opt_relieve: "3D Schattierung (Relief Esp)", opt_none: "Keine",
+                opt_esri: "Globaler Satellit (ESRI)", opt_opentopo: "Globale Topo (OpenTopoMap)",
+                opt_thin: "Dünn", opt_normal: "Normal", opt_thick: "Dick",
+                opt_modern: "Modern", opt_classic: "Klassisch", opt_military: "Militär", opt_minimal: "Minimalistisch",
+                opt_blue_side: "🔵 Blaue Fraktion", opt_red_side: "🔴 Rote Fraktion", opt_green_side: "🟢 Grüne Fraktion", opt_yellow_side: "🟡 Gelbe Fraktion", opt_pmc: "⚫ PMC / Söldner", opt_marine: "💀 Marine Raider bcn",
+                offgrid_title: "📡 Off-Grid Teilen", offgrid_desc: "Teile Projekte <b>ohne Internetverbindung</b>.", offgrid_btn_share: "📱 Via Bluetooth Senden", offgrid_lbl_export: "Radio / SMS Export:", offgrid_btn_copy: "Kopieren", offgrid_lbl_import: "Code Empfangen:", offgrid_ph_import: "AM Code einfügen...", offgrid_btn_load: "Laden",
+                manual_title: "📖 Benutzerhandbuch", manual_understood: "Verstanden", edit_fact_gen: "🏳️ Allgemein", edit_fact_red: "🔴 Rote Fraktion", edit_fact_blue: "🔵 Blaue Fraktion", edit_fact_org: "⭐ Organisation", edit_fact_neu: "⚪ Neutral / Zivilist", edit_group_ph: "Z.B.: Alpha Squad", edit_notes_ph: "Anweisungen, Taktik...", opt_purple: "Lila", opt_dark: "Dunkel", opt_white: "Weiß", icon_dot: "📍 Normaler Punkt", icon_base: "⛺ Basis / Camp", icon_target: "🎯 Ziel", icon_flag: "🚩 Respawn", icon_combat: "⚔️ Kampf", icon_defend: "🛡️ Verteidigung", icon_heli: "🚁 Extraktion", icon_medic: "➕ Sanitäter", icon_radio: "📻 Comms", icon_raider: "💀 Raider Logo", route_foot: "🚶‍♂️🏃‍♂️ Zu Fuß", route_drive: "🚙 Im Auto", route_bike: "🚲 Fahrrad", btn_undo: "↩️ Rückgängig", btn_finish: "✅ Fertig", btn_cancel_action: "❌ Abbrechen", nav_target: "Ziel", btn_stop_nav: "⏹ Stopp",
+                edit_recon_photo: "📸 Recon Foto", edit_recon_ph: "URL oder Upload...", edit_recon_upload: "⬆️ Hochladen",
+                update_title: "🔄 Update verfügbar", update_desc: "Bitte App neu starten.", update_btn: "Aktualisieren", offline_banner: "📡 Du bist offline",
+                manual_p1: "<b>✍️ Markierungen & Notizen:</b> Klicke auf <b>\"✍️ Bearbeiten\"</b> für Farben, Fraktionen und taktische Notizen.",
+                manual_p2: "<b>📏 Schnelles Lineal:</b> Messe Entfernungen direkt auf der Karte.",
+                manual_p3: "<b>🗺️ Smarte Route:</b> Berechnet Wege, Höhenprofil und geschätzte Zeit.",
+                manual_p4: "<b>🎯 GPS & Kompass:</b> Aktiviere GPS, um deine Live-Position und Blickrichtung zu sehen.",
+                manual_p5: "<b>📡 Live Räume:</b> Erstelle private Räume. Teile Zeichnungen mit deinem Team.",
+                manual_p6: "<b>🌍 Offline Karten:</b> Speichere Zonen im Cache für Gebiete ohne Empfang.",
+                manual_p7: "<b>📡 Off-Grid Sync:</b> Teile Daten via Bluetooth oder taktischem SMS-Code.",
+                manual_p8: "<b>🖨️ Erweiterter Druck:</b> Erstelle topografische PDFs aus dynamischen Kartenausschnitten.",
+                manual_p9: "<b>🔍 Koordinaten & Gitter:</b> UTM oder taktisches Gitter aktivieren.",
+                manual_p10: "<b>🎯 Taktische Nav:</b> Drücke \"🎯 Los\" für direkte Zielführung.",
+                manual_p11: "<b>👥 Squad Liste:</b> Sieh, wer aktiv oder markiert (getroffen) ist.",
+                manual_p12: "<b>👁️ AR Viewer:</b> Augmented Reality Ansicht via Kamera.",
+                manual_p13: "<b>📸 Aufklärung:</b> Lade Fotos von Zielen hoch.",
+                manual_p14: "<b>🌦️ Wetter:</b> Wind- und Temperaturdaten in Echtzeit.",
+                manual_p15: "<b>🗺️ Eigene Karten:</b> Lade dein Spielfeld hoch und passe es an.",
+                manual_p16: "<b>✍️ Live Taktikboard:</b> Zeichne in Echtzeit für dein Team.",
+                manual_p17: "<b>🕒 Raum-Verlauf:</b> Schnelles Beitreten zu vorherigen Räumen."
+            }
+        };
+
+        window.changeLanguage = function (lang) {
+            if (!window.translations[lang]) return;
+            localStorage.setItem('am_language', lang);
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const translation = window.translations[lang][key];
+                if (translation) { el.childNodes.length > 1 && el.querySelector('span') ? el.querySelector('span').innerHTML = translation : el.innerHTML = translation; }
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (window.translations[lang][el.getAttribute('data-i18n-placeholder')]) el.setAttribute('placeholder', window.translations[lang][el.getAttribute('data-i18n-placeholder')]); });
+            if (document.getElementById('langSelect')) document.getElementById('langSelect').value = lang;
+        };
+        window.changeLanguage(localStorage.getItem('am_language') || 'es');
+
+        // --- SISTEMA DE ACTUALIZACIONES PWA (Para APK de PWABuilder / GitHub Pages) ---
+        let newWorker;
+        window.applyAppUpdate = function () {
+            if (newWorker) {
+                newWorker.postMessage({ action: 'skipWaiting' }); // Fuerza al SW a activarse
+            }
+            document.getElementById('update-modal').style.display = 'none';
+        };
+
+        window.manualUpdateCheck = function () {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg) {
+                        reg.update().then(() => {
+                            window.customAlert("Buscando Actualización", "Se ha ordenado al dispositivo buscar una nueva versión.\n\nSi no aparece el cartel de actualizar, significa que ya tienes la última versión instalada o que tu dispositivo (iOS) tiene bloqueada la caché.\n\nEn iOS: Cierra la app por completo deslizando hacia arriba en el selector de aplicaciones y vuelve a abrirla.");
+                        }).catch(() => {
+                            window.customAlert("Aviso", "No se pudo comprobar la actualización. Revisa tu conexión a internet.");
+                        });
+                    } else {
+                        window.customAlert("Aviso", "La app está en modo local o no hay Service Worker registrado.");
+                    }
+                }).catch(e => window.customAlert("Error", "Error al comprobar el Service Worker."));
+            } else {
+                window.customAlert("Aviso", "Tu navegador no soporta actualizaciones PWA o estás ejecutando el archivo localmente.");
+            }
+        };
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+
+                    // Forzar comprobación de actualización al volver a primer plano (Ayuda especialmente a iOS)
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'visible') {
+                            reg.update();
+                        }
+                    });
+
+                    reg.addEventListener('updatefound', () => {
+                        newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            // Si hay un nuevo worker instalado y ya teníamos uno controlando la app, es una actualización
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                document.getElementById('update-modal').style.display = 'flex';
+                            }
+                        });
+                    });
+                }).catch(err => console.log('SW Registration Error:', err));
+
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) { refreshing = true; window.location.reload(); }
+                });
+            });
+        }
+
+        // --- DETECCIÓN DE CONEXIÓN A INTERNET ---
+        function updateOnlineStatus() {
+            const offlineBanner = document.getElementById('offline-banner');
+            if (navigator.onLine) {
+                offlineBanner.style.display = 'none';
+            } else {
+                offlineBanner.style.display = 'flex';
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus(); // Comprobación inicial al cargar la página
+
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('am_offline_warning_v147') !== 'true') {
+                setTimeout(() => {
+                    if (typeof window.customAlert === 'function') {
+                        window.customAlert(
+                            "⚠️ Prepárate para la partida", 
+                            "Si vas a usar AirsoftMaps en una partida de Airsoft (MilSim) o ruta por la montaña donde podrías perder la cobertura, recuerda:\n\n1. Inicia sesión con tu cuenta AHORA que tienes internet.\n2. Ve a 'Mezclador de Mapas' -> 'Modo Offline' y dibuja un recuadro para descargar tu zona de juego.\n\n¡Así tendrás el mapa por satélite 100% funcional aunque te quedes sin señal en el bosque!"
+                        );
+                        localStorage.setItem('am_offline_warning_v147', 'true');
+                    }
+                }, 1500);
+            }
+        });
+    </script>
+
+    <!-- HISTORIAL DE VERSIONES MODAL -->
+    <div id="history-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:4000;align-items:center;justify-content:center;">
+        <div style="background:white;padding:25px;border-radius:12px;width:90%;max-width:500px;max-height:85vh;overflow-y:auto;position:relative;">
+            <button onclick="document.getElementById('history-modal').style.display='none'" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;">✕</button>
+            <h2 style="margin-top:0;color:var(--ign-blue);border-bottom:2px solid #f1f5f9;padding-bottom:10px;font-size:20px;">📜 Historial de Versiones</h2>
+            <div style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
+                
+                <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.01 - 16 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>[🛠️ CORRECCIONES MENORES]:</b> Arreglado el problema visual de la barra de ruta inteligente en móviles (los botones ahora se envuelven correctamente en la pantalla sin desbordarse).</li>
+                        <li><b>[🧭 ENRUTAMIENTO MEJORADO]:</b> Actualizado el servidor interno de GPS (OSRM a FOSSGIS OSM) para que diferencie de verdad entre rutas de coche (carreteras) y rutas peatonales (senderos de bosque y campo a través).</li>
+                        <li><b>[⚙️ UX]:</b> El menú de "Edición" ya no abre todos los grupos colapsables de golpe al abrirse.</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.01 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>[🔥 REDISEÑO HUD TÁCTICO]:</b> Actualización visual masiva estilo militar con colores oscuros, efecto cristal, botones preparados para uso con guantes y tipografía técnica.</li>
+                        <li><b>[📱 NAVEGACIÓN BOTTOM BAR]:</b> Nuevo menú inferior flotante en móviles para usar el mapa con una sola mano y acceder más rápido al GPS y Capas.</li>
+                    </ul>
+
+                    <h3 style="color:#aaa;margin-bottom:5px;margin-top:15px;">v1.50 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;color:#aaa;">
+                        <li><b>[🌍 EXPANSIÓN GLOBAL]:</b> Añadidos 4 idiomas nuevos (Francés, Portugués, Italiano y Alemán).</li>
+                        <li><b>[🗺️ MAPAS MUNDIALES]:</b> Añadidas las capas Satélite Global (ESRI World Imagery) y Topográfico Global (OpenTopoMap) para campos internacionales.</li>
+                        <li><b>[✨ OPTIMIZACIÓN]:</b> El Gestor de Capas ahora está clasificado por ámbito geográfico.</li>
+                    </ul>
+
+                    <h3 style="color:#aaa;margin-bottom:5px;margin-top:15px;">v1.49 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;color:#aaa;">
+                        <li><b>Modo Impresión Avanzado:</b> Creado un motor de impresión tipo QGIS. Ya no recorta una imagen estática, ahora el mapa está vivo debajo del encuadre.</li>
+                        <li><b>PDF Topográfico a Escala:</b> Generación directa de PDF (A4/A3) integrando la librería jsPDF. Leyenda y brújula arrastrables libremente en el folio.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
+                    <h3 style="color:var(--ign-blue);margin-bottom:5px;">v1.47.2 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>Visor 3D Externo:</b> Se ha sustituido el Dron 3D interno por un enlace directo a Google Earth Web para evitar problemas de licencias y ofrecer topografía 3D de mejor calidad.</li>
+                        <li><b>Aviso Offline:</b> Alerta automática si intentas abrir el visor 3D sin conexión a internet.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
+                    <h3 style="color:var(--ign-blue);margin-bottom:5px;">v1.47.0 - 15 de Agosto de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>Optimización Extrema GPS:</b> Intervalos de actualización de sala pasados a 15 segundos y filtro de movimiento para ahorrar un 80% de batería y peticiones Firebase en MilSims de 24h/36h.</li>
+                        <li><b>Aviso Pre-Partida:</b> Recordatorio automático para descargar mapas offline e iniciar sesión antes de perder la cobertura.</li>
+                        <li><b>Historial:</b> Nueva sección de historial de versiones en la app.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
+                    <h3 style="color:var(--ign-blue);margin-bottom:5px;">v1.46 - 27 de Julio de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li>Añadidos textos legales de atribución obligatorios para mapas IGN y OSM (Google Play).</li>
+                        <li>Nuevo motor 3D de alta precisión para el ajuste manual de mapas solapados.</li>
+                        <li>NUEVO: Pizarra Táctica en Vivo (dibujo a mano alzada sincronizado en tiempo real).</li>
+                        <li>NUEVO: Historial automático de Salas Recientes (¡entra con 1 clic!).</li>
+                        <li>Mejoras generales de estabilidad y renderizado.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
+                    <h3 style="color:var(--ign-blue);margin-bottom:5px;">v1.45 y anteriores</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li>Lanzamiento principal de la aplicación en la nube.</li>
+                        <li>Soporte para marcadores, áreas, reglas, GPS en vivo, brújula dinámica y modo offline con PWA.</li>
+                        <li>Sincronización Off-Grid (Bluetooth / Modo Texto).</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;">
+                <button style="padding:10px 20px;border-radius:6px;border:none;background:var(--ign-blue);color:white;font-weight:bold;cursor:pointer;" onclick="document.getElementById('history-modal').style.display='none'">Cerrar Historial</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PC Link Modal (Mobile Only) -->
+    <div id="pc-link-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:99999;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;">
+        <div style="background:var(--bg-sidebar);padding:25px;border-radius:12px;width:100%;max-width:350px;border:2px solid var(--ign-gold);box-shadow:var(--shadow);text-align:center;">
+            <h3 style="margin-top:0;color:var(--ign-gold);">💻 Vincular con PC</h3>
+            <p style="font-size:14px;color:white;line-height:1.5;">Entra en <b>www.airsoftmaps.es</b> desde el navegador de tu ordenador e introduce tu código de este mes para desbloquear la Sala de Comandancia grande:</p>
+            <div id="monthly-pin-display" style="background:#000;color:var(--success);font-size:32px;font-weight:bold;padding:15px;border-radius:8px;border:2px dashed var(--success);margin:20px 0;letter-spacing:2px;">
+                Cargando...
+            </div>
+            <p style="font-size:12px;color:#cbd5e0;margin-bottom:20px;">* Este código cambia cada mes por seguridad.</p>
+            <button class="btn-outline" style="border-color:var(--danger);color:var(--danger);width:100%;" onclick="document.getElementById('pc-link-modal').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- PC Lock Logic -->
+    <script>
+        // Generate Monthly PIN: "AM-" + month (01-12) + year (YY)
+        const __d = new Date();
+        const currentMonthPIN = "AM-" + (__d.getMonth() + 1 < 10 ? '0' + (__d.getMonth() + 1) : (__d.getMonth() + 1)) + __d.getFullYear().toString().slice(-2);
+        
+        // Show PIN in mobile modal
+        document.getElementById('monthly-pin-display').innerText = currentMonthPIN;
+
+        // Check PC Lock
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const unlockedPIN = localStorage.getItem('am_pc_unlocked');
+
+        if (!isMobile && unlockedPIN !== currentMonthPIN) {
+            document.getElementById('pc-lock-screen').style.display = 'flex';
+        }
+
+        window.unlockPC = function() {
+            const input = document.getElementById('pc-pin-input').value.trim().toUpperCase();
+            if (input === currentMonthPIN) {
+                localStorage.setItem('am_pc_unlocked', currentMonthPIN);
+                document.getElementById('pc-lock-screen').style.display = 'none';
+            } else {
+                document.getElementById('pc-lock-error').style.display = 'block';
+            }
+        };
+
+        // --- PRINT COMPOSER LOGIC ---
+        let printComposerActive = false;
+
+        function makePrintElementDraggable(el) {
+            if (!el || el.dataset.draggable) return;
+            el.dataset.draggable = "true";
+            el.style.position = 'absolute';
+            el.style.cursor = 'move';
+            el.style.zIndex = '10001';
+            let isDown = false, startX, startY, startLeft, startTop;
+            const start = (e) => {
+                if (!printComposerActive) return;
+                isDown = true;
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                startX = clientX;
+                startY = clientY;
+                startLeft = el.offsetLeft;
+                startTop = el.offsetTop;
+                e.stopPropagation();
+            };
+            const move = (e) => {
+                if (!isDown) return;
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                el.style.left = (startLeft + clientX - startX) + 'px';
+                el.style.top = (startTop + clientY - startY) + 'px';
+                el.style.bottom = 'auto';
+                el.style.right = 'auto';
+            };
+            const end = () => { isDown = false; };
+            el.addEventListener('mousedown', start); el.addEventListener('touchstart', start, {passive:true});
+            window.addEventListener('mousemove', move); window.addEventListener('touchmove', move, {passive:true});
+            window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
+        }
+
+        window.startPrintComposer = function() {
+            window.toggleMenu();
+            printComposerActive = true;
+            document.getElementById('print-composer').style.display = 'block';
+            window.updatePrintLayout();
+
+            // Make elements draggable and bring them to center slightly
+            const legend = document.getElementById('map-legend');
+            const compass = document.getElementById('compass-rose');
+            const scale = document.querySelector('.leaflet-control-scale');
+            
+            if (legend) { makePrintElementDraggable(legend); }
+            if (compass) { makePrintElementDraggable(compass); }
+            if (scale) { makePrintElementDraggable(scale); }
+        };
+
+        window.closePrintComposer = function() {
+            printComposerActive = false;
+            document.getElementById('print-composer').style.display = 'none';
+        };
+
+        window.updatePrintLayout = function() {
+            if (!printComposerActive) return;
+            const format = document.getElementById('print-format').value;
+            const orientation = document.getElementById('print-orientation').value;
+            const cutout = document.getElementById('print-cutout');
+            
+            let aspect = format === 'A4' ? 297/210 : 420/297;
+            if (orientation === 'landscape') aspect = 1 / aspect;
+
+            const maxW = window.innerWidth * 0.9;
+            const maxH = window.innerHeight * 0.65; // space for toolbar
+
+            let width, height;
+            if (maxW * aspect <= maxH) {
+                width = maxW; height = maxW * aspect;
+            } else {
+                height = maxH; width = maxH / aspect;
+            }
+
+            cutout.style.width = width + 'px';
+            cutout.style.height = height + 'px';
+        };
+
+        window.addEventListener('resize', window.updatePrintLayout);
+
+        window.exportPrint = async function(type) {
+            const btnPdf = document.getElementById('btn-export-pdf');
+            const btnPng = document.getElementById('btn-export-png');
+            btnPdf.disabled = true; btnPng.disabled = true;
+            const origPdf = btnPdf.innerHTML; const origPng = btnPng.innerHTML;
+            btnPdf.innerHTML = '⏳...'; btnPng.innerHTML = '⏳...';
+
+            try {
+                if (!window.html2canvas) { 
+                    const script = document.createElement('script'); 
+                    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; 
+                    document.head.appendChild(script); 
+                    await new Promise(resolve => script.onload = resolve); 
+                }
+
+                const cutout = document.getElementById('print-cutout');
+                const rect = cutout.getBoundingClientRect();
+                
+                // Hide composer UI so it doesn't get captured as a dark mask
+                document.getElementById('print-composer').style.display = 'none';
+                
+                const canvas = await html2canvas(document.body, { 
+                    useCORS: true, 
+                    allowTaint: false, 
+                    scale: 2, 
+                    x: rect.left,
+                    y: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    ignoreElements: (el) => { 
+                        if (!el.classList) return false; 
+                        if (el.classList.contains('leaflet-control-zoom') || el.classList.contains('leaflet-control-attribution')) return true; 
+                        if (el.id === 'side-menu' || el.id === 'menu-btn' || el.id === 'crosshair' || el.id === 'floating-toolbar') return true;
+                        return false; 
+                    } 
+                });
+                
+                document.getElementById('print-composer').style.display = 'block';
+
+                if (type === 'png') {
+                    const link = document.createElement('a'); 
+                    link.download = 'Mapa_Topografico.png'; 
+                    link.href = canvas.toDataURL('image/png'); 
+                    link.click();
+                } else if (type === 'pdf') {
+                    const orientation = document.getElementById('print-orientation').value === 'landscape' ? 'l' : 'p';
+                    const format = document.getElementById('print-format').value.toLowerCase();
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF(orientation, 'mm', format);
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    const pdfW = doc.internal.pageSize.getWidth();
+                    const pdfH = doc.internal.pageSize.getHeight();
+                    
+                    doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+                    doc.save('Mapa_Topografico.pdf');
+                }
+                
+                window.customAlert("Éxito", "Exportación completada correctamente.");
+                window.closePrintComposer();
+
+            } catch (error) { 
+                document.getElementById('print-composer').style.display = 'block';
+                window.customAlert("Error", "No se pudo generar la exportación. Asegúrate de alejar el zoom un poco. " + error.message); 
+            } finally { 
+                btnPdf.disabled = false; btnPng.disabled = false;
+                btnPdf.innerHTML = origPdf; btnPng.innerHTML = origPng;
+            }
+        };
+    </script>
+
+    <!-- Print Composer Overlay -->
+    <div id="print-composer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;">
+        <div id="print-cutout" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); border: 2px dashed #10b981; box-shadow: 0 0 0 9999px rgba(0,0,0,0.75); pointer-events:none; transition: width 0.3s, height 0.3s; overflow:hidden;">
+            <!-- Elements will be moved here -->
+        </div>
+        
+        <div id="print-toolbar" style="position:absolute; bottom:0; left:0; width:100%; background:#f8fafc; padding:15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.2); pointer-events:auto; display:flex; flex-direction:column; gap:10px; box-sizing:border-box; border-top:3px solid #10b981;">
+            <div style="text-align:center; font-size:12px; color:#64748b; font-weight:bold; margin-bottom:-5px;">Mueve el mapa para encuadrar. Arrastra la leyenda y brújula.</div>
+            <div style="display:flex; justify-content:center; gap:10px; align-items:center; flex-wrap:wrap;">
+                <select id="print-format" onchange="window.updatePrintLayout()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none;">
+                    <option value="A4">Formato A4</option>
+                    <option value="A3">Formato A3</option>
+                </select>
+                <select id="print-orientation" onchange="window.updatePrintLayout()" style="padding:8px; border-radius:6px; border:2px solid #cbd5e0; font-weight:bold; color:#0f172a; outline:none;">
+                    <option value="landscape">Horizontal</option>
+                    <option value="portrait">Vertical</option>
+                </select>
+            </div>
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button id="btn-export-pdf" onclick="window.exportPrint('pdf')" style="flex:1; background:#10b981; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">📄 PDF a Escala</button>
+                <button id="btn-export-png" onclick="window.exportPrint('png')" style="flex:1; background:#3b82f6; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:180px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">🖼️ Imagen (PNG)</button>
+                <button onclick="window.closePrintComposer()" style="flex:1; background:#ef4444; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; max-width:120px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">❌ Salir</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Funciones Bottom Navigation Bar v2.01
+        window.closeAllPanels = function () {
+            document.querySelectorAll('.sidebar').forEach(panel => {
+                panel.classList.add('oculto');
+            });
+            updateBottomNavActive(0); // 0 = Mapa
+        };
+
+        window.openTacticalMenu = function () {
+            document.querySelectorAll('.sidebar').forEach(panel => panel.classList.add('oculto'));
+            document.getElementById('panelLive').classList.remove('oculto');
+            updateBottomNavActive(1);
+        };
+
+        window.openEditMenu = function () {
+            document.querySelectorAll('.sidebar').forEach(panel => panel.classList.add('oculto'));
+            document.getElementById('panelLateral').classList.remove('oculto');
+            updateBottomNavActive(2);
+        };
+
+        window.toggleBottomNav = function (show) {
+            const nav = document.getElementById('main-bottom-nav');
+            const btn = document.getElementById('show-bottom-nav-btn');
+            if (show) {
+                nav.style.transform = 'translateY(0)';
+                btn.style.display = 'none';
+            } else {
+                nav.style.transform = 'translateY(100%)';
+                btn.style.display = 'flex';
+                window.closeAllPanels();
+            }
+        };
+
+        // Sobrescribir toggleMenu original
+        const originalToggleMenu = window.toggleMenu;
+        window.toggleMenu = function() {
+            if (originalToggleMenu) originalToggleMenu();
+            const panel = document.getElementById('panelLateral');
+            if (!panel.classList.contains('oculto')) {
+                window.openEditMenu();
+            } else {
+                updateBottomNavActive(0);
+            }
+        };
+
+        // Sobrescribir toggleLiveMenu original
+        const originalToggleLiveMenu = window.toggleLiveMenu;
+        window.toggleLiveMenu = function() {
+            if (originalToggleLiveMenu) originalToggleLiveMenu();
+            const panel = document.getElementById('panelLive');
+            if (!panel.classList.contains('oculto')) {
+                updateBottomNavActive(1);
+            } else {
+                updateBottomNavActive(0);
+            }
+        };
+
+        function updateBottomNavActive(index) {
+            const btns = document.querySelectorAll('.bottom-nav-btn');
+            btns.forEach((btn, i) => {
+                if (i === index) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
 
 
