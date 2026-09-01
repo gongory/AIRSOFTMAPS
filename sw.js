@@ -66,7 +66,7 @@ self.addEventListener("fetch", event => {
           return networkResponse;
         })
         .catch(() => { /* Ignorar errores en modo offline */ });
-      
+
       // Devuelve la caché instantáneamente (si existe), mientras actualiza en segundo plano
       return cachedResponse || fetchPromise;
     })
