@@ -46,6 +46,7 @@
             margin: 0;
             padding: 0;
             height: 100%;
+            height: 100dvh; /* Modern iOS/Android fix */
             font-family: 'Rajdhani', sans-serif;
             overflow: hidden;
             background: #000;
@@ -56,7 +57,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            height: 100vh;
+            height: 100%; /* Better than 100vh which causes bugs with address bar */
             width: 100%;
         }
 
@@ -1480,11 +1481,11 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.10
+                            v2.11
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
-                    <p style="margin:5px 0;" data-i18n="about_date"><b>📅 Fecha:</b> Actualizado 1 de Septiembre de 2026
+                    <p style="margin:5px 0;" data-i18n="about_date"><b>📅 Fecha:</b> Actualizado 2 de Septiembre de 2026
                     </p>
                     
                     <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;text-align:center;">
@@ -1585,6 +1586,11 @@
                         <option value="#1e293b" data-i18n="opt_pmc">⚫ PMC / Mercenarios</option>
                         <option value="#8b4513" data-i18n="opt_marine">💀 Marine Raider bcn</option>
                     </select>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px; padding:5px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.1);">
+                        <img id="live-avatar-preview" src="" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:none; border:2px solid #3498db; background:#333;">
+                        <input type="file" id="live-avatar-upload" accept="image/*" style="display:none;" onchange="window.handleLiveAvatarUpload(event)">
+                        <button class="btn-outline" style="margin:0; flex:1; font-size:12px; padding:8px;" onclick="document.getElementById('live-avatar-upload').click()">📷 Cambiar mi Avatar</button>
+                    </div>
                     <select id="live-role" class="form-select" style="margin-bottom:10px;">
                         <option value="asalto" data-i18n="opt_assault">🔫 Asalto</option>
                         <option value="sniper" data-i18n="opt_sniper">🔭 Francotirador</option>
@@ -2429,6 +2435,10 @@
 
         function enterRoom(roomId, alias, isAdmin) {
             window.saveRecentRoom(roomId, document.getElementById('room-pass').value);
+            const myAvatar = localStorage.getItem('userAvatar');
+            if (myAvatar && auth.currentUser) {
+                setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'profile', 'avatar'), { base64: myAvatar }).catch(()=>{});
+            }
             currentRoom = roomId; const btn = document.getElementById('btn-room-toggle'); btn.innerHTML = "🚪 Entrar / Crear Sala"; btn.disabled = false;
             document.getElementById('room-setup-ui').style.display = 'none'; document.getElementById('room-active-ui').style.display = 'block';
             document.getElementById('active-room-name').innerText = "📍 " + roomId; document.getElementById('active-room-name').style.display = 'inline-block';
@@ -2565,9 +2575,35 @@
                     const filterStyle = isEliminated ? 'filter: grayscale(100%) opacity(0.6);' : (isOffline ? 'filter: grayscale(50%) opacity(0.7);' : '');
 
                     const popupHtml = `<div style="text-align:center;font-size:12px;"><b>${data.alias}</b><br>${roleIcon} ${data.role ? data.role.toUpperCase() : 'ASALTO'}<br>A <b>${distText}</b>${offlinePopupText}</div>`;
+                    if (!window.roomAvatars) window.roomAvatars = {};
+                    if (window.roomAvatars[id] === undefined) {
+                        window.roomAvatars[id] = null;
+                        getDoc(doc(db, 'artifacts', appId, 'users', id, 'profile', 'avatar'))
+                            .then(snap => {
+                                if(snap.exists() && snap.data().base64) {
+                                    window.roomAvatars[id] = snap.data().base64;
+                                    renderLiveMembers();
+                                } else {
+                                    window.roomAvatars[id] = false;
+                                }
+                            }).catch(()=>{ window.roomAvatars[id] = false; });
+                    }
+
+                    const pAvatar = (window.roomAvatars[id]) ? window.roomAvatars[id] : null;
                     let bgStyle = `background-color:${data.color};`; let txtStyle = `color:#333;text-shadow:0 1px 2px rgba(0,0,0,0.5);`;
-                    if (data.color === '#8b4513' && !isEliminated) { bgStyle += 'background-image:url("image_ef21e1.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png");background-size:cover;background-position:center;'; txtStyle = `color:white;text-shadow:0 1px 2px rgba(0,0,0,0.8);`; }
-                    const newIcon = L.divIcon({ className: 'custom-ally', html: `<div class="ally-container" style="position:relative;width:24px;height:24px;${filterStyle}"><div class="ally-circle" style="position:absolute;width:100%;height:100%;${bgStyle}border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;display:flex;align-items:center;justify-content:center;font-size:12px;${txtStyle}">${roleIcon}</div><div class="ally-arrow" style="position:absolute;top:50%;left:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid rgba(255,255,255,0.8);transform-origin:50% 100%;margin-left:-5px;margin-top:-14px;transform:rotate(${data.heading}deg);z-index:1;"></div><div class="ally-label grid-label ${extraClass}" style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);border-color:${data.color};color:#333;z-index:3;text-align:center;">${displayAlias}</div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+                    let contentHtml = roleIcon;
+                    let mSize = 24; let mAnchor = 12;
+                    if (pAvatar && !isEliminated) { 
+                        bgStyle += `background-image:url('${pAvatar}');background-size:cover;background-position:center;`; 
+                        txtStyle = `color:transparent;text-shadow:none;`; 
+                        contentHtml = '';
+                        mSize = 32; mAnchor = 16;
+                    }
+                    else if (data.color === '#8b4513' && !isEliminated) { 
+                        bgStyle += 'background-image:url("raider_logo.png"), url("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png");background-size:cover;background-position:center;'; 
+                        txtStyle = `color:white;text-shadow:0 1px 2px rgba(0,0,0,0.8);`; 
+                    }
+                    const newIcon = L.divIcon({ className: 'custom-ally', html: `<div class="ally-container" style="position:relative;width:${mSize}px;height:${mSize}px;${filterStyle}"><div class="ally-circle" style="position:absolute;width:100%;height:100%;${bgStyle}border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;display:flex;align-items:center;justify-content:center;font-size:12px;${txtStyle}">${contentHtml}</div><div class="ally-arrow" style="position:absolute;top:50%;left:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid rgba(255,255,255,0.8);transform-origin:50% 100%;margin-left:-5px;margin-top:-14px;transform:rotate(${data.heading}deg);z-index:1;"></div><div class="ally-label grid-label ${extraClass}" style="position:absolute;top:-${mSize}px;left:50%;transform:translateX(-50%);border-color:${data.color};color:#333;z-index:3;text-align:center;">${displayAlias}</div></div>`, iconSize: [mSize, mSize], iconAnchor: [mAnchor, mAnchor] });
 
                     if (allyMarkers[id]) {
                         allyMarkers[id].setLatLng([data.lat, data.lng]);
@@ -2995,7 +3031,7 @@
         function updateLayerTree() {
             const list = document.getElementById('layer-list'); const layers = drawnItems.getLayers(); if (layers.length === 0) { list.innerHTML = '<div style="font-size:11px;color:#64748b;text-align:center;padding:10px;">Vacio</div>'; updateLegend(); return; }
             const factions = {}; layers.forEach(layer => { const faction = layer.feature?.properties?.faction || window.projectName; if (!factions[faction]) factions[faction] = []; factions[faction].push(layer); });
-            let html = ''; const factionIcons = { 'General': '🏳️', 'Rojo': '🔴', 'Azul': '🔵', 'Organizacion': '⚙️', 'Neutral': '⚪', 'Marine Raider bcn': '<img src="image_ef21e1.png" style="width:14px;height:14px;display:inline-block;vertical-align:middle;border-radius:2px;" onerror="this.src=\'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png\'">' };
+            let html = ''; const factionIcons = { 'General': '🏳️', 'Rojo': '🔴', 'Azul': '🔵', 'Organizacion': '⚙️', 'Neutral': '⚪', 'Marine Raider bcn': '<img src="raider_logo.png" style="width:14px;height:14px;display:inline-block;vertical-align:middle;border-radius:2px;" onerror="this.src=\'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Marine_Raider_Regiment_emblem.svg/200px-Marine_Raider_Regiment_emblem.svg.png\'">' };
             for (const [factionName, factionLayers] of Object.entries(factions)) {
                 const allHidden = factionLayers.every(l => l.isHidden); const eyeIcon = allHidden ? '👁️‍🗨️' : '👁️'; const eyeClass = allHidden ? 'layer-vis-btn hidden' : 'layer-vis-btn'; const fIcon = factionIcons[factionName] || '📁';
                 html += `<div class="faction-header" style="cursor:pointer;" onclick="const content=this.nextElementSibling;const icon=this.querySelector('.toggle-icon');if(content.style.display==='none'){content.style.display='block';icon.innerText='▼';}else{content.style.display='none';icon.innerText='▶';}"><div style="display:flex;align-items:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;margin-right:10px;" title="${factionName}"><span class="toggle-icon" style="margin-right:5px;font-size:10px;width:12px;display:inline-block;">▼</span><span style="margin-right:4px;">${fIcon}</span><span style="overflow:hidden;text-overflow:ellipsis;">${factionName}</span></div><button class="${eyeClass}" onclick="event.stopPropagation(); window.toggleFactionVisibility('${factionName}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0;">${eyeIcon}</button></div><div class="faction-content" style="display:block;">`;
@@ -3323,6 +3359,56 @@
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
+        };
+
+        window.handleLiveAvatarUpload = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 128; // Mantenemos 128px para que sea super ligera
+                    let width = img.width; let height = img.height;
+                    if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
+                    else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const base64Str = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    // Guardar en LocalStorage
+                    localStorage.setItem('userAvatar', base64Str);
+                    
+                    // Actualizar UI
+                    window.updateAvatarPreview();
+                    
+                    // Actualizar el marcador local si existe
+                    if (window.userLocMarker) {
+                        // Forzar redibujado
+                        const latlng = window.userLocMarker.getLatLng();
+                        window.userLocMarker.setLatLng([latlng.lat, latlng.lng + 0.00001]);
+                    }
+                    
+                    e.target.value = '';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.updateAvatarPreview = function() {
+            const avatar = localStorage.getItem('userAvatar');
+            const preview = document.getElementById('live-avatar-preview');
+            if (preview && avatar) {
+                preview.src = avatar;
+                preview.style.display = 'block';
+                const color = document.getElementById('live-faction') ? document.getElementById('live-faction').value : '#3498db';
+                preview.style.borderColor = color;
+            } else if (preview) {
+                preview.style.display = 'none';
+            }
         };
 
         window.enableTacticalMarker = function(iconType, customUrl = null) {
@@ -4489,7 +4575,15 @@
                         const lat = pos.coords.latitude; const lng = pos.coords.longitude; const acc = pos.coords.accuracy; const heading = pos.coords.heading; const speed = pos.coords.speed;
                         if (window.isFollowingUser) { map.setView([lat, lng], map.getZoom() < 16 ? 17 : map.getZoom()); }
                         if (btn && btn.innerHTML.includes("⏳")) { btn.innerHTML = "🚶‍♂️ Seguimiento GPS Activo"; btn.style.opacity = "1"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; if (arBtn) arBtn.style.display = 'block'; }
-                        if (!userLocMarker) { const userIcon = L.divIcon({ className: 'custom-user-marker', html: `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 14px solid rgba(13,110,253,0.8); transform-origin: 50% 100%; margin-left: -6px; margin-top: -14px; transform: rotate(${window.currentDeviceHeading || 0}deg);"></div></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }); userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map); window.userLocMarker = userLocMarker; } else { userLocMarker.setLatLng([lat, lng]); }
+                        const myAvatar = localStorage.getItem('userAvatar');
+                        let markerHtml = `<div style="position: relative; width: 14px; height: 14px; background-color: #0d6efd; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 14px solid rgba(13,110,253,0.8); transform-origin: 50% 100%; margin-left: -6px; margin-top: -14px; transform: rotate(${window.currentDeviceHeading || 0}deg);"></div></div>`;
+                        let mSize = [18, 18]; let mAnchor = [9, 9];
+                        if (myAvatar) {
+                            markerHtml = `<div style="position: relative; width: 28px; height: 28px; background-color: #0d6efd; background-image: url('${myAvatar}'); background-size: cover; background-position: center; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"><div id="user-dir-arrow" style="display:${window.currentDeviceHeading !== undefined ? 'block' : 'none'}; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 14px solid rgba(13,110,253,0.8); transform-origin: 50% 100%; margin-left: -6px; margin-top: -14px; transform: rotate(${window.currentDeviceHeading || 0}deg); z-index:-1;"></div></div>`;
+                            mSize = [32, 32]; mAnchor = [16, 16];
+                        }
+                        const userIcon = L.divIcon({ className: 'custom-user-marker', html: markerHtml, iconSize: mSize, iconAnchor: mAnchor });
+                        if (!userLocMarker) { userLocMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map); window.userLocMarker = userLocMarker; } else { userLocMarker.setLatLng([lat, lng]); userLocMarker.setIcon(userIcon); }
                         window.updateNavigationUI();
                         window.lastKnownPos = pos;
                         window.updateAtakHud(pos);
@@ -5721,6 +5815,14 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.11 - 2 de Septiembre de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>[📷 AVATARES PERSONALIZADOS]:</b> Nuevo sistema para subir tu propia foto/parche y mostrarla como tu marcador GPS local. Si entras en una Sala Live, tus compañeros verán tu avatar en tiempo real en el mapa, rodeado del color de tu bando. ¡Totalmente optimizado para ahorrar el 99% del consumo de datos móviles en el campo!</li>
+                        <li><b>[📱 OPTIMIZACIÓN MÓVIL]:</b> Arreglado el problema del recorte y la franja negra inferior (Viewport dinámico) en móviles como iPhone (Safari), adaptándose perfectamente al diseño de pantalla completa con barra de direcciones retráctil.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
                     <h3 style="color:var(--success);margin-bottom:5px;">v2.10 - 1 de Septiembre de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🔋 MODO BOLSILLO]:</b> Nueva función "Pantalla Negra" para apagar la pantalla del móvil mientras la app sigue grabando la ruta GPS y registrando la telemetría, ahorrando batería al máximo en el campo.</li>
