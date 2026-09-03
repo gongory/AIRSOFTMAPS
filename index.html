@@ -38,7 +38,7 @@
             --border-color: rgba(0, 255, 65, 0.4);
             /* Stronger Neon Borders */
             --text-main: #e2e8f0;
-            --bottom-nav-height: 65px;
+            --bottom-nav-height: 40px;
         }
 
         body,
@@ -490,13 +490,12 @@
             border-right: 1px solid rgba(0, 255, 65, 0.2);
             color: #888;
             font-family: 'Rajdhani', sans-serif;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 700;
-            display: grid;
-            grid-template-rows: auto minmax(0, 1fr);
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 25%;
+            width: 33.33%;
             height: 100%;
             cursor: pointer;
             transition: all 0.2s;
@@ -1052,15 +1051,12 @@
 
     <nav class="bottom-nav-bar" id="main-bottom-nav" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
         <button class="bottom-nav-btn" onclick="window.openTacticalMenu()">
-            <span class="icon">🎯</span>
             <span data-i18n="nav_tactical">Táctica</span>
         </button>
         <button class="bottom-nav-btn" onclick="window.openEditMenu()">
-            <span class="icon">🛠️</span>
             <span data-i18n="nav_edit">Edición</span>
         </button>
         <button class="bottom-nav-btn" onclick="window.toggleBottomNav(false)">
-            <span class="icon">👁️‍🗨️</span>
             <span data-i18n="nav_hide">Ocultar</span>
         </button>
     </nav>
@@ -1481,11 +1477,11 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.11
+                            v2.12
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
-                    <p style="margin:5px 0;" data-i18n="about_date"><b>📅 Fecha:</b> Actualizado 2 de Septiembre de 2026
+                    <p style="margin:5px 0;" data-i18n="about_date"><b>📅 Fecha:</b> Actualizado 3 de Septiembre de 2026
                     </p>
                     
                     <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;text-align:center;">
@@ -1495,9 +1491,9 @@
                     <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;">
                         <b style="color:var(--ign-blue);" data-i18n="latest_changes">Últimos cambios:</b>
                         <ul style="margin:5px 0;padding-left:20px;">
-                            <li data-i18n="about_ul_1">NUEVO: Modo Bolsillo para ahorro extremo de batería.</li>
-                            <li data-i18n="about_ul_2">NUEVO: Sección de Consejos y Manual de Usuario integrados.</li>
-                            <li data-i18n="about_ul_3">OPTIMIZACIÓN: Traducciones completas en todos los idiomas.</li>
+                            <li data-i18n="about_ul_1">NUEVO: Grabar ruta desde menú rápido con función de Pausa.</li>
+                            <li data-i18n="about_ul_2">NUEVO: Icono de Navegante (Brújula).</li>
+                            <li data-i18n="about_ul_3">MEJORA: Barra de navegación inferior más elegante y fina.</li>
                         </ul>
                     </div>
                     <div style="border-top:1px dashed #cbd5e0;margin-top:10px;padding-top:10px;text-align:center;">
@@ -1590,6 +1586,7 @@
                         <img id="live-avatar-preview" src="" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:none; border:2px solid #3498db; background:#333;">
                         <input type="file" id="live-avatar-upload" accept="image/*" style="display:none;" onchange="window.handleLiveAvatarUpload(event)">
                         <button class="btn-outline" style="margin:0; flex:1; font-size:12px; padding:8px;" onclick="document.getElementById('live-avatar-upload').click()">📷 Cambiar mi Avatar</button>
+                        <button class="btn-outline" id="btn-clear-avatar" style="margin:0; width:auto; padding:8px 12px; font-size:12px; border-color:var(--danger); color:var(--danger); display:none;" onclick="window.clearLiveAvatar()" title="Quitar Avatar">🗑️</button>
                     </div>
                     <select id="live-role" class="form-select" style="margin-bottom:10px;">
                         <option value="asalto" data-i18n="opt_assault">🔫 Asalto</option>
@@ -2909,6 +2906,7 @@
             'apoyo': '<img src="https://api.iconify.design/game-icons/ammo-box.svg?color=white" style="width:22px;height:22px;object-fit:contain;">',
             'ingeniero': '<img src="https://api.iconify.design/game-icons/gears.svg?color=white" style="width:22px;height:22px;object-fit:contain;">',
             'comandante': '<img src="https://api.iconify.design/game-icons/star-medal.svg?color=white" style="width:22px;height:22px;object-fit:contain;">',
+            'navegante': '<img src="https://api.iconify.design/game-icons/compass.svg?color=white" style="width:22px;height:22px;object-fit:contain;">',
             'defensa': '<img src="https://api.iconify.design/game-icons/shield.svg?color=white" style="width:22px;height:22px;object-fit:contain;">',
             'barricada': '<img src="https://api.iconify.design/game-icons/barrier.svg?color=white" style="width:22px;height:22px;object-fit:contain;">',
             'suministros': '<img src="https://api.iconify.design/game-icons/cargo-crate.svg?color=white" style="width:22px;height:22px;object-fit:contain;">',
@@ -3401,13 +3399,29 @@
         window.updateAvatarPreview = function() {
             const avatar = localStorage.getItem('userAvatar');
             const preview = document.getElementById('live-avatar-preview');
+            const clearBtn = document.getElementById('btn-clear-avatar');
             if (preview && avatar) {
                 preview.src = avatar;
                 preview.style.display = 'block';
+                if (clearBtn) clearBtn.style.display = 'block';
                 const color = document.getElementById('live-faction') ? document.getElementById('live-faction').value : '#3498db';
                 preview.style.borderColor = color;
             } else if (preview) {
                 preview.style.display = 'none';
+                if (clearBtn) clearBtn.style.display = 'none';
+            }
+        };
+
+        window.clearLiveAvatar = async function() {
+            localStorage.removeItem('userAvatar');
+            window.updateAvatarPreview();
+            if (window.updateUserLocMarker) window.updateUserLocMarker();
+            if (auth.currentUser && window.currentRoom) {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'profile', 'avatar'), { base64: null, timestamp: Date.now() });
+                } catch (e) {
+                    console.error("Error al borrar el avatar de Firebase:", e);
+                }
             }
         };
 
@@ -4589,7 +4603,7 @@
                         window.updateAtakHud(pos);
                         
                         // Tracker Logic
-                        if (window.isRecordingTrack) {
+                        if (window.isRecordingTrack && !window.isTrackPaused) {
                             const currentLatLng = L.latLng(lat, lng);
                             const now = Date.now();
                             window.trackPoints.push({ lat, lng, time: now, speed: speed || 0, altitude: pos.coords.altitude || 0 });
@@ -4606,11 +4620,26 @@
 
         // --- ROUTE TRACKER LOGIC ---
         window.isRecordingTrack = false;
+        window.isTrackPaused = false;
+        window.trackTotalPausedMs = 0;
+        window.trackPauseStart = 0;
         window.trackStartTime = 0;
         window.trackPoints = [];
         window.trackDistance = 0;
         window.trackPolyline = null;
         window.trackTimerInterval = null;
+
+        window.toggleRoutePause = function() {
+            if(!window.isRecordingTrack) return;
+            window.isTrackPaused = !window.isTrackPaused;
+            if(window.isTrackPaused) {
+                window.trackPauseStart = Date.now();
+                window.lastTrackPoint = null; // Evitar saltos de distancia al reanudar
+            } else {
+                window.trackTotalPausedMs += (Date.now() - window.trackPauseStart);
+            }
+            window.renderQuickMenu();
+        };
         window.lastTrackPoint = null;
 
         window.toggleTrackerPanel = function() {
@@ -4644,7 +4673,11 @@
                 return;
             }
             
-            const elapsed = Math.floor((Date.now() - window.trackStartTime) / 1000);
+            let totalPaused = window.trackTotalPausedMs;
+            if (window.isTrackPaused) {
+                totalPaused += (Date.now() - window.trackPauseStart);
+            }
+            const elapsed = Math.floor((Date.now() - window.trackStartTime - totalPaused) / 1000);
             const hrs = String(Math.floor(elapsed / 3600)).padStart(2, '0');
             const mins = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
             const secs = String(elapsed % 60).padStart(2, '0');
@@ -4662,6 +4695,9 @@
         };
 
         window.toggleRouteRecording = function(btn) {
+            const mainBtn = document.getElementById('record-route-btn');
+            const quickBtn = document.getElementById('quick-btn-record-route');
+
             if(!window.isRecordingTrack) {
                 if(locWatchId === null) {
                     window.customAlert("Atención", "Se activará el GPS para grabar la ruta.");
@@ -4669,6 +4705,9 @@
                 }
                 
                 window.isRecordingTrack = true;
+                window.isTrackPaused = false;
+                window.trackTotalPausedMs = 0;
+                window.trackPauseStart = 0;
                 window.trackStartTime = Date.now();
                 window.trackPoints = [];
                 window.trackDistance = 0;
@@ -4677,9 +4716,16 @@
                 if(window.trackPolyline) { map.removeLayer(window.trackPolyline); }
                 window.trackPolyline = L.polyline([], {color: '#ff0000', weight: 4, opacity: 0.8}).addTo(map);
                 
-                btn.innerHTML = '🛑 Detener Grabación';
-                btn.style.color = '#fff';
-                btn.style.backgroundColor = 'var(--danger, #ff4444)';
+                if(mainBtn) {
+                    mainBtn.innerHTML = '🛑 Detener Grabación';
+                    mainBtn.style.color = '#fff';
+                    mainBtn.style.backgroundColor = 'var(--danger, #ff4444)';
+                }
+                if(quickBtn) {
+                    quickBtn.style.color = 'var(--danger)';
+                    quickBtn.style.borderColor = 'var(--danger)';
+                    quickBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+                }
                 
                 const panel = document.getElementById('tracker-panel');
                 if(panel && (panel.style.width === '0px' || panel.style.width === '')) {
@@ -4690,9 +4736,16 @@
             } else {
                 window.isRecordingTrack = false;
                 clearInterval(window.trackTimerInterval);
-                btn.innerHTML = '🔴 Iniciar Grabación de Ruta';
-                btn.style.color = 'var(--danger, #ff4444)';
-                btn.style.backgroundColor = 'transparent';
+                if(mainBtn) {
+                    mainBtn.innerHTML = '🔴 Iniciar Grabación de Ruta';
+                    mainBtn.style.color = 'var(--danger, #ff4444)';
+                    mainBtn.style.backgroundColor = 'transparent';
+                }
+                if(quickBtn) {
+                    quickBtn.style.color = 'var(--ign-gold)';
+                    quickBtn.style.borderColor = 'var(--ign-gold)';
+                    quickBtn.innerHTML = '<i class="fa-solid fa-circle-dot"></i>';
+                }
                 
                 if(window.trackPoints.length > 2) {
                     const routeName = prompt("Ruta finalizada. Nombre:", "Ruta " + new Date().toLocaleDateString());
@@ -5815,6 +5868,15 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.12 - 3 de Septiembre de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>[📍 GRABAR RUTA EN MENÚ RÁPIDO]:</b> Ahora puedes añadir la opción de "Grabar Ruta" al menú rápido lateral. ¡Incluye un nuevo botón de <b>Pausa/Reanudar</b> (⏸️/▶️) para detener temporalmente el GPS y continuar desde el mismo punto sin falsear tus distancias ni velocidades!</li>
+                        <li><b>[🧭 NUEVOS MARCADORES]:</b> Añadido el icono de <b>Brújula</b> para colocar el marcador táctico de "Navegante".</li>
+                        <li><b>[🎨 DISEÑO MINIMALISTA]:</b> La barra de navegación inferior ahora es más fina, minimalista y elegante, omitiendo los iconos para darte todavía más visión del mapa y una interfaz mucho más táctica.</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
                     <h3 style="color:var(--success);margin-bottom:5px;">v2.11 - 2 de Septiembre de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[📷 AVATARES PERSONALIZADOS]:</b> Nuevo sistema para subir tu propia foto/parche y mostrarla como tu marcador GPS local. Si entras en una Sala Live, tus compañeros verán tu avatar en tiempo real en el mapa, rodeado del color de tu bando. ¡Totalmente optimizado para ahorrar el 99% del consumo de datos móviles en el campo!</li>
@@ -7157,6 +7219,7 @@
             { id: 'polygon', icon: '<i class="fa-solid fa-draw-polygon"></i>', title: 'Áreas y Polígonos', action: "window.enableTool('polygon')" },
             { id: 'auto-route', icon: '<i class="fa-solid fa-wand-magic-sparkles"></i>', title: 'Ruta Inteligente', action: "window.enableTool('auto-route')" },
             { id: 'measure', icon: '<i class="fa-solid fa-ruler-combined"></i>', title: 'Regla de Medición', action: "window.enableTool('measure')" },
+            { id: 'record-route', icon: '<i class="fa-solid fa-circle-dot"></i>', title: 'Grabar Ruta', action: "window.toggleRouteRecording()" },
             { id: 'pocket', icon: '<i class="fa-solid fa-mobile-screen"></i>', title: 'Modo Bolsillo', action: "window.activatePocketMode()" },
             { id: 'delete', icon: '<i class="fa-solid fa-trash-can"></i>', title: 'Borrar Elemento', action: "window.enableTool('delete')" }
         ];
@@ -7192,11 +7255,29 @@
             window.appSettings.quickMenu.forEach(toolId => {
                 const toolDef = AVAILABLE_QUICK_TOOLS.find(t => t.id === toolId);
                 if (toolDef) {
+                    let btnColor = 'var(--ign-gold)';
+                    let btnIcon = toolDef.icon;
+                    let pauseBtnHtml = '';
+                    
+                    if (toolId === 'record-route' && window.isRecordingTrack) {
+                        btnColor = 'var(--danger)';
+                        btnIcon = '<i class="fa-solid fa-stop"></i>';
+                        
+                        const pauseColor = window.isTrackPaused ? 'var(--warning, #f39c12)' : 'var(--ign-gold)';
+                        pauseBtnHtml = `
+                        <button id="quick-btn-pause-route" onclick="window.toggleRoutePause()" title="Pausar/Reanudar Ruta"
+                            style="position:absolute; left:-55px; background:var(--ign-blue); color:${pauseColor}; width:46px; height:46px; border-radius:23px; border:2px solid ${pauseColor}; box-shadow:0 4px 10px rgba(0,0,0,0.5); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition: transform 0.2s; flex-shrink:0;">
+                            ${window.isTrackPaused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>'}
+                        </button>`;
+                    }
                     toolbar.innerHTML += `
-                        <button onclick="${toolDef.action}" title="${toolDef.title}"
-                            style="background:var(--ign-blue); color:var(--ign-gold); width:46px; height:46px; border-radius:23px; border:2px solid var(--ign-gold); box-shadow:0 4px 10px rgba(0,0,0,0.5); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition: transform 0.2s; flex-shrink:0;">
-                            ${toolDef.icon}
-                        </button>
+                        <div style="position:relative; display:flex;">
+                            ${pauseBtnHtml}
+                            <button id="quick-btn-${toolDef.id}" onclick="${toolDef.action}" title="${toolDef.title}"
+                                style="background:var(--ign-blue); color:${btnColor}; width:46px; height:46px; border-radius:23px; border:2px solid ${btnColor}; box-shadow:0 4px 10px rgba(0,0,0,0.5); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition: transform 0.2s; flex-shrink:0;">
+                                ${btnIcon}
+                            </button>
+                        </div>
                     `;
                 }
             });
