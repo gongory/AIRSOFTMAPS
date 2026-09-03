@@ -4721,10 +4721,8 @@
                     mainBtn.style.color = '#fff';
                     mainBtn.style.backgroundColor = 'var(--danger, #ff4444)';
                 }
-                if(quickBtn) {
-                    quickBtn.style.color = 'var(--danger)';
-                    quickBtn.style.borderColor = 'var(--danger)';
-                    quickBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+                if(typeof window.renderQuickMenu === 'function') {
+                    window.renderQuickMenu();
                 }
                 
                 const panel = document.getElementById('tracker-panel');
@@ -4741,10 +4739,8 @@
                     mainBtn.style.color = 'var(--danger, #ff4444)';
                     mainBtn.style.backgroundColor = 'transparent';
                 }
-                if(quickBtn) {
-                    quickBtn.style.color = 'var(--ign-gold)';
-                    quickBtn.style.borderColor = 'var(--ign-gold)';
-                    quickBtn.innerHTML = '<i class="fa-solid fa-circle-dot"></i>';
+                if(typeof window.renderQuickMenu === 'function') {
+                    window.renderQuickMenu();
                 }
                 
                 if(window.trackPoints.length > 2) {
