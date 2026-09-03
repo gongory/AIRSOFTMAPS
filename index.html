@@ -7262,17 +7262,17 @@
                         const pauseColor = window.isTrackPaused ? 'var(--warning, #f39c12)' : 'var(--ign-gold)';
                         pauseBtnHtml = `
                         <button id="quick-btn-pause-route" onclick="window.toggleRoutePause()" title="Pausar/Reanudar Ruta"
-                            style="position:absolute; left:-55px; background:var(--ign-blue); color:${pauseColor}; width:46px; height:46px; border-radius:23px; border:2px solid ${pauseColor}; box-shadow:0 4px 10px rgba(0,0,0,0.5); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition: transform 0.2s; flex-shrink:0;">
+                            style="background:var(--ign-blue); color:${pauseColor}; width:46px; height:46px; border-radius:23px; border:2px solid ${pauseColor}; box-shadow:0 4px 10px rgba(0,0,0,0.5); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition: transform 0.2s; flex-shrink:0;">
                             ${window.isTrackPaused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>'}
                         </button>`;
                     }
                     toolbar.innerHTML += `
-                        <div style="position:relative; display:flex;">
-                            ${pauseBtnHtml}
+                        <div style="display:flex; flex-direction:row-reverse; gap:10px; justify-content:flex-start;">
                             <button id="quick-btn-${toolDef.id}" onclick="${toolDef.action}" title="${toolDef.title}"
                                 style="background:var(--ign-blue); color:${btnColor}; width:46px; height:46px; border-radius:23px; border:2px solid ${btnColor}; box-shadow:0 4px 10px rgba(0,0,0,0.5); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition: transform 0.2s; flex-shrink:0;">
                                 ${btnIcon}
                             </button>
+                            ${pauseBtnHtml}
                         </div>
                     `;
                 }
