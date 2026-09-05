@@ -5271,7 +5271,7 @@
         (function () {
             try {
                 function buildManifest(icon192, icon512) {
-                    const manifestJSON = { "name": "AirsoftMaps", "short_name": "AirsoftMaps", "start_url": window.location.href.split('?')[0] || ".", "display": "standalone", "background_color": "#003366", "theme_color": "#003366", "icons": [{ "src": icon192, "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }, { "src": icon512, "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }] };
+                    const manifestJSON = { "id": "com.airsoftmaps.app", "name": "AirsoftMaps", "short_name": "AirsoftMaps", "description": "App de topografia y navegación para preparacion de eventos airsoft", "start_url": window.location.href.split('?')[0] || ".", "display": "standalone", "background_color": "#003366", "theme_color": "#003366", "icons": [{ "src": icon192, "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }, { "src": icon512, "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }] };
                     const manifestStr = JSON.stringify(manifestJSON); const manifestData = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(manifestStr);
                     const link = document.createElement('link'); link.rel = 'manifest'; link.href = manifestData; document.head.appendChild(link);
                 }
