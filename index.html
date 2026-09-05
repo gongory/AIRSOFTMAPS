@@ -5267,28 +5267,6 @@
 
         map.on('dragstart', () => { if (locWatchId !== null) { window.isFollowingUser = false; const btn = document.querySelector('button[title="Mi Ubicación"]'); if (btn) { btn.innerHTML = '🚶‍♂️ Centrar GPS'; btn.style.color = 'var(--ign-gold)'; btn.style.borderColor = 'var(--ign-gold)'; btn.style.opacity = "1"; } } });
 
-        // PWA: Convertir en App Instalable (Conversión de icono de .ico a .png dinámica)
-        (function () {
-            try {
-                function buildManifest(icon192, icon512) {
-                    const manifestJSON = { "id": "com.airsoftmaps.app", "name": "AirsoftMaps", "short_name": "AirsoftMaps", "description": "App de topografia y navegación para preparacion de eventos airsoft", "start_url": window.location.href.split('?')[0] || ".", "display": "standalone", "background_color": "#003366", "theme_color": "#003366", "icons": [{ "src": icon192, "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }, { "src": icon512, "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }] };
-                    const manifestStr = JSON.stringify(manifestJSON); const manifestData = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(manifestStr);
-                    const link = document.createElement('link'); link.rel = 'manifest'; link.href = manifestData; document.head.appendChild(link);
-                }
-                const img = new Image(); img.crossOrigin = "anonymous";
-                img.onload = function () {
-                    const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d'); cvs.width = 192; cvs.height = 192; ctx.drawImage(img, 0, 0, 192, 192); const icon192 = cvs.toDataURL('image/png');
-                    cvs.width = 512; cvs.height = 512; ctx.clearRect(0, 0, 512, 512); ctx.drawImage(img, 0, 0, 512, 512); const icon512 = cvs.toDataURL('image/png'); buildManifest(icon192, icon512);
-                };
-                img.onerror = function () {
-                    const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d');
-                    cvs.width = 192; cvs.height = 192; ctx.fillStyle = '#003366'; ctx.fillRect(0, 0, 192, 192); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('AM', 96, 96); const i192 = cvs.toDataURL('image/png');
-                    cvs.width = 512; cvs.height = 512; ctx.fillStyle = '#003366'; ctx.fillRect(0, 0, 512, 512); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 200px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('AM', 256, 256); const i512 = cvs.toDataURL('image/png');
-                    buildManifest(i192, i512);
-                };
-                img.src = 'AirsoftMaps.ico';
-            } catch (e) { console.error("Error PWA:", e); }
-        })();
 
         window.openGoogleEarth = function () {
             if (!navigator.onLine) {
