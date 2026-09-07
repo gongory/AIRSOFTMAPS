@@ -4,7 +4,7 @@
 <head>
     <link rel="manifest" href="./manifest.json?v=6">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AirsoftMaps - Edición y Personalización</title>
     <link rel="icon" type="image/x-icon" href="AirsoftMaps.ico">
     <link rel="apple-touch-icon" href="AirsoftMaps.ico">
@@ -45,8 +45,10 @@
         html {
             margin: 0;
             padding: 0;
+            width: 100%;
             height: 100%;
-            height: 100dvh; /* Modern iOS/Android fix */
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
             font-family: 'Rajdhani', sans-serif;
             overflow: hidden;
             background: #000;
@@ -1477,7 +1479,7 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.12
+                            v2.13
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
@@ -4602,16 +4604,40 @@
                         window.lastKnownPos = pos;
                         window.updateAtakHud(pos);
                         
-                        // Tracker Logic
+                        // Tracker Logic (Anti-saltos GPS)
                         if (window.isRecordingTrack && !window.isTrackPaused) {
-                            const currentLatLng = L.latLng(lat, lng);
-                            const now = Date.now();
-                            window.trackPoints.push({ lat, lng, time: now, speed: speed || 0, altitude: pos.coords.altitude || 0 });
-                            window.trackPolyline.addLatLng(currentLatLng);
-                            if (window.lastTrackPoint) {
-                                window.trackDistance += window.lastTrackPoint.distanceTo(currentLatLng);
+                            const accuracy = pos.coords.accuracy || 0;
+                            
+                            // 1. Filtrar por precisión: Si el margen de error es enorme (> 60m), ignoramos el punto (pérdida de señal en bolsillo)
+                            if (accuracy <= 60) {
+                                const currentLatLng = L.latLng(lat, lng);
+                                const now = Date.now();
+                                
+                                let isValidPoint = true;
+                                // 2. Filtrar por salto de velocidad: Si nos movemos a una velocidad inhumana (ej. salto GPS a la otra punta del pueblo)
+                                if (window.lastTrackPoint && window.trackPoints.length > 0) {
+                                    const lastP = window.trackPoints[window.trackPoints.length - 1];
+                                    const dist = window.lastTrackPoint.distanceTo(currentLatLng);
+                                    const timeDiffSec = (now - lastP.time) / 1000;
+                                    
+                                    if (timeDiffSec > 0) {
+                                        const calcSpeed = dist / timeDiffSec; // metros por segundo
+                                        // 30 m/s son 108 km/h. Un jugador no corre tanto. Si pasa, es un error del GPS.
+                                        if (calcSpeed > 30) {
+                                            isValidPoint = false;
+                                        }
+                                    }
+                                }
+
+                                if (isValidPoint) {
+                                    window.trackPoints.push({ lat, lng, time: now, speed: speed || 0, altitude: pos.coords.altitude || 0, accuracy: accuracy });
+                                    window.trackPolyline.addLatLng(currentLatLng);
+                                    if (window.lastTrackPoint) {
+                                        window.trackDistance += window.lastTrackPoint.distanceTo(currentLatLng);
+                                    }
+                                    window.lastTrackPoint = currentLatLng;
+                                }
                             }
-                            window.lastTrackPoint = currentLatLng;
                         }
                     } catch (e) { console.error(e); }
                 }, (err) => { window.customAlert("Error GPS", err.message); if (btn) { btn.innerHTML = '🎯 Activar Seguimiento GPS'; btn.style.opacity = "1"; } }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
@@ -5842,6 +5868,15 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13 - 8 de Septiembre de 2026</h3>
+                    <ul style="margin:0;padding-left:20px;">
+                        <li><b>[🐛 BUGFIX PANTALLA]:</b> Corregido el problema de la barra negra inferior en iOS con notch (viewport-fit y compatibilidad PWA).</li>
+                        <li><b>[📴 MODO BOLSILLO PRO]:</b> Añadido un deslizador "Deslizar para salir" (Slide to Unlock) que evita bloqueos por roces en el bolsillo. Recuperación inteligente del modo pantalla siempre encendida (WakeLock) incluso si minimizas la app, y bloqueo del molesto popup "Agitar para deshacer" de iOS.</li>
+                        <li><b>[🛰️ ANTI-SALTOS GPS]:</b> Implementado doble escudo de IA (Filtro de Precisión >60m y Filtro de Velocidad >100km/h) en el grabador de rutas para ignorar coordenadas corruptas y líneas rectas disparatadas cuando pierdes señal.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;border-top:1px dashed #cbd5e0;padding-top:10px;">
                     <h3 style="color:var(--success);margin-bottom:5px;">v2.12 - 3 de Septiembre de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[📍 GRABAR RUTA EN MENÚ RÁPIDO]:</b> Ahora puedes añadir la opción de "Grabar Ruta" al menú rápido lateral. ¡Incluye un nuevo botón de <b>Pausa/Reanudar</b> (⏸️/▶️) para detener temporalmente el GPS y continuar desde el mismo punto sin falsear tus distancias ni velocidades!</li>
@@ -7331,12 +7366,16 @@
         };
 
         window.wakeLock = null;
+        window.isWakeLockRequestedByUser = false;
+
         window.toggleWakeLock = async function (isChecked) {
             const chk = document.getElementById('chkWakeLock');
             if (isChecked === undefined) {
                 isChecked = window.wakeLock === null;
-                if (chk) chk.checked = isChecked;
             }
+            
+            window.isWakeLockRequestedByUser = isChecked;
+            if (chk) chk.checked = isChecked;
 
             if (!isChecked) {
                 if (window.wakeLock !== null) {
@@ -7349,30 +7388,33 @@
                         window.wakeLock = await navigator.wakeLock.request('screen');
                         window.wakeLock.addEventListener('release', () => {
                             window.wakeLock = null;
-                            if (chk) chk.checked = false;
+                            // Nota: NO desmarcamos la casilla aquí. Si el SO nos quita el wakelock 
+                            // (ej. al apagar la pantalla manualmente), queremos recuperarlo al volver.
                         });
                     } catch (err) {
+                        console.log('Wake Lock Error:', err.message);
+                        window.isWakeLockRequestedByUser = false;
                         if (chk) chk.checked = false;
-                        if (window.customAlert) {
-                            window.customAlert('Error', 'Wake Lock no soportado en este navegador: ' + err.message);
-                        } else {
-                            alert('Wake Lock no soportado en este navegador: ' + err.message);
-                        }
                     }
                 }
             }
         };
 
-        window.activatePocketMode = async function() {
-            if (window.wakeLock === null) {
-                try {
-                    window.wakeLock = await navigator.wakeLock.request('screen');
-                    const chk = document.getElementById('chkWakeLock');
-                    if (chk) chk.checked = true;
-                } catch (e) {
-                    console.log('Wakelock not allowed in pocket mode');
-                }
+        // Recuperar el WakeLock automáticamente cuando la app vuelve a primer plano
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && window.isWakeLockRequestedByUser && window.wakeLock === null) {
+                window.toggleWakeLock(true);
             }
+        });
+
+        window.activatePocketMode = async function() {
+            // Prevenir el "Agitar para deshacer" de iOS quitando el foco de cualquier caja de texto
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+
+            // Activamos la pantalla siempre encendida (con autorrecuperación)
+            window.toggleWakeLock(true);
             
             let pmOverlay = document.getElementById('pocket-mode-overlay');
             if (!pmOverlay) {
@@ -7400,28 +7442,108 @@
                 icon.style.opacity = '0.4';
                 
                 const text = document.createElement('div');
-                text.innerHTML = 'MODO BOLSILLO<br><br>Doble toque para despertar';
+                text.innerHTML = 'MODO BOLSILLO ACTIVADO';
                 text.style.textAlign = 'center';
-                text.style.fontSize = '16px';
-                text.style.opacity = '0.4';
+                text.style.fontSize = '18px';
+                text.style.fontWeight = 'bold';
+                text.style.opacity = '0.5';
                 
                 pmOverlay.appendChild(icon);
                 pmOverlay.appendChild(text);
-                
-                let lastTap = 0;
-                pmOverlay.addEventListener('touchstart', function(e) {
-                    e.preventDefault(); 
-                    const currentTime = new Date().getTime();
-                    const tapLength = currentTime - lastTap;
-                    if (tapLength < 500 && tapLength > 0) {
+
+                // SLIDE TO UNLOCK COMPONENT
+                const sliderContainer = document.createElement('div');
+                sliderContainer.style.width = '260px';
+                sliderContainer.style.height = '60px';
+                sliderContainer.style.background = '#222';
+                sliderContainer.style.borderRadius = '30px';
+                sliderContainer.style.position = 'relative';
+                sliderContainer.style.marginTop = '40px';
+                sliderContainer.style.overflow = 'hidden';
+
+                const sliderText = document.createElement('div');
+                sliderText.innerHTML = 'Deslizar para salir';
+                sliderText.style.position = 'absolute';
+                sliderText.style.width = '100%';
+                sliderText.style.textAlign = 'center';
+                sliderText.style.lineHeight = '60px';
+                sliderText.style.color = '#777';
+                sliderText.style.fontSize = '16px';
+                sliderText.style.pointerEvents = 'none';
+
+                const sliderKnob = document.createElement('div');
+                sliderKnob.innerHTML = '<i class="fa-solid fa-arrow-right"></i>';
+                sliderKnob.style.width = '60px';
+                sliderKnob.style.height = '60px';
+                sliderKnob.style.background = 'var(--ign-blue, #0d6efd)';
+                sliderKnob.style.borderRadius = '50%';
+                sliderKnob.style.position = 'absolute';
+                sliderKnob.style.left = '0';
+                sliderKnob.style.top = '0';
+                sliderKnob.style.display = 'flex';
+                sliderKnob.style.justifyContent = 'center';
+                sliderKnob.style.alignItems = 'center';
+                sliderKnob.style.color = 'white';
+                sliderKnob.style.fontSize = '24px';
+                sliderKnob.style.boxShadow = '0 0 10px rgba(0,0,0,0.8)';
+                sliderKnob.style.touchAction = 'none';
+
+                sliderContainer.appendChild(sliderText);
+                sliderContainer.appendChild(sliderKnob);
+                pmOverlay.appendChild(sliderContainer);
+
+                let isDragging = false;
+                let startX = 0;
+                const maxDrag = 200; // 260 - 60
+
+                const onMove = (e) => {
+                    if (!isDragging) return;
+                    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    let diff = clientX - startX;
+                    if (diff < 0) diff = 0;
+                    if (diff > maxDrag) diff = maxDrag;
+                    sliderKnob.style.left = diff + 'px';
+                    sliderKnob.style.opacity = (1 - (diff / maxDrag)) + 0.2;
+                };
+
+                const onEnd = (e) => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    let currentLeft = parseInt(sliderKnob.style.left || '0');
+                    if (currentLeft >= maxDrag - 10) {
+                        // Unlocked!
                         pmOverlay.style.display = 'none';
+                        sliderKnob.style.left = '0px';
+                        sliderKnob.style.opacity = '1';
+                    } else {
+                        // Snap back
+                        sliderKnob.style.transition = 'left 0.3s, opacity 0.3s';
+                        sliderKnob.style.left = '0px';
+                        sliderKnob.style.opacity = '1';
                     }
-                    lastTap = currentTime;
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onEnd);
+                    document.removeEventListener('touchmove', onMove);
+                    document.removeEventListener('touchend', onEnd);
+                };
+
+                const onStart = (e) => {
+                    isDragging = true;
+                    startX = (e.touches ? e.touches[0].clientX : e.clientX) - parseInt(sliderKnob.style.left || '0');
+                    sliderKnob.style.transition = 'none';
+                    document.addEventListener('mousemove', onMove, {passive: false});
+                    document.addEventListener('mouseup', onEnd);
+                    document.addEventListener('touchmove', onMove, {passive: false});
+                    document.addEventListener('touchend', onEnd);
+                };
+
+                sliderKnob.addEventListener('mousedown', onStart);
+                sliderKnob.addEventListener('touchstart', onStart, {passive: false});
+
+                // Prevent scrolling or unwanted bounces
+                pmOverlay.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
                 }, {passive: false});
-                
-                pmOverlay.addEventListener('dblclick', function() {
-                    pmOverlay.style.display = 'none';
-                });
                 
                 document.body.appendChild(pmOverlay);
             }
