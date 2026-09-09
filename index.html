@@ -284,13 +284,13 @@
         }
 
         #fabBtn {
-            top: 15px;
-            right: 15px;
+            top: calc(15px + env(safe-area-inset-top, 0px));
+            right: calc(15px + env(safe-area-inset-right, 0px));
         }
 
         #fabLiveBtn {
-            top: 15px;
-            right: 75px;
+            top: calc(15px + env(safe-area-inset-top, 0px));
+            right: calc(75px + env(safe-area-inset-right, 0px));
         }
 
         /* Recolocados lado a lado, como en la foto */
@@ -1509,7 +1509,7 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.13.4
+                            v2.13.5
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
@@ -5903,8 +5903,9 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
-                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13.4 - 10 de Septiembre de 2026</h3>
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13.5 - 10 de Septiembre de 2026</h3>
                     <ul style="color:#e2e8f0;margin-bottom:15px;padding-left:20px;font-size:15px;">
+                        <li><b>[🐛 BUGFIX iOS]:</b> Resuelto el solapamiento de los botones superiores con la batería y el reloj en iPhone usando márgenes inteligentes dinámicos (safe-area-inset).</li>
                         <li><span style="color:var(--warning);">[NUEVO]</span> MESHTASTIC: Fase preliminar de conexión Bluetooth con nodos LoRa para rastreo off-grid sin internet.</li>
                         <li><span style="color:var(--warning);">[NUEVO]</span> CÓDIGO MAESTRO: Implementada llave de acceso VIP permanente independiente al mes.</li>
                         <li><span style="color:var(--warning);">[MEJORA]</span> UI: Unificado el diseño a "Modo Escritorio" para todos los dispositivos móviles y eliminado el botón de alternancia.</li>
