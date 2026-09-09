@@ -1104,7 +1104,7 @@
                     <option value="ca" style="color:black;">CA</option>
                 </select>
                 <button id="modeToggleBtn"
-                    style="background:rgba(255,255,255,0.2);border:none;color:white;cursor:pointer;font-size:18px;border-radius:50%;width:32px;height:32px;"
+                    style="display:none;"
                     onclick="window.toggleMobileMode()">📱</button>
                 <button id="themeToggleBtn"
                     style="background:rgba(255,255,255,0.2);border:none;color:white;cursor:pointer;font-size:18px;border-radius:50%;width:32px;height:32px;"
@@ -1509,7 +1509,7 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.13.3
+                            v2.13.4
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
@@ -2108,12 +2108,16 @@
                     de nuevo la contraseña.</p>
                 <p data-i18n="manual_p18"><b>🌍 Mapas Globales (NUEVO):</b> Utiliza el Gestor de Capas para seleccionar
                     mapas mundiales como el Satélite ESRI o OpenTopoMap si juegas fuera de España.</p>
-                <p data-i18n="manual_p19"><b>📊 Panel de Telemetría:</b> Al activar el Seguimiento GPS, aparecerá un
-                    panel táctico en la esquina de la pantalla. Muestra en tiempo real tu indicativo, coordenadas en el
-                    formato elegido, altitud, velocidad, precisión del GPS y el rumbo exacto al que apuntas con el
-                    móvil.</p>
+                <p data-i18n="manual_p19"><b>📊 Panel de Telemetría:</b> Al activar el Seguimiento GPS, aparecerá un panel táctico en la esquina. Este panel muestra en tiempo real:<br>
+                    - <b>Indicativo:</b> Tu nombre o alias.<br>
+                    - <b>Coordenadas:</b> Tu posición exacta en el formato elegido.<br>
+                    - <b>Altitud (ALT):</b> Tu altura sobre el nivel del mar.<br>
+                    - <b>Velocidad (VEL):</b> Tu ritmo de movimiento actual.<br>
+                    - <b>Precisión (ACC):</b> El margen de error del GPS en metros.<br>
+                    - <b>Rumbo (HDG):</b> Hacia dónde apunta tu brújula en grados.</p>
                 <p data-i18n="manual_p20"><b>🔴 Grabación de Rutas (Tracker):</b> En el panel GPS puedes Iniciar la Grabación de tu ruta. Se guardará localmente. En 'Mis Rutas Guardadas' puedes cargar tus trayectos, exportarlos como GPX universal o sincronizarlos en la nube para tenerlos en cualquier dispositivo.</p>
                 <p data-i18n="manual_p21"><b>📴 Modo Bolsillo (Pantalla Negra):</b> En Configuración, actívalo para mantener el GPS grabando con la pantalla 100% negra y ahorrar batería sin cerrar la app (doble toque para salir).</p>
+                <p data-i18n="manual_p22"><b>📡 Conexión Meshtastic (Radio Off-Grid):</b> En Ajustes puedes conectar la App por Bluetooth a tu nodo LoRa (Meshtastic). Esto permite enviar tu posición a tus compañeros sin internet, dibujándolos en el mapa.</p>
             </div>
             <div style="text-align:right;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;"><button
                     style="padding:10px 20px;border-radius:8px;border:none;background:var(--ign-blue);color:white;cursor:pointer;font-weight:bold;"
@@ -4256,9 +4260,9 @@
         }
         dragElement(document.getElementById("map-legend")); dragElement(document.getElementById("compass-rose")); dragElement(document.getElementById("numeric-scale-widget")); dragElement(document.getElementById("liveCoords"));
 
-        let isMobileMode = window.innerWidth <= 768;
-        function initMobileMode() { const btn = document.getElementById('modeToggleBtn'); if (isMobileMode) { document.body.classList.add('mobile-mode'); btn.innerText = '💻'; btn.title = 'Cambiar a modo escritorio'; } else { document.body.classList.remove('mobile-mode'); btn.innerText = '📱'; btn.title = 'Cambiar a modo móvil'; } }
-        window.toggleMobileMode = function () { isMobileMode = !isMobileMode; initMobileMode(); };
+        let isMobileMode = false;
+        function initMobileMode() { document.body.classList.remove('mobile-mode'); }
+        window.toggleMobileMode = function () { };
         window.toggleTheme = function () { const body = document.body; const btnTheme = document.getElementById('themeToggleBtn'); body.classList.toggle('dark-mode'); if (body.classList.contains('dark-mode')) { btnTheme.innerHTML = '☀️'; btnTheme.title = 'Cambiar a Modo Claro'; } else { btnTheme.innerHTML = '🌙'; btnTheme.title = 'Cambiar a Modo Oscuro'; } };
         initMobileMode();
 
@@ -5404,9 +5408,10 @@
                 manual_p16: "<b><i class='fa-solid fa-pen'></i> Pizarra Táctica (En Vivo):</b> Dibuja libremente en el mapa desde el menú Editar. Tus trazos se envían en tiempo real a la Sala de Operaciones.",
                 manual_p17: "<b><i class='fa-solid fa-clock-rotate-left'></i> Historial de Salas:</b> Al entrar o crear una sala, se guardará automáticamente en un desplegable para que puedas volver a entrar rápidamente sin tener que escribir de nuevo la contraseña.",
                 manual_p18: "<b><i class='fa-solid fa-earth-europe'></i> Mapas Globales (NUEVO):</b> Utiliza el Gestor de Capas para seleccionar mapas mundiales como el Satélite ESRI o OpenTopoMap si juegas fuera de España.",
-                manual_p19: "<b><i class='fa-solid fa-chart-line'></i> Panel de Telemetría:</b> Al activar el Seguimiento GPS, aparecerá un panel táctico en la esquina de la pantalla. Muestra en tiempo real tu indicativo, coordenadas en el formato elegido, altitud, velocidad, precisión del GPS y el rumbo exacto al que apuntas con el móvil.",
+                manual_p19: "<b><i class='fa-solid fa-chart-line'></i> Panel de Telemetría:</b> Al activar el Seguimiento GPS, aparecerá un panel táctico en la esquina. Muestra en tiempo real:<br>- <b>Indicativo:</b> Tu alias.<br>- <b>Coordenadas:</b> Tu posición exacta.<br>- <b>Altitud (ALT):</b> Tu altura.<br>- <b>Velocidad (VEL):</b> Tu ritmo.<br>- <b>Precisión (ACC):</b> Margen de error GPS.<br>- <b>Rumbo (HDG):</b> Grados de brújula.",
                 manual_p20: "<b><i class='fa-solid fa-circle-dot'></i> Grabación de Rutas (Tracker):</b> En el panel GPS puedes Iniciar la Grabación de tu ruta. Se guardará localmente. En 'Mis Rutas Guardadas' puedes cargar tus trayectos, exportarlos como GPX universal o sincronizarlos en la nube para tenerlos en cualquier dispositivo.",
-                manual_p21: "<b><i class='fa-solid fa-mobile-screen'></i> Modo Bolsillo (Pantalla Negra):</b> En Configuración, actívalo para mantener el GPS grabando con la pantalla 100% negra y ahorrar batería sin cerrar la app (doble toque para salir)."
+                manual_p21: "<b><i class='fa-solid fa-mobile-screen'></i> Modo Bolsillo (Pantalla Negra):</b> En Configuración, actívalo para mantener el GPS grabando con la pantalla 100% negra y ahorrar batería sin cerrar la app (doble toque para salir).",
+                manual_p22: "<b><i class='fa-solid fa-satellite-dish'></i> Conexión Meshtastic (Radio Off-Grid):</b> En Ajustes puedes conectar la App por Bluetooth a un nodo LoRa (Meshtastic). Te permite compartir la ubicación con tu equipo sin internet y verlos en vivo en el mapa."
             },
             en: {
                 manual_btn: "📖 User Manual", tips_btn: "💡 Tips & Tricks", tips_title: "💡 Quick Tips & Tricks", tip_1_t: "Battery & GPS (Pocket Mode)", tip_1_d: "Enable 'Pocket Mode' in settings to turn off the screen while keeping the app recording your GPS route without interruptions.", tip_2_t: "Offline Maps", tip_2_d: "Draw a box in 'Mixer -> Mark Zone' before leaving home. The satellite map will be cached for when you lose signal in the field.", tip_3_t: "Colors and Factions", tip_3_d: "Tap any marker and press 'Edit'. You can change its color and icon to instantly distinguish allied bases from enemy ones.", tip_4_t: "Measure Distances", tip_4_d: "Use the 'Quick Ruler' tool to know how many meters away a target is without cluttering the map.", search_title: "🔍 Search", search_placeholder: "City or coordinates...", search_go: "Go",
@@ -5898,6 +5903,14 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13.4 - 10 de Septiembre de 2026</h3>
+                    <ul style="color:#e2e8f0;margin-bottom:15px;padding-left:20px;font-size:15px;">
+                        <li><span style="color:var(--warning);">[NUEVO]</span> MESHTASTIC: Fase preliminar de conexión Bluetooth con nodos LoRa para rastreo off-grid sin internet.</li>
+                        <li><span style="color:var(--warning);">[NUEVO]</span> CÓDIGO MAESTRO: Implementada llave de acceso VIP permanente independiente al mes.</li>
+                        <li><span style="color:var(--warning);">[MEJORA]</span> UI: Unificado el diseño a "Modo Escritorio" para todos los dispositivos móviles y eliminado el botón de alternancia.</li>
+                        <li><span style="color:var(--warning);">[MANUAL]</span> Actualizadas las guías de usuario con desglose completo del Panel de Telemetría e info de conexión Meshtastic.</li>
+                    </ul>
+
                     <h3 style="color:var(--success);margin-bottom:5px;">v2.13.3 - 9 de Septiembre de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🐛 BUGFIX PANTALLA]:</b> Corregido el problema de la barra negra inferior en iOS con notch (viewport-fit y compatibilidad PWA).</li>
