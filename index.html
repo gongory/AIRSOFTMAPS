@@ -709,9 +709,8 @@
             const isTWA = document.referrer.includes('android-app://');
             const isVIP = localStorage.getItem('vip_access') === 'true';
             const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-            if ((isIOS || (!isStandalone && !isTWA)) && !isVIP && !isLocal) {
+            if (!isStandalone && !isTWA && !isVIP && !isLocal) {
                 document.documentElement.style.display = 'none'; // Hide initially
                 window.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.style.display = '';
@@ -1467,11 +1466,6 @@
                     <span data-i18n="set_wakelock">Pantalla siempre encendida</span>
                 </label>
 
-                <button class="btn-outline" onclick="if(window.connectMeshtastic) window.connectMeshtastic(); else alert('Módulo Meshtastic no cargado');"
-                    style="margin-bottom:12px;justify-content:center;border-color:#1e293b;color:#f8fafc;background-color:#0284c7;font-weight:bold;width:100%;">
-                    <i class="fa-brands fa-bluetooth"></i> <span data-i18n="meshtastic_connect_btn">Conectar Meshtastic</span>
-                </button>
-
                 <button class="btn-outline" onclick="window.activatePocketMode()"
                     style="margin-bottom:12px;justify-content:center;border-color:#1e293b;color:#f8fafc;background-color:#0f172a;font-weight:bold;width:100%;">
                     <span data-i18n="pocket_mode_btn">📴 Activar Modo Bolsillo (Pantalla Negra)</span>
@@ -1507,7 +1501,7 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.13.2
+                            v2.13
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
@@ -5358,7 +5352,7 @@
                 base_layer_lbl: "Capa Principal (Fondo)", overlay_layer_lbl: "Capa Secundaria", overlay_opacity_lbl: "Opacidad Secundaria",
                 offline_mode_lbl: "Modo Offline", offline_current_btn: "⬇️ Visión Actual", offline_zone_btn: "🔲 Marcar Zona",
                 tools_3d_lbl: "Herramientas 3D In-App", drone_3d_btn: "🛰️ Dron de Reconocimiento 3D",
-                settings_menu: "⚙️ Configuración y Ajustes", meshtastic_connect_btn: "📡 Conectar Meshtastic", pocket_mode_btn: "📴 Activar Modo Bolsillo (Pantalla Negra)", set_coords_format: "Formato de Coordenadas", set_units_system: "Sistema de Unidades", unit_metric: "Métrico (Metros / Km)", unit_imperial: "Imperial (Pies / Millas)", set_telemetry: "Panel de Telemetría", set_wakelock: "Pantalla siempre encendida", set_clear_cache: "Limpiar Caché y Datos",
+                settings_menu: "⚙️ Configuración y Ajustes", pocket_mode_btn: "📴 Activar Modo Bolsillo (Pantalla Negra)", set_coords_format: "Formato de Coordenadas", set_units_system: "Sistema de Unidades", unit_metric: "Métrico (Metros / Km)", unit_imperial: "Imperial (Pies / Millas)", set_telemetry: "Panel de Telemetría", set_wakelock: "Pantalla siempre encendida", set_clear_cache: "Limpiar Caché y Datos",
                 tips_btn: "💡 Consejos y Trucos", tips_title: "💡 Consejos y Trucos Rápidos", tip_1_t: "Batería y GPS (Modo Bolsillo)", tip_1_d: "Activa el 'Modo Bolsillo' en los ajustes para que la pantalla se apague, pero la app siga grabando tu ruta GPS sin interrupciones.", tip_2_t: "Mapas sin Cobertura", tip_2_d: "Dibuja un recuadro en 'Mezclador -> Marcar Zona' antes de salir de casa. El mapa por satélite se guardará en la memoria para cuando no tengas internet en el campo.", tip_3_t: "Colores y Bandos", tip_3_d: "Toca cualquier marcador y pulsa 'Editar'. Podrás cambiar su color e icono para diferenciar bases aliadas de enemigas al instante.", tip_4_t: "Medir Distancias", tip_4_d: "Usa la herramienta 'Regla Rápida' para saber a cuántos metros estás de un objetivo sin ensuciar el mapa.",
                 thickness_lbl: "Grosor", color_lbl: "Color", lock_zoom_btn: "🔓 Bloquear Zoom", grid_toggle_btn: "Activar Cuadrícula", scale_toggle_btn: "Mostrar Escala", numscale_toggle_btn: "Ocultar Numérica",
                 line_thickness_lbl: "Grosor Línea", line_color_lbl: "Color Línea", marker_color_lbl: "Color Marcador", compass_style_lbl: "Estilo Brújula", dynamic_lbl: "🔄 Dinámica",
@@ -5419,7 +5413,7 @@
                 base_layer_lbl: "Base Layer (Background)", overlay_layer_lbl: "Overlay Layer", overlay_opacity_lbl: "Overlay Opacity",
                 offline_mode_lbl: "Offline Mode", offline_current_btn: "⬇️ Current View", offline_zone_btn: "🔲 Mark Zone",
                 tools_3d_lbl: "In-App 3D Tools", drone_3d_btn: "🛰️ 3D Recon Drone",
-                settings_menu: "⚙️ Settings & Configuration", meshtastic_connect_btn: "📡 Connect Meshtastic", pocket_mode_btn: "🌙 Pocket Mode (Black Screen)", set_coords_format: "Coordinates Format", set_units_system: "Unit System", unit_metric: "Metric (Meters / Km)", unit_imperial: "Imperial (Feet / Miles)", set_telemetry: "Telemetry Panel", set_wakelock: "Keep Screen Awake", set_clear_cache: "Clear Cache and Data",
+                settings_menu: "⚙️ Settings & Configuration", pocket_mode_btn: "🌙 Pocket Mode (Black Screen)", set_coords_format: "Coordinates Format", set_units_system: "Unit System", unit_metric: "Metric (Meters / Km)", unit_imperial: "Imperial (Feet / Miles)", set_telemetry: "Telemetry Panel", set_wakelock: "Keep Screen Awake", set_clear_cache: "Clear Cache and Data",
                 tips_btn: "💡 Tips & Tricks", tips_title: "💡 Quick Tips & Tricks", tip_1_t: "Battery & GPS (Pocket Mode)", tip_1_d: "Enable 'Pocket Mode' in settings to turn off the screen while keeping the app recording your GPS route without interruptions.", tip_2_t: "Offline Maps", tip_2_d: "Draw a box in 'Mixer -> Mark Zone' before leaving home. The satellite map will be cached for when you lose signal in the field.", tip_3_t: "Colors and Factions", tip_3_d: "Tap any marker and press 'Edit'. You can change its color and icon to instantly distinguish allied bases from enemy ones.", tip_4_t: "Measure Distances", tip_4_d: "Use the 'Quick Ruler' tool to know how many meters away a target is without cluttering the map.",
                 thickness_lbl: "Thickness", color_lbl: "Color", lock_zoom_btn: "🔓 Lock Zoom", grid_toggle_btn: "Enable Grid", scale_toggle_btn: "Show Scale", numscale_toggle_btn: "Hide Numeric",
                 line_thickness_lbl: "Line Thickness", line_color_lbl: "Line Color", marker_color_lbl: "Marker Color", compass_style_lbl: "Compass Style", dynamic_lbl: "🔄 Dynamic",
@@ -5896,7 +5890,7 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
-                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13.2 - 8 de Septiembre de 2026</h3>
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13 - 8 de Septiembre de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🐛 BUGFIX PANTALLA]:</b> Corregido el problema de la barra negra inferior en iOS con notch (viewport-fit y compatibilidad PWA).</li>
                         <li><b>[📴 MODO BOLSILLO PRO]:</b> Añadido un deslizador "Deslizar para salir" (Slide to Unlock) que evita bloqueos por roces en el bolsillo. Recuperación inteligente del modo pantalla siempre encendida (WakeLock) incluso si minimizas la app, y bloqueo del molesto popup "Agitar para deshacer" de iOS.</li>
@@ -7645,49 +7639,6 @@
             return Math.round(distMeters) + " m";
         };
         // --- FIN: LOGICA DE AJUSTES v2.04 ---
-    </script>
-    <!-- MODULE: Meshtastic Bluetooth -->
-    <script type="module">
-        import { MeshClient } from "https://esm.sh/@meshtastic/sdk@2.3.9";
-        import { WebBluetoothTransport } from "https://esm.sh/@meshtastic/transport-web-bluetooth@2.3.9";
-
-        window.meshtasticClient = null;
-        window.meshtasticConnected = false;
-
-        window.connectMeshtastic = async function () {
-            try {
-                if (!navigator.bluetooth) {
-                    alert("Tu navegador no soporta Web Bluetooth. (En iOS debes usar la app Bluefy).");
-                    return;
-                }
-
-                if (window.meshtasticConnected) {
-                    alert("Ya estás conectado a la malla Meshtastic.");
-                    return;
-                }
-
-                alert("Asegúrate de que tu nodo Meshtastic esté encendido. Selecciona 'Meshtastic_XXXX' en la lista que aparecerá.");
-                
-                const transport = new WebBluetoothTransport();
-                window.meshtasticClient = new MeshClient({ transport });
-
-                await window.meshtasticClient.connect();
-                window.meshtasticConnected = true;
-                
-                alert("✅ Conectado al nodo Meshtastic correctamente. ¡El modo radio está activo!");
-                
-                // MOCKUP: Escuchar posiciones y parsear datos para integrarlos en Leaflet
-                // El desarrollo profundo del parseo protobuf de posiciones se hará cuando haya hardware físico.
-                window.meshtasticClient.on('PositionPlugin', (packet) => {
-                    console.log("Posición recibida vÍa Meshtastic:", packet);
-                    // Lógica futura para crear un Leaflet Marker con los datos de packet
-                });
-
-            } catch (error) {
-                console.error("Error al conectar Meshtastic:", error);
-                alert("❌ Error de conexión Bluetooth: " + error.message);
-            }
-        };
     </script>
 </body>
 
