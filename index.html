@@ -694,62 +694,6 @@
             color: #ff3b30;
             box-shadow: 0 0 10px rgba(255, 59, 48, 0.4);
         }
-        /* FORZAR MODO ESCRITORIO SIEMPRE (Ignorar móvil) y Arreglar notch iOS */
-        body.mobile-mode .sidebar {
-            top: max(15px, env(safe-area-inset-top, 15px)) !important;
-            bottom: auto !important;
-            left: auto !important;
-            right: 15px !important;
-            width: 340px !important;
-            max-width: calc(100vw - 30px) !important;
-            height: auto !important;
-            max-height: calc(100vh - 30px) !important;
-            border-radius: 0 !important;
-            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px) !important;
-            border-bottom: 1px solid var(--border-color) !important;
-            border-top: 1px solid var(--border-color) !important;
-            transform: translateX(0) !important;
-        }
-        body.mobile-mode .sidebar.oculto {
-            transform: translateX(120%) !important;
-        }
-        body.mobile-mode .fab-menu {
-            display: flex !important;
-        }
-        body.mobile-mode .bottom-nav-bar {
-            display: none !important;
-        }
-        body.mobile-mode .leaflet-control-zoom {
-            display: block !important;
-        }
-        body.mobile-mode .coord-display {
-            bottom: max(25px, env(safe-area-inset-bottom, 25px)) !important;
-            left: 15px !important;
-            right: auto !important;
-            max-width: none !important;
-            font-size: 11px !important;
-        }
-        #show-bottom-nav-btn {
-            display: none !important;
-        }
-        
-        /* Arreglo específico para el NOTCH en iPhone (Botones Superiores) */
-        #fabBtn, #fabLiveBtn {
-            top: max(15px, calc(10px + env(safe-area-inset-top, 10px))) !important;
-        }
-        .sidebar {
-            top: max(15px, calc(10px + env(safe-area-inset-top, 10px))) !important;
-        }
-
-        /* Arreglo de la banda negra inferior en iOS (forzar map-container a ocupar todo) */
-        #map-container {
-            height: 100vh !important; /* Forza el alto total */
-            height: 100dvh !important; /* Si el navegador lo soporta, ajusta dinámicamente a la barra de Safari */
-        }
-        /* Correcciones de color para el correo en diferentes temas */
-        body.theme-coyote #login-status-text { color: #3e2f18 !important; }
-        body.theme-khaki #login-status-text { color: #f8f9fa !important; }
-        body.theme-white #login-status-text { color: #334155 !important; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -765,8 +709,9 @@
             const isTWA = document.referrer.includes('android-app://');
             const isVIP = localStorage.getItem('vip_access') === 'true';
             const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-            if (!isStandalone && !isTWA && !isVIP && !isLocal) {
+            if ((isIOS || (!isStandalone && !isTWA)) && !isVIP && !isLocal) {
                 document.documentElement.style.display = 'none'; // Hide initially
                 window.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.style.display = '';
@@ -929,62 +874,6 @@
             border-radius: 6px !important;
             font-weight: 500 !important;
         }
-        /* FORZAR MODO ESCRITORIO SIEMPRE (Ignorar móvil) y Arreglar notch iOS */
-        body.mobile-mode .sidebar {
-            top: max(15px, env(safe-area-inset-top, 15px)) !important;
-            bottom: auto !important;
-            left: auto !important;
-            right: 15px !important;
-            width: 340px !important;
-            max-width: calc(100vw - 30px) !important;
-            height: auto !important;
-            max-height: calc(100vh - 30px) !important;
-            border-radius: 0 !important;
-            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px) !important;
-            border-bottom: 1px solid var(--border-color) !important;
-            border-top: 1px solid var(--border-color) !important;
-            transform: translateX(0) !important;
-        }
-        body.mobile-mode .sidebar.oculto {
-            transform: translateX(120%) !important;
-        }
-        body.mobile-mode .fab-menu {
-            display: flex !important;
-        }
-        body.mobile-mode .bottom-nav-bar {
-            display: none !important;
-        }
-        body.mobile-mode .leaflet-control-zoom {
-            display: block !important;
-        }
-        body.mobile-mode .coord-display {
-            bottom: max(25px, env(safe-area-inset-bottom, 25px)) !important;
-            left: 15px !important;
-            right: auto !important;
-            max-width: none !important;
-            font-size: 11px !important;
-        }
-        #show-bottom-nav-btn {
-            display: none !important;
-        }
-        
-        /* Arreglo específico para el NOTCH en iPhone (Botones Superiores) */
-        #fabBtn, #fabLiveBtn {
-            top: max(15px, calc(10px + env(safe-area-inset-top, 10px))) !important;
-        }
-        .sidebar {
-            top: max(15px, calc(10px + env(safe-area-inset-top, 10px))) !important;
-        }
-
-        /* Arreglo de la banda negra inferior en iOS (forzar map-container a ocupar todo) */
-        #map-container {
-            height: 100vh !important; /* Forza el alto total */
-            height: 100dvh !important; /* Si el navegador lo soporta, ajusta dinámicamente a la barra de Safari */
-        }
-        /* Correcciones de color para el correo en diferentes temas */
-        body.theme-coyote #login-status-text { color: #3e2f18 !important; }
-        body.theme-khaki #login-status-text { color: #f8f9fa !important; }
-        body.theme-white #login-status-text { color: #334155 !important; }
     </style>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -1236,7 +1125,7 @@
                     <div id="login-status-container"
                         style="display:none; align-items:center; gap:5px; background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; border:1px solid #475569;">
                         <span id="login-status-text"
-                            style="font-size:12px; font-weight:900; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.9;"
+                            style="font-size:11px; color:#94a3b8; font-weight:bold; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
                             title="Sesión iniciada"></span>
                         <button id="btn-logout"
                             style="background:transparent; border:none; color:#f87171; font-size:14px; cursor:pointer; padding:0;"
@@ -1613,7 +1502,7 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.13
+                            v2.13.2
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
@@ -6002,7 +5891,7 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
-                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13 - 8 de Septiembre de 2026</h3>
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13.2 - 8 de Septiembre de 2026</h3>
                     <ul style="margin:0;padding-left:20px;">
                         <li><b>[🐛 BUGFIX PANTALLA]:</b> Corregido el problema de la barra negra inferior en iOS con notch (viewport-fit y compatibilidad PWA).</li>
                         <li><b>[📴 MODO BOLSILLO PRO]:</b> Añadido un deslizador "Deslizar para salir" (Slide to Unlock) que evita bloqueos por roces en el bolsillo. Recuperación inteligente del modo pantalla siempre encendida (WakeLock) incluso si minimizas la app, y bloqueo del molesto popup "Agitar para deshacer" de iOS.</li>
@@ -6974,62 +6863,6 @@
             bottom: 5px;
             right: 25px;
         }
-        /* FORZAR MODO ESCRITORIO SIEMPRE (Ignorar móvil) y Arreglar notch iOS */
-        body.mobile-mode .sidebar {
-            top: max(15px, env(safe-area-inset-top, 15px)) !important;
-            bottom: auto !important;
-            left: auto !important;
-            right: 15px !important;
-            width: 340px !important;
-            max-width: calc(100vw - 30px) !important;
-            height: auto !important;
-            max-height: calc(100vh - 30px) !important;
-            border-radius: 0 !important;
-            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px) !important;
-            border-bottom: 1px solid var(--border-color) !important;
-            border-top: 1px solid var(--border-color) !important;
-            transform: translateX(0) !important;
-        }
-        body.mobile-mode .sidebar.oculto {
-            transform: translateX(120%) !important;
-        }
-        body.mobile-mode .fab-menu {
-            display: flex !important;
-        }
-        body.mobile-mode .bottom-nav-bar {
-            display: none !important;
-        }
-        body.mobile-mode .leaflet-control-zoom {
-            display: block !important;
-        }
-        body.mobile-mode .coord-display {
-            bottom: max(25px, env(safe-area-inset-bottom, 25px)) !important;
-            left: 15px !important;
-            right: auto !important;
-            max-width: none !important;
-            font-size: 11px !important;
-        }
-        #show-bottom-nav-btn {
-            display: none !important;
-        }
-        
-        /* Arreglo específico para el NOTCH en iPhone (Botones Superiores) */
-        #fabBtn, #fabLiveBtn {
-            top: max(15px, calc(10px + env(safe-area-inset-top, 10px))) !important;
-        }
-        .sidebar {
-            top: max(15px, calc(10px + env(safe-area-inset-top, 10px))) !important;
-        }
-
-        /* Arreglo de la banda negra inferior en iOS (forzar map-container a ocupar todo) */
-        #map-container {
-            height: 100vh !important; /* Forza el alto total */
-            height: 100dvh !important; /* Si el navegador lo soporta, ajusta dinámicamente a la barra de Safari */
-        }
-        /* Correcciones de color para el correo en diferentes temas */
-        body.theme-coyote #login-status-text { color: #3e2f18 !important; }
-        body.theme-khaki #login-status-text { color: #f8f9fa !important; }
-        body.theme-white #login-status-text { color: #334155 !important; }
     </style>
 
     <!-- Print Composer Overlay -->
