@@ -90,7 +90,7 @@
             border: none !important;
             box-shadow: var(--shadow) !important;
             margin-left: 15px !important;
-            margin-top: 25px !important;
+            margin-top: 85px !important;
         }
 
         /* Paneles Laterales - Estilo HUD transparente */
@@ -1530,7 +1530,7 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.13.7
+                            v2.13.8
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
@@ -5908,6 +5908,13 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13.8 - 15 de Septiembre de 2026</h3>
+                    <ul style="color:#e2e8f0;margin-bottom:15px;padding-left:20px;font-size:15px;">
+                        <li><b>[🐛 BUGFIX iOS]:</b> Arreglado fallo de desconexión Meshtastic y reposicionados los botones de zoom.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;">
                     <h3 style="color:var(--success);margin-bottom:5px;">v2.13.7 - 14 de Septiembre de 2026</h3>
                     <ul style="color:#e2e8f0;margin-bottom:15px;padding-left:20px;font-size:15px;">
                         <li><span style="color:var(--warning);">[NUEVO]</span> MAPAS OFF-ROAD: Añadidas las capas CyclOSM y Rutas a Pie (Waymarked) globales para senderos, atajos y rutas GR/PR.</li>
@@ -7875,13 +7882,6 @@
 
         window.connectMeshtastic = async function () {
             try {
-                if (!navigator.bluetooth) {
-                    if (confirm("Tu navegador no soporta Web Bluetooth.\n\n¿Deseas iniciar el Simulador de Malla Radio para hacer pruebas?")) {
-                        window.simulateMeshtastic();
-                    }
-                    return;
-                }
-
                 if (window.meshtasticConnected) {
                     if (confirm("¿Deseas desconectar la radio Meshtastic (o detener el simulador) y borrar las posiciones actuales?")) {
                         window.meshtasticConnected = false;
@@ -7889,16 +7889,32 @@
                             clearInterval(meshtasticSimInterval);
                             meshtasticSimInterval = null;
                         }
+                        if (window.meshtasticDevice && window.meshtasticDevice.gatt.connected) {
+                            window.meshtasticDevice.gatt.disconnect();
+                        }
                         if (window.meshtasticClient) {
                             try { window.meshtasticClient.disconnect(); } catch(e) {}
                             window.meshtasticClient = null;
                         }
-                        window.meshtasticLayer.clearLayers();
-                        window.meshtasticNodes = {};
+                        Object.keys(meshtasticMarkers).forEach(id => {
+                            map.removeLayer(meshtasticMarkers[id]);
+                        });
+                        meshtasticMarkers = {};
+                        document.getElementById('btn-meshtastic').innerHTML = "<i class='fa-solid fa-satellite-dish'></i> Conectar Meshtastic";
+                        document.getElementById('btn-meshtastic').style.backgroundColor = "var(--bg-card)";
+                        document.getElementById('btn-meshtastic').style.color = "var(--text)";
                         alert("📻 Radio Meshtastic desconectada correctamente.");
                     }
                     return;
                 }
+
+                if (!navigator.bluetooth) {
+                    if (confirm("Tu navegador (o dispositivo iOS) no soporta Web Bluetooth nativo.\n\n¿Deseas iniciar el Simulador de Malla Radio para hacer pruebas?")) {
+                        window.simulateMeshtastic();
+                    }
+                    return;
+                }
+
 
                 alert("Asegúrate de que tu nodo Meshtastic esté encendido. Selecciona 'Meshtastic_XXXX' en la lista que aparecerá.\n\n(Si cancelas, podrás iniciar el Simulador).");
                 
