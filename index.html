@@ -1530,7 +1530,7 @@
                         <b style="color:var(--ign-blue);font-size:14px;">AirsoftMaps</b><br>
                         <span
                             style="background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">
-                            v2.13.8
+                            v2.13.9
                         </span>
                     </div>
                     <p style="margin:5px 0;"><b data-i18n="about_author">👨‍💻 Autor:</b> gongorycorp.</p>
@@ -5908,6 +5908,13 @@
                 style="font-size:13px;color:#475569;line-height:1.6;max-height:60vh;overflow-y:auto;padding-right:5px;">
 
                 <div style="margin-bottom:20px;">
+                    <h3 style="color:var(--success);margin-bottom:5px;">v2.13.9 - 15 de Septiembre de 2026</h3>
+                    <ul style="color:#e2e8f0;margin-bottom:15px;padding-left:20px;font-size:15px;">
+                        <li><b>[🐛 BUGFIX]:</b> Solucionado el error al desconectar la radio o detener el simulador (los nodos ahora se borran correctamente del mapa).</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:20px;">
                     <h3 style="color:var(--success);margin-bottom:5px;">v2.13.8 - 15 de Septiembre de 2026</h3>
                     <ul style="color:#e2e8f0;margin-bottom:15px;padding-left:20px;font-size:15px;">
                         <li><b>[🐛 BUGFIX iOS]:</b> Arreglado fallo de desconexión Meshtastic y reposicionados los botones de zoom.</li>
@@ -7896,10 +7903,13 @@
                             try { window.meshtasticClient.disconnect(); } catch(e) {}
                             window.meshtasticClient = null;
                         }
-                        Object.keys(meshtasticMarkers).forEach(id => {
-                            map.removeLayer(meshtasticMarkers[id]);
-                        });
-                        meshtasticMarkers = {};
+                        if (window.meshtasticLayer) {
+                            window.meshtasticLayer.clearLayers();
+                            if (window.map && window.map.hasLayer(window.meshtasticLayer)) {
+                                window.map.removeLayer(window.meshtasticLayer);
+                            }
+                        }
+                        window.meshtasticNodes = {};
                         document.getElementById('btn-meshtastic').innerHTML = "<i class='fa-solid fa-satellite-dish'></i> Conectar Meshtastic";
                         document.getElementById('btn-meshtastic').style.backgroundColor = "var(--bg-card)";
                         document.getElementById('btn-meshtastic').style.color = "var(--text)";
