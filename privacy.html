@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Política de Privacidad - AirsoftMaps</title>
+    <title data-i18n="title">Política de Privacidad - AirsoftMaps</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -28,50 +28,296 @@
             font-style: italic;
             margin-bottom: 20px;
         }
+        .lang-selector {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        select {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Política de Privacidad</h1>
-        <p class="date">Última actualización: 15 de Agosto de 2026</p>
-
-        <p>Bienvenido a <strong>AirsoftMaps</strong>. Tu privacidad es fundamental para nosotros. Esta Política de Privacidad explica cómo recopilamos, usamos y protegemos tu información cuando utilizas nuestra aplicación móvil y sitio web.</p>
-
-        <h2>1. Información que Recopilamos</h2>
-        <ul>
-            <li><strong>Datos de Ubicación (GPS):</strong> Si utilizas la función de seguimiento en vivo (LiveTracker) o las Salas de Operaciones, solicitaremos permiso para acceder a la ubicación precisa de tu dispositivo en tiempo real.</li>
-            <li><strong>Información de la Cuenta:</strong> Si decides iniciar sesión para guardar tus proyectos en la nube, recopilaremos la información básica de tu perfil de Google (correo electrónico y nombre de usuario) mediante el sistema de autenticación de Google Firebase.</li>
-            <li><strong>Datos Generados por el Usuario:</strong> Marcadores, dibujos, rutas y notas tácticas que crees y guardes dentro de la aplicación.</li>
-        </ul>
-
-        <h2>2. Cómo Usamos tu Información</h2>
-        <ul>
-            <li><strong>Para proporcionar el servicio:</strong> Utilizamos tu ubicación GPS únicamente para mostrar tu posición en el mapa y sincronizarla con los miembros de tu Sala de Operaciones si decides compartirla.</li>
-            <li><strong>Para guardar tus proyectos:</strong> Utilizamos tu cuenta vinculada para permitirte recuperar tus mapas y dibujos desde cualquier dispositivo.</li>
-            <li><strong>Seguridad:</strong> No vendemos, alquilamos ni compartimos tu información personal con terceros para fines publicitarios.</li>
-        </ul>
-
-        <h2>3. Servicios de Terceros</h2>
-        <p>Nuestra aplicación utiliza servicios de terceros que pueden recopilar información utilizada para identificarte. Los servicios que utilizamos son:</p>
-        <ul>
-            <li><strong>Google Play Services:</strong> Para el funcionamiento de la app en Android.</li>
-            <li><strong>Firebase Analytics y Authentication:</strong> Para el sistema de guardado en la nube y sincronización de bases de datos en tiempo real (Salas Live).</li>
-            <li><strong>Proveedores de Mapas (Leaflet, ESRI, OpenTopoMap):</strong> Para cargar las imágenes de satélite y topográficas de fondo.</li>
-        </ul>
-
-        <h2>4. Retención y Eliminación de Datos</h2>
-        <p>Conservaremos tu información solo durante el tiempo que sea necesario para proporcionarte nuestros servicios. Puedes solicitar la eliminación de tu cuenta y todos los datos asociados en cualquier momento cerrando sesión y solicitándolo a nuestro correo de soporte, o borrando tus proyectos manualmente desde la app.</p>
-
-        <h2>5. Permisos de la Aplicación</h2>
-        <p>AirsoftMaps solicita los siguientes permisos en tu dispositivo:</p>
-        <ul>
-            <li><strong>Ubicación:</strong> Necesario para el modo GPS y Salas de Operaciones.</li>
-            <li><strong>Almacenamiento:</strong> Necesario para descargar mapas de uso sin conexión (Offline) y guardar fotos de reconocimiento.</li>
-            <li><strong>Cámara (Opcional):</strong> Para la captura de imágenes en el gestor de incidentes o fotos en el campo.</li>
-        </ul>
-
-        <h2>6. Contacto</h2>
-        <p>Si tienes alguna pregunta sobre esta Política de Privacidad, puedes contactarnos a través de nuestra página web.</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; max-width:800px; margin-left:auto; margin-right:auto;">
+        <button onclick="window.close(); history.back();" style="padding:10px 15px; background-color:#3b82f6; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,0.2);" data-i18n="btn_back">⬅ Volver</button>
+        <div class="lang-selector" style="margin-bottom:0;">
+            🌍 <select id="lang-select" onchange="changeLanguage(this.value)">
+            <option value="es">Español</option>
+            <option value="en">English</option>
+            <option value="ca">Català</option>
+            <option value="fr">Français</option>
+            <option value="pt">Português</option>
+            <option value="it">Italiano</option>
+            <option value="de">Deutsch</option>
+        </select>
     </div>
+    <div class="container">
+        <h1 data-i18n="title">Política de Privacidad</h1>
+        <p class="date" data-i18n="date">Última actualización: 15 de Agosto de 2026</p>
+
+        <p data-i18n="p1">Bienvenido a <strong>AirsoftMaps</strong>. Tu privacidad es fundamental para nosotros. Esta Política de Privacidad explica cómo recopilamos, usamos y protegemos tu información cuando utilizas nuestra aplicación móvil y sitio web.</p>
+
+        <h2 data-i18n="h2_1">1. Información que Recopilamos</h2>
+        <ul>
+            <li data-i18n="ul1_1"><strong>Datos de Ubicación (GPS):</strong> Si utilizas la función de seguimiento en vivo (LiveTracker) o las Salas de Operaciones, solicitaremos permiso para acceder a la ubicación precisa de tu dispositivo en tiempo real.</li>
+            <li data-i18n="ul1_2"><strong>Información de la Cuenta:</strong> Si decides iniciar sesión para guardar tus proyectos en la nube, recopilaremos la información básica de tu perfil de Google (correo electrónico y nombre de usuario) mediante el sistema de autenticación de Google Firebase.</li>
+            <li data-i18n="ul1_3"><strong>Datos Generados por el Usuario:</strong> Marcadores, dibujos, rutas y notas tácticas que crees y guardes dentro de la aplicación.</li>
+        </ul>
+
+        <h2 data-i18n="h2_2">2. Cómo Usamos tu Información</h2>
+        <ul>
+            <li data-i18n="ul2_1"><strong>Para proporcionar el servicio:</strong> Utilizamos tu ubicación GPS únicamente para mostrar tu posición en el mapa y sincronizarla con los miembros de tu Sala de Operaciones si decides compartirla.</li>
+            <li data-i18n="ul2_2"><strong>Para guardar tus proyectos:</strong> Utilizamos tu cuenta vinculada para permitirte recuperar tus mapas y dibujos desde cualquier dispositivo.</li>
+            <li data-i18n="ul2_3"><strong>Seguridad:</strong> No vendemos, alquilamos ni compartimos tu información personal con terceros para fines publicitarios.</li>
+        </ul>
+
+        <h2 data-i18n="h2_3">3. Servicios de Terceros</h2>
+        <p data-i18n="p3">Nuestra aplicación utiliza servicios de terceros que pueden recopilar información utilizada para identificarte. Los servicios que utilizamos son:</p>
+        <ul>
+            <li data-i18n="ul3_1"><strong>Google Play Services:</strong> Para el funcionamiento de la app en Android.</li>
+            <li data-i18n="ul3_2"><strong>Firebase Analytics y Authentication:</strong> Para el sistema de guardado en la nube y sincronización de bases de datos en tiempo real (Salas Live).</li>
+            <li data-i18n="ul3_3"><strong>Proveedores de Mapas (Leaflet, ESRI, OpenTopoMap):</strong> Para cargar las imágenes de satélite y topográficas de fondo.</li>
+        </ul>
+
+        <h2 data-i18n="h2_4">4. Retención y Eliminación de Datos</h2>
+        <p data-i18n="p4">Conservaremos tu información solo durante el tiempo que sea necesario para proporcionarte nuestros servicios. Puedes solicitar la eliminación de tu cuenta y todos los datos asociados en cualquier momento cerrando sesión y solicitándolo a nuestro correo de soporte, o borrando tus proyectos manualmente desde la app.</p>
+
+        <h2 data-i18n="h2_5">5. Permisos de la Aplicación</h2>
+        <p data-i18n="p5">AirsoftMaps solicita los siguientes permisos en tu dispositivo:</p>
+        <ul>
+            <li data-i18n="ul5_1"><strong>Ubicación:</strong> Necesario para el modo GPS y Salas de Operaciones.</li>
+            <li data-i18n="ul5_2"><strong>Almacenamiento:</strong> Necesario para descargar mapas de uso sin conexión (Offline) y guardar fotos de reconocimiento.</li>
+            <li data-i18n="ul5_3"><strong>Cámara (Opcional):</strong> Para la captura de imágenes en el gestor de incidentes o fotos en el campo.</li>
+        </ul>
+
+        <h2 data-i18n="h2_6">6. Contacto</h2>
+        <p data-i18n="p6">Si tienes alguna pregunta sobre esta Política de Privacidad, puedes contactarnos en: support.gongorycorp@gmail.com o a través de nuestra página web: <a href="https://www.airsoftmaps.es">www.airsoftmaps.es</a></p>
+    </div>
+
+    <script>
+        const translations = {
+            es: {
+                btn_back: "⬅ Volver",
+                title: "Política de Privacidad", date: "Última actualización: 15 de Agosto de 2026",
+                p1: "Bienvenido a <strong>AirsoftMaps</strong>. Tu privacidad es fundamental para nosotros. Esta Política de Privacidad explica cómo recopilamos, usamos y protegemos tu información cuando utilizas nuestra aplicación móvil y sitio web.",
+                h2_1: "1. Información que Recopilamos",
+                ul1_1: "<strong>Datos de Ubicación (GPS):</strong> Si utilizas la función de seguimiento en vivo (LiveTracker) o las Salas de Operaciones, solicitaremos permiso para acceder a la ubicación precisa de tu dispositivo en tiempo real.",
+                ul1_2: "<strong>Información de la Cuenta:</strong> Si decides iniciar sesión para guardar tus proyectos en la nube, recopilaremos la información básica de tu perfil de Google (correo electrónico y nombre de usuario) mediante el sistema de autenticación de Google Firebase.",
+                ul1_3: "<strong>Datos Generados por el Usuario:</strong> Marcadores, dibujos, rutas y notas tácticas que crees y guardes dentro de la aplicación.",
+                h2_2: "2. Cómo Usamos tu Información",
+                ul2_1: "<strong>Para proporcionar el servicio:</strong> Utilizamos tu ubicación GPS únicamente para mostrar tu posición en el mapa y sincronizarla con los miembros de tu Sala de Operaciones si decides compartirla.",
+                ul2_2: "<strong>Para guardar tus proyectos:</strong> Utilizamos tu cuenta vinculada para permitirte recuperar tus mapas y dibujos desde cualquier dispositivo.",
+                ul2_3: "<strong>Seguridad:</strong> No vendemos, alquilamos ni compartimos tu información personal con terceros para fines publicitarios.",
+                h2_3: "3. Servicios de Terceros",
+                p3: "Nuestra aplicación utiliza servicios de terceros que pueden recopilar información utilizada para identificarte. Los servicios que utilizamos son:",
+                ul3_1: "<strong>Google Play Services:</strong> Para el funcionamiento de la app en Android.",
+                ul3_2: "<strong>Firebase Analytics y Authentication:</strong> Para el sistema de guardado en la nube y sincronización de bases de datos en tiempo real (Salas Live).",
+                ul3_3: "<strong>Proveedores de Mapas (Leaflet, ESRI, OpenTopoMap):</strong> Para cargar las imágenes de satélite y topográficas de fondo.",
+                h2_4: "4. Retención y Eliminación de Datos",
+                p4: "Conservaremos tu información solo durante el tiempo que sea necesario para proporcionarte nuestros servicios. Puedes solicitar la eliminación de tu cuenta y todos los datos asociados en cualquier momento cerrando sesión y solicitándolo a nuestro correo de soporte, o borrando tus proyectos manualmente desde la app.",
+                h2_5: "5. Permisos de la Aplicación",
+                p5: "AirsoftMaps solicita los siguientes permisos en tu dispositivo:",
+                ul5_1: "<strong>Ubicación:</strong> Necesario para el modo GPS y Salas de Operaciones.",
+                ul5_2: "<strong>Almacenamiento:</strong> Necesario para descargar mapas de uso sin conexión (Offline) y guardar fotos de reconocimiento.",
+                ul5_3: "<strong>Cámara (Opcional):</strong> Para la captura de imágenes en el gestor de incidentes o fotos en el campo.",
+                h2_6: "6. Contacto",
+                p6: "Si tienes alguna pregunta sobre esta Política de Privacidad, puedes contactarnos en: support.gongorycorp@gmail.com o a través de nuestra página web: www.airsoftmaps.es"
+            },
+            en: {
+                btn_back: "⬅ Go Back",
+                title: "Privacy Policy", date: "Last updated: August 15, 2026",
+                p1: "Welcome to <strong>AirsoftMaps</strong>. Your privacy is fundamental to us. This Privacy Policy explains how we collect, use, and protect your information when you use our mobile application and website.",
+                h2_1: "1. Information We Collect",
+                ul1_1: "<strong>Location Data (GPS):</strong> If you use the live tracking feature or Operations Rooms, we will request permission to access your device's precise location in real-time.",
+                ul1_2: "<strong>Account Information:</strong> If you choose to log in to save your projects in the cloud, we will collect basic Google profile information (email and username) via Google Firebase authentication.",
+                ul1_3: "<strong>User-Generated Data:</strong> Markers, drawings, routes, and tactical notes you create and save within the app.",
+                h2_2: "2. How We Use Your Information",
+                ul2_1: "<strong>To provide the service:</strong> We use your GPS location only to show your position on the map and synchronize it with your Operations Room members if you choose to share it.",
+                ul2_2: "<strong>To save your projects:</strong> We use your linked account to allow you to retrieve your maps and drawings from any device.",
+                ul2_3: "<strong>Security:</strong> We do not sell, rent, or share your personal information with third parties for advertising purposes.",
+                h2_3: "3. Third-Party Services",
+                p3: "Our application uses third-party services that may collect information used to identify you. The services we use are:",
+                ul3_1: "<strong>Google Play Services:</strong> For Android app functionality.",
+                ul3_2: "<strong>Firebase Analytics & Authentication:</strong> For cloud saving and real-time database synchronization.",
+                ul3_3: "<strong>Map Providers (Leaflet, ESRI, OpenTopoMap):</strong> To load satellite and topographic background images.",
+                h2_4: "4. Data Retention and Deletion",
+                p4: "We will retain your information only as long as necessary to provide our services. You can request the deletion of your account and all associated data at any time by logging out and contacting our support email, or by manually deleting your projects from the app.",
+                h2_5: "5. App Permissions",
+                p5: "AirsoftMaps requests the following permissions on your device:",
+                ul5_1: "<strong>Location:</strong> Required for GPS mode and Operations Rooms.",
+                ul5_2: "<strong>Storage:</strong> Required to download offline maps and save reconnaissance photos.",
+                ul5_3: "<strong>Camera (Optional):</strong> For image capture in the incident manager or field photos.",
+                h2_6: "6. Contact",
+                p6: "If you have any questions about this Privacy Policy, you can contact us at: support.gongorycorp@gmail.com or through our website: www.airsoftmaps.es"
+            },
+            ca: {
+                btn_back: "⬅ Tornar",
+                title: "Política de Privadesa", date: "Última actualització: 15 d'Agost de 2026",
+                p1: "Benvingut a <strong>AirsoftMaps</strong>. La teva privadesa és fonamental per a nosaltres. Aquesta Política de Privadesa explica com recopilem, utilitzem i protegim la teva informació quan utilitzes la nostra aplicació mòbil i lloc web.",
+                h2_1: "1. Informació que Recopilem",
+                ul1_1: "<strong>Dades d'Ubicació (GPS):</strong> Si utilitzes la funció de seguiment en viu (LiveTracker) o les Sales d'Operacions, sol·licitarem permís per accedir a la ubicació precisa del teu dispositiu en temps real.",
+                ul1_2: "<strong>Informació del Compte:</strong> Si decideixes iniciar sessió per desar els teus projectes al núvol, recopilarem la informació bàsica del teu perfil de Google (correu electrònic i nom d'usuari) mitjançant l'autenticació de Google Firebase.",
+                ul1_3: "<strong>Dades Generades per l'Usuari:</strong> Marcadors, dibuixos, rutes i notes tàctiques que creïs i desis dins de l'aplicació.",
+                h2_2: "2. Com Utilitzem la teva Informació",
+                ul2_1: "<strong>Per proporcionar el servei:</strong> Utilitzem la teva ubicació GPS únicament per mostrar la teva posició al mapa i sincronitzar-la amb els membres de la teva Sala d'Operacions si decideixes compartir-la.",
+                ul2_2: "<strong>Per desar els teus projectes:</strong> Utilitzem el teu compte vinculat per permetre't recuperar els teus mapes i dibuixos des de qualsevol dispositiu.",
+                ul2_3: "<strong>Seguretat:</strong> No venem, lloguem ni compartim la teva informació personal amb tercers amb finalitats publicitàries.",
+                h2_3: "3. Serveis de Tercers",
+                p3: "La nostra aplicació utilitza serveis de tercers que poden recopilar informació utilitzada per identificar-te. Els serveis que utilitzem són:",
+                ul3_1: "<strong>Google Play Services:</strong> Per al funcionament de l'app a Android.",
+                ul3_2: "<strong>Firebase Analytics i Authentication:</strong> Pel sistema de desat al núvol i sincronització en temps real (Sales Live).",
+                ul3_3: "<strong>Proveïdors de Mapes (Leaflet, ESRI, OpenTopoMap):</strong> Per carregar les imatges de satèl·lit i topogràfiques de fons.",
+                h2_4: "4. Retenció i Eliminació de Dades",
+                p4: "Conservarem la teva informació només durant el temps que sigui necessari per proporcionar-te els nostres serveis. Pots sol·licitar l'eliminació del teu compte i totes les dades associades en qualsevol moment tancant sessió i sol·licitant-ho al nostre correu de suport, o esborrant els teus projectes manualment des de l'app.",
+                h2_5: "5. Permisos de l'Aplicació",
+                p5: "AirsoftMaps sol·licita els següents permisos al teu dispositiu:",
+                ul5_1: "<strong>Ubicació:</strong> Necessari pel mode GPS i Sales d'Operacions.",
+                ul5_2: "<strong>Emmagatzematge:</strong> Necessari per descarregar mapes d'ús sense connexió (Offline) i desar fotos de reconeixement.",
+                ul5_3: "<strong>Càmera (Opcional):</strong> Per a la captura d'imatges en el gestor d'incidents o fotos al camp.",
+                h2_6: "6. Contacte",
+                p6: "Si tens alguna pregunta sobre aquesta Política de Privadesa, pots contactar-nos a: support.gongorycorp@gmail.com o a través de la nostra pàgina web: www.airsoftmaps.es"
+            },
+            fr: {
+                btn_back: "⬅ Retour",
+                title: "Politique de Confidentialité", date: "Dernière mise à jour : 15 Août 2026",
+                p1: "Bienvenue sur <strong>AirsoftMaps</strong>. Votre vie privée est fondamentale pour nous. Cette Politique de Confidentialité explique comment nous collectons, utilisons et protégeons vos informations lorsque vous utilisez notre application.",
+                h2_1: "1. Informations que nous collectons",
+                ul1_1: "<strong>Données de localisation (GPS) :</strong> Si vous utilisez le suivi en direct (LiveTracker) ou les Salles d'Opérations, nous demanderons l'accès à la position de votre appareil en temps réel.",
+                ul1_2: "<strong>Informations du compte :</strong> Si vous vous connectez pour sauvegarder vos projets, nous collectons les informations de base de votre profil Google via Firebase.",
+                ul1_3: "<strong>Données générées par l'utilisateur :</strong> Marqueurs, dessins, itinéraires et notes tactiques que vous créez.",
+                h2_2: "2. Comment nous utilisons vos informations",
+                ul2_1: "<strong>Pour fournir le service :</strong> Nous n'utilisons votre position GPS que pour la montrer sur la carte et la synchroniser avec votre équipe.",
+                ul2_2: "<strong>Pour sauvegarder vos projets :</strong> Nous utilisons votre compte lié pour vous permettre de récupérer vos cartes depuis n'importe quel appareil.",
+                ul2_3: "<strong>Sécurité :</strong> Nous ne vendons, ne louons ni ne partageons vos informations avec des tiers à des fins publicitaires.",
+                h2_3: "3. Services tiers",
+                p3: "Notre application utilise des services tiers pouvant collecter des informations. Les services utilisés sont :",
+                ul3_1: "<strong>Google Play Services :</strong> Pour le fonctionnement sur Android.",
+                ul3_2: "<strong>Firebase :</strong> Pour la sauvegarde Cloud et la base de données en temps réel.",
+                ul3_3: "<strong>Fournisseurs de cartes :</strong> Pour charger les images satellites et topographiques.",
+                h2_4: "4. Conservation et Suppression",
+                p4: "Nous ne conservons vos informations que le temps nécessaire. Vous pouvez demander la suppression de votre compte et de vos données à tout moment.",
+                h2_5: "5. Autorisations de l'application",
+                p5: "AirsoftMaps demande les autorisations suivantes :",
+                ul5_1: "<strong>Localisation :</strong> Requis pour le GPS et les Salles d'Opérations.",
+                ul5_2: "<strong>Stockage :</strong> Requis pour les cartes hors ligne et les photos.",
+                ul5_3: "<strong>Caméra :</strong> Pour la prise de photos.",
+                h2_6: "6. Contact",
+                p6: "Pour toute question, contactez-nous à l'adresse : support.gongorycorp@gmail.com ou via notre site web : www.airsoftmaps.es"
+            },
+            pt: {
+                btn_back: "⬅ Voltar",
+                title: "Política de Privacidade", date: "Última atualização: 15 de Agosto de 2026",
+                p1: "Bem-vindo ao <strong>AirsoftMaps</strong>. Sua privacidade é fundamental para nós. Esta Política explica como coletamos, usamos e protegemos suas informações.",
+                h2_1: "1. Informações que Coletamos",
+                ul1_1: "<strong>Dados de Localização (GPS):</strong> Se usar o LiveTracker ou Salas de Operações, solicitaremos acesso à sua localização em tempo real.",
+                ul1_2: "<strong>Informações da Conta:</strong> Se fizer login para salvar projetos na nuvem, coletamos informações básicas do seu perfil do Google via Firebase.",
+                ul1_3: "<strong>Dados Gerados pelo Usuário:</strong> Marcadores, rotas e notas que você cria.",
+                h2_2: "2. Como Usamos suas Informações",
+                ul2_1: "<strong>Para fornecer o serviço:</strong> Usamos seu GPS apenas para exibir sua posição no mapa e sincronizar com sua equipe.",
+                ul2_2: "<strong>Para salvar projetos:</strong> Usamos sua conta para que possa recuperar mapas em qualquer dispositivo.",
+                ul2_3: "<strong>Segurança:</strong> Não vendemos nem compartilhamos suas informações para fins publicitários.",
+                h2_3: "3. Serviços de Terceiros",
+                p3: "Usamos serviços de terceiros que podem coletar informações. Eles são:",
+                ul3_1: "<strong>Google Play Services:</strong> Para o funcionamento no Android.",
+                ul3_2: "<strong>Firebase:</strong> Para armazenamento na nuvem.",
+                ul3_3: "<strong>Provedores de Mapas:</strong> Para carregar imagens de satélite.",
+                h2_4: "4. Retenção e Exclusão",
+                p4: "Você pode solicitar a exclusão da sua conta e dados a qualquer momento.",
+                h2_5: "5. Permissões do Aplicativo",
+                p5: "O AirsoftMaps solicita as seguintes permissões:",
+                ul5_1: "<strong>Localização:</strong> Para GPS.",
+                ul5_2: "<strong>Armazenamento:</strong> Para mapas offline.",
+                ul5_3: "<strong>Câmera:</strong> Para fotos.",
+                h2_6: "6. Contato",
+                p6: "Se tiver dúvidas, entre em contato através de: support.gongorycorp@gmail.com ou através do nosso site: www.airsoftmaps.es"
+            },
+            it: {
+                btn_back: "⬅ Indietro",
+                title: "Informativa sulla Privacy", date: "Ultimo aggiornamento: 15 Agosto 2026",
+                p1: "Benvenuto su <strong>AirsoftMaps</strong>. Questa Informativa spiega come raccogliamo, utilizziamo e proteggiamo le tue informazioni.",
+                h2_1: "1. Informazioni che Raccogliamo",
+                ul1_1: "<strong>Dati di Posizione (GPS):</strong> Richiederemo la posizione in tempo reale se usi il LiveTracker o le Sale Operative.",
+                ul1_2: "<strong>Informazioni sull'Account:</strong> Raccogliamo le informazioni di base del profilo Google tramite Firebase se accedi.",
+                ul1_3: "<strong>Dati Generati:</strong> Marcatori, percorsi e note create nell'app.",
+                h2_2: "2. Come Utilizziamo le Informazioni",
+                ul2_1: "<strong>Per fornire il servizio:</strong> Usiamo il GPS solo per mostrare la tua posizione e sincronizzarla con la squadra.",
+                ul2_2: "<strong>Per salvare progetti:</strong> Ti permette di recuperare le mappe da qualsiasi dispositivo.",
+                ul2_3: "<strong>Sicurezza:</strong> Non vendiamo le tue informazioni personali a terzi.",
+                h2_3: "3. Servizi di Terze Parti",
+                p3: "Utilizziamo servizi che potrebbero raccogliere informazioni:",
+                ul3_1: "<strong>Google Play Services:</strong> Per il funzionamento Android.",
+                ul3_2: "<strong>Firebase:</strong> Per il cloud.",
+                ul3_3: "<strong>Fornitori di Mappe:</strong> Per caricare le immagini satellitari.",
+                h2_4: "4. Conservazione e Cancellazione",
+                p4: "Puoi richiedere l'eliminazione dei tuoi dati e del tuo account in qualsiasi momento.",
+                h2_5: "5. Permessi dell'App",
+                p5: "AirsoftMaps richiede i seguenti permessi:",
+                ul5_1: "<strong>Posizione:</strong> Per il GPS.",
+                ul5_2: "<strong>Archiviazione:</strong> Per le mappe offline.",
+                ul5_3: "<strong>Fotocamera:</strong> Per scattare foto.",
+                h2_6: "6. Contatto",
+                p6: "Per domande, contattaci all'indirizzo: support.gongorycorp@gmail.com o tramite il nostro sito web: www.airsoftmaps.es"
+            },
+            de: {
+                btn_back: "⬅ Zurück",
+                title: "Datenschutzrichtlinie", date: "Zuletzt aktualisiert: 15. August 2026",
+                p1: "Willkommen bei <strong>AirsoftMaps</strong>. Diese Richtlinie erklärt, wie wir Ihre Daten sammeln, nutzen und schützen.",
+                h2_1: "1. Informationen, die wir sammeln",
+                ul1_1: "<strong>Standortdaten (GPS):</strong> Wir fordern Echtzeit-GPS an, wenn Sie LiveTracker oder Einsatzräume nutzen.",
+                ul1_2: "<strong>Kontoinformationen:</strong> Wenn Sie sich anmelden, erfassen wir grundlegende Google-Profildaten über Firebase.",
+                ul1_3: "<strong>Benutzerdaten:</strong> Von Ihnen erstellte Markierungen, Routen und Notizen.",
+                h2_2: "2. Wie wir Ihre Daten nutzen",
+                ul2_1: "<strong>Bereitstellung des Dienstes:</strong> Das GPS wird nur verwendet, um Ihre Position auf der Karte anzuzeigen und mit dem Team zu teilen.",
+                ul2_2: "<strong>Projekte speichern:</strong> Ermöglicht das Abrufen von Karten auf beliebigen Geräten.",
+                ul2_3: "<strong>Sicherheit:</strong> Wir verkaufen Ihre Daten nicht für Werbezwecke an Dritte.",
+                h2_3: "3. Dienste von Drittanbietern",
+                p3: "Wir nutzen Dienste, die möglicherweise Informationen sammeln:",
+                ul3_1: "<strong>Google Play Services:</strong> Für Android.",
+                ul3_2: "<strong>Firebase:</strong> Für Cloud-Speicherung.",
+                ul3_3: "<strong>Kartenanbieter:</strong> Für Satellitenbilder.",
+                h2_4: "4. Speicherung und Löschung",
+                p4: "Sie können jederzeit die Löschung Ihres Kontos und Ihrer Daten beantragen.",
+                h2_5: "5. App-Berechtigungen",
+                p5: "AirsoftMaps benötigt folgende Berechtigungen:",
+                ul5_1: "<strong>Standort:</strong> Für GPS.",
+                ul5_2: "<strong>Speicher:</strong> Für Offline-Karten.",
+                ul5_3: "<strong>Kamera:</strong> Für Fotos.",
+                h2_6: "6. Kontakt",
+                p6: "Bei Fragen kontaktieren Sie uns unter: support.gongorycorp@gmail.com oder über unsere Website: www.airsoftmaps.es"
+            }
+        };
+
+        function changeLanguage(lang) {
+            const strings = translations[lang];
+            if (!strings) return;
+            document.title = strings.title + " - AirsoftMaps";
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (strings[key]) {
+                    el.innerHTML = strings[key];
+                }
+            });
+            localStorage.setItem('preferredLang', lang);
+        }
+
+        // Detect language automatically on load
+        window.onload = function() {
+            let lang = localStorage.getItem('preferredLang');
+            if (!lang) {
+                const navLang = navigator.language.slice(0, 2);
+                if (translations[navLang]) {
+                    lang = navLang;
+                } else {
+                    lang = 'en'; // Default fallback
+                }
+            }
+            if(lang && translations[lang]) {
+                document.getElementById('lang-select').value = lang;
+                changeLanguage(lang);
+            }
+        };
+    </script>
 </body>
 </html>

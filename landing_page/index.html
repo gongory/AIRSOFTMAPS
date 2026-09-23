@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirsoftMaps - Tu Ventaja Táctica</title>
+    <link rel="icon" href="icon.png?v=2" type="image/png">
+    <meta name="description" content="La aplicación definitiva para crear, compartir y ejecutar tácticas de airsoft en tiempo real con tu equipo.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fa-solid fa-crosshairs"></i> Airsoft<span>Maps</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features" data-i18n="nav_features">Características</a></li>
+                <li><a href="#reviews" data-i18n="nav_reviews">Opiniones</a></li>
+                <li><a href="Manual_Usuario_AirsoftMaps.pdf" target="_blank" style="color:var(--neon-green); font-weight:bold;"><i class="fa-solid fa-book"></i> <span data-i18n="nav_manual">Manual PDF</span></a></li>
+                <li><button id="langBtn" style="background:transparent; border:1px solid var(--neon-green); color:var(--neon-green); padding:5px 10px; border-radius:15px; cursor:pointer; font-weight:bold; margin-left:10px;">🇬🇧 EN</button></li>
+                <li><a href="#download" data-i18n="nav_download">Descargar</a></li>
+                <li><a href="mailto:support.gongorycorp@gmail.com" class="contact-link" data-i18n="nav_contact">Contacto</a></li>
+            </ul>
+            <div class="hamburger">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-content">
+            <h1 class="fade-in-up" data-i18n="hero_title">Domina el campo de batalla.</h1>
+            <p class="fade-in-up delay-1" data-i18n="hero_desc">Mapas interactivos, marcadores colaborativos en tiempo real y medición táctica de distancias. La ventaja definitiva para tu equipo.</p>
+            
+            <div class="cta-buttons fade-in-up delay-2">
+                <a href="#download" class="btn btn-primary">
+                    <i class="fa-brands fa-google-play"></i> <span data-i18n="btn_app">Descargar App</span>
+                </a>
+                <a href="https://www.airsoftmaps.es/" class="btn btn-secondary">
+                    <i class="fa-solid fa-desktop"></i> <span data-i18n="btn_web">Versión Web</span>
+                </a>
+            </div>
+        </div>
+        <div class="hero-image-container fade-in-up delay-3">
+            <div class="mockup-frame">
+                <img src="img/captura.jpg" alt="AirsoftMaps App" style="width: 100%; height: 100%; object-fit: cover; border-radius: 28px;">
+            </div>
+            <div class="glow-effect"></div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="section-header">
+            <h2 data-i18n="feat_title">Herramientas Tácticas</h2>
+            <p data-i18n="feat_desc">Diseñado específicamente para jugadores de Airsoft y MilSim.</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon-wrapper">
+                    <i class="fa-solid fa-users-viewfinder"></i>
+                </div>
+                <h3 data-i18n="feat_1_title">Salas Colaborativas</h3>
+                <p data-i18n="feat_1_desc">Crea una sala segura con contraseña para tu equipo. Todos verán los marcadores y movimientos en tiempo real.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="icon-wrapper">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                </div>
+                <h3 data-i18n="feat_2_title">Marcadores Tácticos</h3>
+                <p data-i18n="feat_2_desc">Añade snipers, puntos de respawn, enemigos u objetivos con iconos personalizados al instante sobre el mapa satélite.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="icon-wrapper">
+                    <i class="fa-solid fa-ruler"></i>
+                </div>
+                <h3 data-i18n="feat_3_title">Medición Precisa</h3>
+                <p data-i18n="feat_3_desc">Calcula distancias exactas entre tu posición y el objetivo para ajustar la mira y asegurar el impacto.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section id="reviews" class="reviews-section" style="padding: 5rem 2rem; background: var(--bg-darker);">
+        <div class="section-header">
+            <h2 data-i18n="rev_title">Lo que dicen los operativos</h2>
+            <p data-i18n="rev_desc">Comentarios reales de nuestra comunidad en la fase Beta.</p>
+        </div>
+        
+        <div class="reviews-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 1200px; margin: 0 auto;">
+            <div class="review-card feature-card">
+                <div style="color: #ffc107; margin-bottom: 1rem;"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                <p style="font-style: italic; margin-bottom: 1rem;">"Buenísima y necesaria aplicación para la práctica del airsoft. Es muy ágil y sin errores, los mapas se cargan rápido."</p>
+                <h4 style="color: var(--neon-green);">- Tester de Google Play</h4>
+            </div>
+            <div class="review-card feature-card">
+                <div style="color: #ffc107; margin-bottom: 1rem;"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                <p style="font-style: italic; margin-bottom: 1rem;">"Me ha encantado. Le veo muchísimas buenas opciones para airsoft y rutas de senderismo. Herramienta muy completa."</p>
+                <h4 style="color: var(--neon-green);">- Tester de Google Play</h4>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download-section">
+        <div class="download-box">
+            <h2 data-i18n="dl_title">Lleva la ventaja en tu bolsillo</h2>
+            <p data-i18n="dl_desc">Descarga la aplicación oficial de AirsoftMaps para Android y obtén notificaciones, mejor rendimiento y acceso sin conexión parcial.</p>
+            <a href="https://play.google.com/store/apps/details?id=com.airsoftmaps.app" target="_blank" class="store-badge">
+                <img src="https://play.google.com/intl/en_us/badges/static/images/badges/es_badge_web_generic.png" alt="Disponible en Google Play" style="max-height: 60px;">
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="logo">
+                    <i class="fa-solid fa-crosshairs"></i> Airsoft<span>Maps</span>
+                </div>
+                <p data-i18n="ft_slogan">Elevando el nivel táctico del Airsoft en España.</p>
+            </div>
+            <div class="footer-links">
+                <h4 data-i18n="ft_legal">Legal y Ayuda</h4>
+                <ul>
+                    <li><a href="https://airsoftmaps.es/privacy.html" target="_blank" data-i18n="ft_privacy">Política de Privacidad</a></li>
+                    <li><a href="Manual_Usuario_AirsoftMaps.pdf" target="_blank" data-i18n="ft_manual">Manual de Usuario PDF</a></li>
+                    <li><a href="mailto:support.gongorycorp@gmail.com" data-i18n="ft_terms">Términos y Soporte</a></li>
+                </ul>
+            </div>
+            <div class="footer-social">
+                <h4 data-i18n="ft_follow">Síguenos</h4>
+                <div class="social-icons">
+                    <a href="https://www.instagram.com/airsoft_maps/" target="_blank" title="@airsoft_maps"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 AirsoftMaps. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
