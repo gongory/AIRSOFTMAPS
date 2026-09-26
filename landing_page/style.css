@@ -116,7 +116,7 @@ ul {
     justify-content: space-between;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 6rem 2rem 2rem;
+    padding: 10rem 2rem 2rem;
     gap: 4rem;
 }
 
@@ -435,7 +435,7 @@ ul {
     .hero {
         flex-direction: column;
         text-align: center;
-        padding-top: 7rem;
+        padding-top: 11rem;
     }
 
     .hero-content {
@@ -478,3 +478,4 @@ ul {
         display: block;
     }
 }
+
