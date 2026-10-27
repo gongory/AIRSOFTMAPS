@@ -1,4 +1,4 @@
-const CACHE_NAME = "airsoftmaps-cache-v2.17.3";
+const CACHE_NAME = "airsoftmaps-cache-v2.17.4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -6,16 +6,20 @@ const ASSETS = [
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
-  "./home-mobile.png",
-  "./home-wide.png",
   "./AirsoftMaps.ico"
 ];
 
-// Instalar y cachear
+// Instalar y cachear de forma blindada (sin abortos por 404)
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
+    caches.open(CACHE_NAME).then(async cache => {
+      for (const url of ASSETS) {
+        try {
+          await cache.add(url);
+        } catch (err) {
+          console.warn('Aviso precaché:', url, err);
+        }
+      }
     })
   );
 });
