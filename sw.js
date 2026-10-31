@@ -1,4 +1,4 @@
-const CACHE_NAME = "airsoftmaps-cache-v2.17.5-r5";
+const CACHE_NAME = "airsoftmaps-cache-v2.18";
 const ASSETS = [
   "./",
   "./index.html",
@@ -6,7 +6,8 @@ const ASSETS = [
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
-  "./AirsoftMaps.ico"
+  "./AirsoftMaps.ico",
+  "./captura_limpia.jpg"
 ];
 
 // Instalar y cachear de forma blindada (sin abortos por 404)
