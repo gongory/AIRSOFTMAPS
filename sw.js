@@ -1,4 +1,4 @@
-const CACHE_NAME = "airsoftmaps-cache-v2.18.3";
+const CACHE_NAME = "airsoftmaps-cache-v2.18.4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -36,16 +36,16 @@ self.addEventListener("activate", event => {
       );
     })
   );
-  // Asegura que el SW tome el control inmediatamente sin tener que recargar la pÃ¡gina
+  // Asegura que el SW tome el control inmediatamente sin tener que recargar la página
   self.clients.claim();
 });
 
-// Interceptar peticiones (Estrategia mixta: actualizaciones automÃ¡ticas invisibles)
+// Interceptar peticiones (Estrategia mixta: actualizaciones automáticas invisibles)
 self.addEventListener("fetch", event => {
   // Ignorar peticiones externas (APIs, Firebase, Leaflet, etc.)
   if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // 1. NETWORK FIRST para la pÃ¡gina (HTML). Asegura tener SIEMPRE la Ãºltima versiÃ³n si hay internet.
+  // 1. NETWORK FIRST para la página (HTML). Asegura tener SIEMPRE la última versión si hay internet.
   if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
     event.respondWith(
       fetch(event.request)
@@ -55,14 +55,14 @@ self.addEventListener("fetch", event => {
           return response;
         })
         .catch(() => {
-          // Si estamos offline, devuelve la versiÃ³n en cachÃ©
+          // Si estamos offline, devuelve la versión en caché
           return caches.match(event.request).then(cached => cached || caches.match("./index.html"));
         })
     );
     return;
   }
 
-  // 2. STALE-WHILE-REVALIDATE para recursos estÃ¡ticos (imÃ¡genes, iconos). Carga ultra-rÃ¡pida.
+  // 2. STALE-WHILE-REVALIDATE para recursos estáticos (imágenes, iconos). Carga ultra-rápida.
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       const fetchPromise = fetch(event.request)
@@ -73,13 +73,13 @@ self.addEventListener("fetch", event => {
         })
         .catch(() => { /* Ignorar errores en modo offline */ });
 
-      // Devuelve la cachÃ© instantÃ¡neamente (si existe), mientras actualiza en segundo plano
+      // Devuelve la caché instantáneamente (si existe), mientras actualiza en segundo plano
       return cachedResponse || fetchPromise;
     })
   );
 });
 
-// Escuchar el mensaje del botÃ³n "Actualizar" de la app
+// Escuchar el mensaje del botón "Actualizar" de la app
 self.addEventListener('message', (event) => {
   if (event.data && event.data.action === 'skipWaiting') {
     self.skipWaiting();
