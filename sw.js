@@ -1,4 +1,4 @@
-const CACHE_NAME = "airsoftmaps-cache-v2.18.14";
+const CACHE_NAME = "airsoftmaps-cache-v2.19";
 const ASSETS = [
   "./",
   "./index.html",
