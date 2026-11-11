@@ -6106,6 +6106,536 @@ const _0x4f13b2=_0x3da4;(function(_0x20af83,_0x55e158){const _0x56f615=_0x3da4,_
         })();
     </script>
 
+    <!-- ============================================================================
+         BRÚJULA / CONO DE VISIÓN — MOTOR DE ORIENTACIÓN UNIFICADO (Android + iOS)
+         Sustituye a window.startOrientationTracking / stopOrientationTracking.
+         Debe ir DESPUÉS de todos los demás scripts. No ofuscar.
+
+         Por qué existe: Chrome para Android expone ahora
+         DeviceOrientationEvent.requestPermission() igual que Safari. El código
+         anterior usaba esa función para decidir "esto es un iPhone", así que en
+         Android entraba por la rama de iOS: solo escuchaba 'deviceorientation'
+         (rumbo relativo, sin Norte) y únicamente si el permiso devolvía 'granted'.
+         Aquí la plataforma NO se deduce de esa función: se escuchan siempre los dos
+         eventos y se elige la fuente según lo que realmente llega.
+         ============================================================================ -->
+    <script data-no-obfuscate="true">
+        (function () {
+            'use strict';
+
+            var SMOOTHING = 0.22;          // 0..1 — mayor = más reactivo, menor = más suave
+            var ABS_GRACE_MS = 1500;       // espera antes de probar AbsoluteOrientationSensor
+            var REL_GRACE_MS = 3000;       // espera antes de aceptar rumbo relativo (último recurso)
+            var DEG = Math.PI / 180;
+
+            var legacyStop = window.stopOrientationTracking;
+
+            var active = false;            // hay listeners registrados
+            var permission = 'unknown';    // 'unknown' | 'granted' | 'denied' | 'prompt'
+            var gestureHooked = false;
+            var startedAt = 0;
+            var lastAbsoluteAt = 0;        // último evento con Norte real
+            var sensor = null;             // AbsoluteOrientationSensor (respaldo)
+            var sensorTimer = null;
+            var targetHeading = null;
+            var rafId = 0;
+
+            function now() { return Date.now(); }
+
+            function screenAngle() {
+                if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === 'number') {
+                    return window.screen.orientation.angle;
+                }
+                return typeof window.orientation === 'number' ? window.orientation : 0;
+            }
+
+            function norm360(a) { return ((a % 360) + 360) % 360; }
+
+            function smoothAngle(current, target, factor) {
+                if (current === null || current === undefined || isNaN(current)) return target;
+                var diff = ((target - current + 540) % 360) - 180;
+                return norm360(current + diff * factor);
+            }
+
+            // ---- Matemática de rumbo -------------------------------------------------
+            // m = componentes Este (e) / Norte (n) / Arriba (u) de los ejes X, Y, Z del
+            // dispositivo. Se calcula hacia dónde apunta la parte superior de la PANTALLA
+            // (compensando el giro vertical/horizontal). Si el móvil está casi de pie esa
+            // proyección es inestable y se usa la dirección de la cámara trasera.
+            function headingFromAxes(m) {
+                var t = screenAngle() * DEG;
+                var s = Math.sin(t), c = Math.cos(t);
+                var ve = s * m.xe + c * m.ye;
+                var vn = s * m.xn + c * m.yn;
+                var vu = s * m.xu + c * m.yu;
+                if (Math.sqrt(ve * ve + vn * vn) < 0.5) {
+                    var sign = vu >= 0 ? -1 : 1;   // -Z = parte trasera del móvil
+                    ve = sign * m.ze;
+                    vn = sign * m.zn;
+                }
+                if (Math.abs(ve) < 1e-6 && Math.abs(vn) < 1e-6) return null;
+                return norm360(Math.atan2(ve, vn) / DEG);
+            }
+
+            function axesFromEuler(alpha, beta, gamma) {
+                var a = alpha * DEG, b = (beta || 0) * DEG, g = (gamma || 0) * DEG;
+                var cA = Math.cos(a), sA = Math.sin(a);
+                var cB = Math.cos(b), sB = Math.sin(b);
+                var cG = Math.cos(g), sG = Math.sin(g);
+                return {
+                    xe: cA * cG - sA * sB * sG, xn: sA * cG + cA * sB * sG, xu: -cB * sG,
+                    ye: -sA * cB,               yn: cA * cB,                yu: sB,
+                    ze: cA * sG + sA * sB * cG, zn: sA * sG - cA * sB * cG, zu: cB * cG
+                };
+            }
+
+            function axesFromQuaternion(q) {
+                var x = q[0], y = q[1], z = q[2], w = q[3];
+                return {
+                    xe: 1 - 2 * (y * y + z * z), xn: 2 * (x * y + z * w),     xu: 2 * (x * z - y * w),
+                    ye: 2 * (x * y - z * w),     yn: 1 - 2 * (x * x + z * z), yu: 2 * (y * z + x * w),
+                    ze: 2 * (x * z + y * w),     zn: 2 * (y * z - x * w),     zu: 1 - 2 * (x * x + y * y)
+                };
+            }
+
+            // ---- Pintado (cono del jugador, rosa de los vientos, HUD, flecha de navegación)
+            function render() {
+                rafId = 0;
+                if (targetHeading === null) return;
+                var h = smoothAngle(window.currentDeviceHeading, targetHeading, SMOOTHING);
+                window.currentDeviceHeading = h;
+
+                var cone = document.getElementById('user-dir-arrow');
+                if (cone) {
+                    cone.style.transition = 'none';
+                    cone.style.transformOrigin = '50% 100%';
+                    cone.style.transform = 'rotate(' + h.toFixed(1) + 'deg)';
+                    cone.style.display = 'block';
+                }
+
+                var chk = document.getElementById('compass-auto-rotate');
+                var rose = document.getElementById('compass-rose');
+                var svg = rose ? rose.querySelector('svg') : null;
+                if (svg) {
+                    if (chk && chk.checked) {
+                        svg.style.transition = 'none';
+                        svg.style.transformOrigin = 'center center';
+                        svg.style.transform = 'rotate(' + (-h).toFixed(1) + 'deg)';
+                    } else if (svg.style.transform && svg.style.transform !== 'rotate(0deg)') {
+                        svg.style.transition = 'transform 0.2s ease-out';
+                        svg.style.transform = 'rotate(0deg)';
+                    }
+                }
+
+                var hud = document.getElementById('hud-hdg');
+                if (hud) hud.innerText = Math.round(h) % 360 + '°M';
+
+                if (typeof window.updateNavigationUI === 'function') {
+                    try { window.updateNavigationUI(); } catch (e) { }
+                }
+            }
+
+            function publish(heading) {
+                if (heading === null || heading === undefined || isNaN(heading)) return;
+                window._orientationEventsReceived = true;
+                targetHeading = norm360(heading);
+                if (!rafId) rafId = window.requestAnimationFrame(render);
+            }
+
+            // Mantiene compatibilidad con el código existente que llama a esta función
+            window.updateUserConeHeading = function (heading) {
+                var cone = document.getElementById('user-dir-arrow');
+                if (!cone || heading === null || heading === undefined || isNaN(heading)) return;
+                cone.style.transition = 'none';
+                cone.style.transformOrigin = '50% 100%';
+                cone.style.transform = 'rotate(' + norm360(heading).toFixed(1) + 'deg)';
+                cone.style.display = 'block';
+            };
+
+            // ---- Fuentes de datos ----------------------------------------------------
+            function hasEuler(e) {
+                return e && e.alpha !== null && e.alpha !== undefined && !isNaN(e.alpha);
+            }
+
+            // Android / Chrome: evento con Norte real
+            function onAbsolute(e) {
+                if (!hasEuler(e)) return;
+                lastAbsoluteAt = now();
+                publish(headingFromAxes(axesFromEuler(e.alpha, e.beta, e.gamma)));
+            }
+
+            function onOrientation(e) {
+                // iOS / Safari / Bluefy: rumbo magnético directo
+                var wk = e.webkitCompassHeading;
+                if (wk !== undefined && wk !== null && !isNaN(wk)) {
+                    lastAbsoluteAt = now();
+                    publish(wk + screenAngle());
+                    return;
+                }
+                if (!hasEuler(e)) return;
+                if (e.absolute === true) { onAbsolute(e); return; }
+                // Rumbo relativo (sin Norte): solo si no hay NINGUNA fuente absoluta
+                var t = now();
+                if (lastAbsoluteAt === 0 && !sensor && t - startedAt > REL_GRACE_MS) {
+                    publish(headingFromAxes(axesFromEuler(e.alpha, e.beta, e.gamma)));
+                }
+            }
+
+            // Respaldo: Generic Sensor API (Chrome Android) si no llegan eventos absolutos
+            function startSensorFallback() {
+                sensorTimer = null;
+                if (!active || lastAbsoluteAt !== 0 || sensor) return;
+                if (typeof window.AbsoluteOrientationSensor !== 'function') return;
+                try {
+                    var s = new window.AbsoluteOrientationSensor({ frequency: 30, referenceFrame: 'device' });
+                    s.addEventListener('reading', function () {
+                        if (!s.quaternion) return;
+                        lastAbsoluteAt = now();
+                        publish(headingFromAxes(axesFromQuaternion(s.quaternion)));
+                    });
+                    s.addEventListener('error', function () {
+                        try { s.stop(); } catch (e) { }
+                        if (sensor === s) sensor = null;
+                    });
+                    s.start();
+                    sensor = s;
+                } catch (e) {
+                    sensor = null;
+                }
+            }
+
+            function attach() {
+                detach();
+                window.addEventListener('deviceorientationabsolute', onAbsolute, true);
+                window.addEventListener('deviceorientation', onOrientation, true);
+            }
+
+            function detach() {
+                window.removeEventListener('deviceorientationabsolute', onAbsolute, true);
+                window.removeEventListener('deviceorientation', onOrientation, true);
+            }
+
+            // ---- Permiso (iOS 13+ y versiones recientes de Chrome) -------------------
+            function hookNextGesture() {
+                if (gestureHooked) return;
+                gestureHooked = true;
+                var handler = function () {
+                    window.removeEventListener('pointerup', handler, true);
+                    window.removeEventListener('touchend', handler, true);
+                    window.removeEventListener('click', handler, true);
+                    gestureHooked = false;
+                    if (active && permission !== 'granted') askPermission();
+                };
+                window.addEventListener('pointerup', handler, true);
+                window.addEventListener('touchend', handler, true);
+                window.addEventListener('click', handler, true);
+            }
+
+            function askPermission() {
+                var DOE = window.DeviceOrientationEvent;
+                if (!DOE || typeof DOE.requestPermission !== 'function') {
+                    permission = 'granted';
+                    return;
+                }
+                var p;
+                try { p = DOE.requestPermission(); } catch (e) { p = null; }
+                if (!p || typeof p.then !== 'function') { hookNextGesture(); return; }
+                p.then(function (state) {
+                    permission = state;
+                    if (!active) return;
+                    if (state === 'granted') {
+                        attach();   // re-registrar: algunos navegadores solo emiten tras conceder
+                    } else if (state !== 'denied') {
+                        hookNextGesture();   // faltaba un gesto del usuario: reintentar al primer toque
+                    }
+                }).catch(function () {
+                    if (active) hookNextGesture();
+                });
+            }
+
+            // ---- API pública ---------------------------------------------------------
+            window.startOrientationTracking = function () {
+                if (active) {
+                    // Ya en marcha: aprovechar el gesto actual si el permiso sigue pendiente
+                    if (permission !== 'granted') askPermission();
+                    return;
+                }
+                active = true;
+                startedAt = now();
+                lastAbsoluteAt = 0;
+                attach();          // los listeners se registran SIEMPRE, sea cual sea el permiso
+                askPermission();
+                if (sensorTimer) clearTimeout(sensorTimer);
+                sensorTimer = setTimeout(startSensorFallback, ABS_GRACE_MS);
+            };
+
+            window.stopOrientationTracking = function () {
+                active = false;
+                detach();
+                if (sensorTimer) { clearTimeout(sensorTimer); sensorTimer = null; }
+                if (sensor) { try { sensor.stop(); } catch (e) { } sensor = null; }
+                if (rafId) { window.cancelAnimationFrame(rafId); rafId = 0; }
+                targetHeading = null;
+                lastAbsoluteAt = 0;
+                window._orientationEventsReceived = false;
+            };
+
+            // Al volver a primer plano Chrome puede dejar los sensores suspendidos
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState !== 'visible' || !active) return;
+                attach();
+                if (sensor) { try { sensor.stop(); sensor.start(); } catch (e) { } }
+            });
+
+            // Diagnóstico rápido desde la consola remota (chrome://inspect)
+            window.getOrientationDebug = function () {
+                return {
+                    active: active,
+                    permission: permission,
+                    absoluteSeen: lastAbsoluteAt !== 0,
+                    usingSensorApi: !!sensor,
+                    heading: window.currentDeviceHeading,
+                    screenAngle: screenAngle()
+                };
+            };
+
+            // Retirar los listeners del motor antiguo (si llegó a arrancar) y relevarlo
+            var wasNeeded = false;
+            try {
+                var chk0 = document.getElementById('compass-auto-rotate');
+                wasNeeded = !!(chk0 && chk0.checked) || !!window.userLocMarker;
+            } catch (e) { }
+            if (typeof legacyStop === 'function') {
+                try { legacyStop(); } catch (e) { }
+            }
+            if (wasNeeded) window.startOrientationTracking();
+        })();
+    </script>
+
+    <!-- ============================================================================
+         iOS / BLUEFY EN HORIZONTAL — MENÚ RÁPIDO Y BRÚJULA
+         Debe ir DESPUÉS de todos los demás scripts. No ofuscar.
+
+         1) Re-ancla la página si el navegador la deja desplazada tras girar
+            (en ese estado los toques caen fuera de donde se ven los elementos).
+         2) Ajusta el alto del menú rápido al área realmente visible.
+         3) Scroll del menú rápido hecho por JavaScript (no depende del scroll
+            nativo de WebKit, que es el que falla en horizontal).
+         4) Arrastre de la brújula solo con eventos táctiles sobre el propio
+            elemento, sin cortarse con 'pointercancel'.
+         ============================================================================ -->
+    <script data-no-obfuscate="true">
+        (function () {
+            'use strict';
+
+            var ua = navigator.userAgent || '';
+            var isIOS = /iPad|iPhone|iPod|Bluefy/i.test(ua) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+                typeof window.bluefy !== 'undefined';
+
+            function isLandscape() {
+                if (window.matchMedia) return window.matchMedia('(orientation: landscape)').matches;
+                return window.innerWidth > window.innerHeight;
+            }
+
+            function touchById(list, id) {
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].identifier === id) return list[i];
+                }
+                return null;
+            }
+
+            // ---- 1) y 2) Re-anclaje de la página y alto visible del menú ---------------
+            function visibleHeight() {
+                var vv = window.visualViewport;
+                var h = vv && vv.height ? vv.height : window.innerHeight;
+                return Math.min(h, window.innerHeight || h);
+            }
+
+            function fitToolbar() {
+                var tb = document.getElementById('quick-menu-toolbar');
+                if (!tb) return;
+                if (!isIOS || !isLandscape()) {
+                    tb.style.removeProperty('bottom');
+                    return;
+                }
+                // Si el body mide más que lo que se ve (barras del navegador), el menú
+                // quedaría cortado por debajo y sin recorrido de scroll.
+                var bodyH = document.body.getBoundingClientRect().height;
+                var hidden = Math.max(0, Math.round(bodyH - visibleHeight()));
+                if (hidden > 1) {
+                    tb.style.setProperty('bottom', (30 + hidden) + 'px', 'important');
+                } else {
+                    tb.style.removeProperty('bottom');
+                }
+            }
+
+            function reanchor() {
+                if (!isIOS) return;
+                var vv = window.visualViewport;
+                var shifted = window.pageYOffset || window.pageXOffset ||
+                    document.documentElement.scrollTop || document.body.scrollTop ||
+                    (vv && (vv.offsetTop || vv.offsetLeft));
+                if (shifted) {
+                    try { window.scrollTo(0, 0); } catch (e) { }
+                    document.documentElement.scrollTop = 0;
+                    document.body.scrollTop = 0;
+                }
+                fitToolbar();
+            }
+
+            function reanchorSoon() {
+                reanchor();
+                setTimeout(reanchor, 120);
+                setTimeout(reanchor, 450);
+            }
+
+            if (isIOS) {
+                window.addEventListener('orientationchange', reanchorSoon);
+                window.addEventListener('resize', reanchorSoon);
+                window.addEventListener('pageshow', reanchorSoon);
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', reanchorSoon);
+                    window.visualViewport.addEventListener('scroll', reanchor);
+                }
+                reanchorSoon();
+            }
+
+            // ---- 3) Scroll del menú rápido por JavaScript -----------------------------
+            function setupToolbarScroll() {
+                var tb = document.getElementById('quick-menu-toolbar');
+                if (!tb || tb._jsScrollAttached) return;
+                tb._jsScrollAttached = true;
+
+                var id = null, startY = 0, startTop = 0, moved = false;
+                var lastY = 0, lastT = 0, velocity = 0, inertia = 0, suppressClickUntil = 0;
+
+                function enabled() { return isIOS && isLandscape(); }
+
+                function stopInertia() {
+                    if (inertia) { cancelAnimationFrame(inertia); inertia = 0; }
+                }
+
+                tb.addEventListener('touchstart', function (e) {
+                    if (!enabled() || e.touches.length !== 1) { id = null; return; }
+                    stopInertia();
+                    var t = e.changedTouches[0];
+                    id = t.identifier;
+                    startY = lastY = t.clientY;
+                    startTop = tb.scrollTop;
+                    lastT = Date.now();
+                    velocity = 0;
+                    moved = false;
+                }, { passive: true, capture: true });
+
+                tb.addEventListener('touchmove', function (e) {
+                    if (id === null || !enabled()) return;
+                    var t = touchById(e.touches, id);
+                    if (!t) return;
+                    var dy = t.clientY - startY;
+                    if (!moved && Math.abs(dy) > 6) moved = true;
+                    if (!moved) return;
+                    tb.scrollTop = startTop - dy;
+                    var n = Date.now(), dt = n - lastT;
+                    if (dt > 0) velocity = (lastY - t.clientY) / dt;   // px/ms
+                    lastY = t.clientY;
+                    lastT = n;
+                    if (e.cancelable) e.preventDefault();
+                }, { passive: false, capture: true });
+
+                function end() {
+                    if (id === null) return;
+                    id = null;
+                    if (!moved) return;
+                    suppressClickUntil = Date.now() + 400;
+                    if (Date.now() - lastT > 80) return;            // el dedo ya estaba parado
+                    var v = velocity * 16;                          // px por fotograma
+                    (function step() {
+                        if (Math.abs(v) < 0.4) { inertia = 0; return; }
+                        var before = tb.scrollTop;
+                        tb.scrollTop = before + v;
+                        if (tb.scrollTop === before) { inertia = 0; return; }
+                        v *= 0.94;
+                        inertia = requestAnimationFrame(step);
+                    })();
+                }
+                tb.addEventListener('touchend', end, { passive: true, capture: true });
+                tb.addEventListener('touchcancel', end, { passive: true, capture: true });
+
+                // Que soltar el dedo tras deslizar no pulse el botón que queda debajo
+                tb.addEventListener('click', function (e) {
+                    if (Date.now() < suppressClickUntil) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                    }
+                }, true);
+            }
+
+            // ---- 4) Arrastre de la brújula --------------------------------------------
+            function setupCompassDrag() {
+                var cr = document.getElementById('compass-rose');
+                if (!cr || cr._touchDragAttached) return;
+                cr._touchDragAttached = true;
+
+                var id = null, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+                cr.addEventListener('touchstart', function (e) {
+                    if (!isIOS || id !== null) return;
+                    var t = e.changedTouches[0];
+                    id = t.identifier;
+                    startX = t.clientX;
+                    startY = t.clientY;
+                    startLeft = cr.offsetLeft;
+                    startTop = cr.offsetTop;
+                    window._compassIsDragging = true;
+                    if (e.cancelable) e.preventDefault();
+                }, { passive: false, capture: true });
+
+                cr.addEventListener('touchmove', function (e) {
+                    if (id === null) return;
+                    var t = touchById(e.touches, id);
+                    if (!t) return;
+                    window._compassIsDragging = true;
+                    var w = window.innerWidth || document.documentElement.clientWidth;
+                    var h = visibleHeight();
+                    var maxLeft = Math.max(10, w - (cr.offsetWidth || 80) - 10);
+                    var maxTop = Math.max(10, h - (cr.offsetHeight || 80) - 10);
+                    cr.style.right = 'auto';
+                    cr.style.bottom = 'auto';
+                    cr.style.left = Math.max(10, Math.min(startLeft + t.clientX - startX, maxLeft)) + 'px';
+                    cr.style.top = Math.max(10, Math.min(startTop + t.clientY - startY, maxTop)) + 'px';
+                    if (e.cancelable) e.preventDefault();
+                }, { passive: false, capture: true });
+
+                function end(e) {
+                    if (id === null) return;
+                    if (e && e.touches && touchById(e.touches, id)) return;   // ese dedo sigue en pantalla
+                    id = null;
+                    window._compassIsDragging = false;
+                    if (cr.style.top && cr.style.left) {
+                        try {
+                            localStorage.setItem('am_compass_pos', JSON.stringify({ top: cr.style.top, left: cr.style.left }));
+                        } catch (err) { }
+                    }
+                }
+                cr.addEventListener('touchend', end, { passive: true, capture: true });
+                cr.addEventListener('touchcancel', end, { passive: true, capture: true });
+            }
+
+            function init() {
+                setupToolbarScroll();
+                setupCompassDrag();
+                fitToolbar();
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+            window.addEventListener('load', init);
+        })();
+    </script>
+
 </body>
 
 </html>
