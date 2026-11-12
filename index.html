@@ -6419,10 +6419,10 @@ const _0x4f13b2=_0x3da4;(function(_0x20af83,_0x55e158){const _0x56f615=_0x3da4,_
          1) Re-ancla la página si el navegador la deja desplazada tras girar
             (en ese estado los toques caen fuera de donde se ven los elementos).
          2) Ajusta el alto del menú rápido al área realmente visible.
-         3) Scroll del menú rápido hecho por JavaScript (no depende del scroll
-            nativo de WebKit, que es el que falla en horizontal).
-         4) Arrastre de la brújula solo con eventos táctiles sobre el propio
-            elemento, sin cortarse con 'pointercancel'.
+         3) Zonas táctiles ampliadas: el scroll del menú rápido y el arrastre de
+            la brújula se resuelven por geometría en todo el documento, con margen
+            alrededor, en vez de depender de acertar justo sobre el elemento.
+         4) Diagnóstico opcional: abrir la app añadiendo  #touchdebug  a la dirección.
          ============================================================================ -->
     <script data-no-obfuscate="true">
         (function () {
@@ -6501,130 +6501,235 @@ const _0x4f13b2=_0x3da4;(function(_0x20af83,_0x55e158){const _0x56f615=_0x3da4,_
                 reanchorSoon();
             }
 
-            // ---- 3) Scroll del menú rápido por JavaScript -----------------------------
-            function setupToolbarScroll() {
-                var tb = document.getElementById('quick-menu-toolbar');
-                if (!tb || tb._jsScrollAttached) return;
-                tb._jsScrollAttached = true;
+            // ---- 3) y 4) Zonas táctiles ampliadas (menú rápido y brújula) -------------
+            // En Bluefy horizontal el toque solo "acertaba" en una franja muy estrecha de
+            // cada elemento. Aquí NO se depende de que el navegador entregue el toque al
+            // elemento: se escucha en todo el documento y se decide por geometría, con
+            // un margen generoso alrededor (pensado para usarlo con guantes).
+            var TB_MARGIN_IN = 48;    // px extra hacia el interior del mapa
+            var TB_MARGIN_V = 12;     // px extra arriba y abajo
+            var CR_MARGIN = 36;       // px extra alrededor de la brújula
 
-                var id = null, startY = 0, startTop = 0, moved = false;
-                var lastY = 0, lastT = 0, velocity = 0, inertia = 0, suppressClickUntil = 0;
+            function tolerant() { return isIOS && isLandscape(); }
 
-                function enabled() { return isIOS && isLandscape(); }
+            function toolbarEl() { return document.getElementById('quick-menu-toolbar'); }
+            function compassEl() { return document.getElementById('compass-rose'); }
 
-                function stopInertia() {
-                    if (inertia) { cancelAnimationFrame(inertia); inertia = 0; }
-                }
-
-                tb.addEventListener('touchstart', function (e) {
-                    if (!enabled() || e.touches.length !== 1) { id = null; return; }
-                    stopInertia();
-                    var t = e.changedTouches[0];
-                    id = t.identifier;
-                    startY = lastY = t.clientY;
-                    startTop = tb.scrollTop;
-                    lastT = Date.now();
-                    velocity = 0;
-                    moved = false;
-                }, { passive: true, capture: true });
-
-                tb.addEventListener('touchmove', function (e) {
-                    if (id === null || !enabled()) return;
-                    var t = touchById(e.touches, id);
-                    if (!t) return;
-                    var dy = t.clientY - startY;
-                    if (!moved && Math.abs(dy) > 6) moved = true;
-                    if (!moved) return;
-                    tb.scrollTop = startTop - dy;
-                    var n = Date.now(), dt = n - lastT;
-                    if (dt > 0) velocity = (lastY - t.clientY) / dt;   // px/ms
-                    lastY = t.clientY;
-                    lastT = n;
-                    if (e.cancelable) e.preventDefault();
-                }, { passive: false, capture: true });
-
-                function end() {
-                    if (id === null) return;
-                    id = null;
-                    if (!moved) return;
-                    suppressClickUntil = Date.now() + 400;
-                    if (Date.now() - lastT > 80) return;            // el dedo ya estaba parado
-                    var v = velocity * 16;                          // px por fotograma
-                    (function step() {
-                        if (Math.abs(v) < 0.4) { inertia = 0; return; }
-                        var before = tb.scrollTop;
-                        tb.scrollTop = before + v;
-                        if (tb.scrollTop === before) { inertia = 0; return; }
-                        v *= 0.94;
-                        inertia = requestAnimationFrame(step);
-                    })();
-                }
-                tb.addEventListener('touchend', end, { passive: true, capture: true });
-                tb.addEventListener('touchcancel', end, { passive: true, capture: true });
-
-                // Que soltar el dedo tras deslizar no pulse el botón que queda debajo
-                tb.addEventListener('click', function (e) {
-                    if (Date.now() < suppressClickUntil) {
-                        e.stopPropagation();
-                        e.preventDefault();
-                    }
-                }, true);
+            function shown(el) {
+                if (!el) return false;
+                var r = el.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
             }
 
-            // ---- 4) Arrastre de la brújula --------------------------------------------
-            function setupCompassDrag() {
-                var cr = document.getElementById('compass-rose');
-                if (!cr || cr._touchDragAttached) return;
-                cr._touchDragAttached = true;
+            // 'toolbar' | 'compass' | null — a quién pertenece un toque en (x, y)
+            function ownerOf(target, x, y) {
+                var tb = toolbarEl(), cr = compassEl();
+                if (cr && target && cr.contains(target)) return 'compass';
+                if (tb && target && tb.contains(target)) return 'toolbar';
+                if (!tolerant()) return null;
+                var r;
+                if (shown(cr)) {
+                    r = cr.getBoundingClientRect();
+                    if (x >= r.left - CR_MARGIN && x <= r.right + CR_MARGIN &&
+                        y >= r.top - CR_MARGIN && y <= r.bottom + CR_MARGIN) return 'compass';
+                }
+                if (shown(tb)) {
+                    r = tb.getBoundingClientRect();
+                    var vw = window.innerWidth || document.documentElement.clientWidth;
+                    // desde un margen a la izquierda del menú hasta el borde de la pantalla
+                    if (x >= r.left - TB_MARGIN_IN && x <= Math.max(r.right + TB_MARGIN_IN, vw) &&
+                        y >= r.top - TB_MARGIN_V && y <= r.bottom + TB_MARGIN_V) return 'toolbar';
+                }
+                return null;
+            }
 
-                var id = null, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+            var g = null;   // gesto en curso
+            var inertia = 0, suppressClickUntil = 0;
 
-                cr.addEventListener('touchstart', function (e) {
-                    if (!isIOS || id !== null) return;
-                    var t = e.changedTouches[0];
-                    id = t.identifier;
-                    startX = t.clientX;
-                    startY = t.clientY;
-                    startLeft = cr.offsetLeft;
-                    startTop = cr.offsetTop;
+            function stopInertia() {
+                if (inertia) { cancelAnimationFrame(inertia); inertia = 0; }
+            }
+
+            function buttonAtY(tb, y) {
+                var best = null, bestDist = Infinity;
+                var items = tb.querySelectorAll('button, [onclick], a');
+                for (var i = 0; i < items.length; i++) {
+                    var r = items[i].getBoundingClientRect();
+                    if (r.height <= 0) continue;
+                    var d = y < r.top ? r.top - y : (y > r.bottom ? y - r.bottom : 0);
+                    if (d < bestDist) { bestDist = d; best = items[i]; }
+                }
+                return bestDist <= 8 ? best : null;
+            }
+
+            document.addEventListener('touchstart', function (e) {
+                if (!isIOS || g || e.touches.length !== 1) return;
+                var t = e.changedTouches[0];
+                var who = ownerOf(e.target, t.clientX, t.clientY);
+                if (!who) return;
+                var tb = toolbarEl(), cr = compassEl();
+                var direct = who === 'compass' ? cr.contains(e.target) : tb.contains(e.target);
+                // El scroll por JS del menú solo se usa en horizontal; en vertical va el nativo
+                if (who === 'toolbar' && !tolerant()) return;
+                stopInertia();
+                g = {
+                    who: who, id: t.identifier, direct: direct, moved: false,
+                    x0: t.clientX, y0: t.clientY, lastY: t.clientY, lastT: Date.now(), v: 0,
+                    top0: who === 'toolbar' ? tb.scrollTop : cr.offsetTop,
+                    left0: who === 'compass' ? cr.offsetLeft : 0
+                };
+                if (who === 'compass') {
                     window._compassIsDragging = true;
                     if (e.cancelable) e.preventDefault();
-                }, { passive: false, capture: true });
-
-                cr.addEventListener('touchmove', function (e) {
-                    if (id === null) return;
-                    var t = touchById(e.touches, id);
-                    if (!t) return;
-                    window._compassIsDragging = true;
-                    var w = window.innerWidth || document.documentElement.clientWidth;
-                    var h = visibleHeight();
-                    var maxLeft = Math.max(10, w - (cr.offsetWidth || 80) - 10);
-                    var maxTop = Math.max(10, h - (cr.offsetHeight || 80) - 10);
-                    cr.style.right = 'auto';
-                    cr.style.bottom = 'auto';
-                    cr.style.left = Math.max(10, Math.min(startLeft + t.clientX - startX, maxLeft)) + 'px';
-                    cr.style.top = Math.max(10, Math.min(startTop + t.clientY - startY, maxTop)) + 'px';
+                }
+                if (!direct) {
+                    // el toque cayó "fuera" según el navegador: que no lo reciba el mapa
+                    e.stopPropagation();
                     if (e.cancelable) e.preventDefault();
-                }, { passive: false, capture: true });
+                }
+            }, { passive: false, capture: true });
 
-                function end(e) {
-                    if (id === null) return;
-                    if (e && e.touches && touchById(e.touches, id)) return;   // ese dedo sigue en pantalla
-                    id = null;
+            document.addEventListener('touchmove', function (e) {
+                if (!g) return;
+                var t = touchById(e.touches, g.id);
+                if (!t) return;
+                var dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+                if (!g.moved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) g.moved = true;
+                if (g.who === 'toolbar') {
+                    var tb = toolbarEl();
+                    if (g.moved && tb) {
+                        tb.scrollTop = g.top0 - dy;
+                        var n = Date.now(), dt = n - g.lastT;
+                        if (dt > 0) g.v = (g.lastY - t.clientY) / dt;
+                        g.lastY = t.clientY;
+                        g.lastT = n;
+                    }
+                } else {
+                    var cr = compassEl();
+                    if (cr) {
+                        window._compassIsDragging = true;
+                        var w = window.innerWidth || document.documentElement.clientWidth;
+                        var h = visibleHeight();
+                        var maxLeft = Math.max(10, w - (cr.offsetWidth || 80) - 10);
+                        var maxTop = Math.max(10, h - (cr.offsetHeight || 80) - 10);
+                        cr.style.right = 'auto';
+                        cr.style.bottom = 'auto';
+                        cr.style.left = Math.max(10, Math.min(g.left0 + dx, maxLeft)) + 'px';
+                        cr.style.top = Math.max(10, Math.min(g.top0 + dy, maxTop)) + 'px';
+                    }
+                }
+                if (!g.direct) e.stopPropagation();
+                if ((g.moved || !g.direct) && e.cancelable) e.preventDefault();
+            }, { passive: false, capture: true });
+
+            function endGesture(e) {
+                if (!g) return;
+                if (e.touches && touchById(e.touches, g.id)) return;   // ese dedo sigue en pantalla
+                var cur = g;
+                g = null;
+                if (!cur.direct) {
+                    e.stopPropagation();
+                    if (e.cancelable) e.preventDefault();
+                }
+                if (cur.who === 'compass') {
                     window._compassIsDragging = false;
-                    if (cr.style.top && cr.style.left) {
+                    var cr = compassEl();
+                    if (cr && cr.style.top && cr.style.left) {
                         try {
                             localStorage.setItem('am_compass_pos', JSON.stringify({ top: cr.style.top, left: cr.style.left }));
                         } catch (err) { }
                     }
+                    return;
                 }
-                cr.addEventListener('touchend', end, { passive: true, capture: true });
-                cr.addEventListener('touchcancel', end, { passive: true, capture: true });
+                var tb = toolbarEl();
+                if (!tb) return;
+                if (!cur.moved) {
+                    // Toque simple en la zona ampliada: pulsar el botón que está a esa altura
+                    if (!cur.direct && e.type === 'touchend') {
+                        var btn = buttonAtY(tb, cur.y0);
+                        if (btn) btn.click();
+                    }
+                    return;
+                }
+                suppressClickUntil = Date.now() + 400;
+                if (Date.now() - cur.lastT > 80) return;            // el dedo ya estaba parado
+                var v = cur.v * 16;                                 // px por fotograma
+                (function step() {
+                    if (Math.abs(v) < 0.4) { inertia = 0; return; }
+                    var before = tb.scrollTop;
+                    tb.scrollTop = before + v;
+                    if (tb.scrollTop === before) { inertia = 0; return; }
+                    v *= 0.94;
+                    inertia = requestAnimationFrame(step);
+                })();
+            }
+            document.addEventListener('touchend', endGesture, { passive: false, capture: true });
+            document.addEventListener('touchcancel', endGesture, { passive: false, capture: true });
+
+            // Leaflet en iOS escucha eventos Pointer: los toques de las zonas ampliadas
+            // tampoco deben llegarle por esa vía.
+            ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach(function (type) {
+                document.addEventListener(type, function (e) {
+                    if (!isIOS || e.pointerType !== 'touch' || !tolerant()) return;
+                    var tb = toolbarEl(), cr = compassEl();
+                    if ((tb && tb.contains(e.target)) || (cr && cr.contains(e.target))) return;
+                    var mine = type === 'pointerdown' ? ownerOf(e.target, e.clientX, e.clientY) : (g && !g.direct);
+                    if (mine) e.stopPropagation();
+                }, true);
+            });
+
+            // Que soltar el dedo tras deslizar no pulse el botón que queda debajo
+            document.addEventListener('click', function (e) {
+                if (Date.now() < suppressClickUntil) {
+                    var tb = toolbarEl();
+                    if (tb && tb.contains(e.target)) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                    }
+                }
+            }, true);
+
+            // ---- Diagnóstico: abrir la app con  #touchdebug  al final de la dirección ---
+            if (/touchdebug/i.test(location.hash + location.search)) {
+                var box = document.createElement('div');
+                box.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483647;' +
+                    'background:rgba(0,0,0,.8);color:#0f0;font:11px/1.35 monospace;padding:6px 8px;border-radius:6px;' +
+                    'pointer-events:none;white-space:pre;max-width:90vw;';
+                var dot = document.createElement('div');
+                dot.style.cssText = 'position:fixed;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;' +
+                    'border:3px solid #f00;z-index:2147483647;pointer-events:none;display:none;';
+                var probe = document.createElement('div');
+                probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;' +
+                    'padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);';
+                var rect = function (el) {
+                    if (!el) return '-';
+                    var r = el.getBoundingClientRect();
+                    return Math.round(r.left) + ',' + Math.round(r.top) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height);
+                };
+                var paint = function (e) {
+                    if (!box.parentNode) { document.body.appendChild(box); document.body.appendChild(dot); document.body.appendChild(probe); }
+                    var t = e && e.changedTouches ? e.changedTouches[0] : null;
+                    var vv = window.visualViewport || {};
+                    var cs = getComputedStyle(probe);
+                    var tg = e && e.target ? (e.target.id || e.target.className || e.target.tagName) : '-';
+                    if (t) { dot.style.display = 'block'; dot.style.left = t.clientX + 'px'; dot.style.top = t.clientY + 'px'; }
+                    box.textContent =
+                        'toque   ' + (t ? Math.round(t.clientX) + ',' + Math.round(t.clientY) : '-') + '  -> ' + String(tg).slice(0, 28) + '\n' +
+                        'dueño   ' + (t ? ownerOf(e.target, t.clientX, t.clientY) : '-') + '  ios=' + isIOS + ' horiz=' + isLandscape() + '\n' +
+                        'inner   ' + window.innerWidth + 'x' + window.innerHeight + '  client ' + document.documentElement.clientWidth + 'x' + document.documentElement.clientHeight + '\n' +
+                        'visual  ' + Math.round(vv.width) + 'x' + Math.round(vv.height) + ' off ' + Math.round(vv.offsetLeft) + ',' + Math.round(vv.offsetTop) + ' esc ' + vv.scale + '\n' +
+                        'screen  ' + screen.width + 'x' + screen.height + '  scroll ' + window.pageXOffset + ',' + window.pageYOffset + '\n' +
+                        'safe    t' + cs.paddingTop + ' r' + cs.paddingRight + ' b' + cs.paddingBottom + ' l' + cs.paddingLeft + '\n' +
+                        'body    ' + rect(document.body) + '\n' +
+                        'menu    ' + rect(toolbarEl()) + '\n' +
+                        'brujula ' + rect(compassEl());
+                };
+                document.addEventListener('touchstart', paint, true);
+                document.addEventListener('touchmove', paint, true);
+                window.addEventListener('load', function () { paint(null); });
             }
 
             function init() {
-                setupToolbarScroll();
-                setupCompassDrag();
                 fitToolbar();
             }
             if (document.readyState === 'loading') {
