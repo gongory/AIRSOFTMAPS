@@ -1,7 +1,9 @@
-﻿const translations = {
+const translations = {
     es: {
         nav_features: "Características",
         nav_reviews: "Opiniones",
+        nav_manual: "Manual PDF",
+        nav_manual_mesh: "Manual Meshtastic",
         nav_download: "Descargar",
         nav_contact: "Contacto",
         hero_title: "Domina el campo de batalla.",
@@ -24,12 +26,18 @@
         ft_legal: "Legal y Ayuda",
         ft_privacy: "Política de Privacidad",
         ft_manual: "Manual de Usuario PDF",
+        ft_manual_mesh: "Manual Meshtastic PDF (ES)",
+        ft_manual_mesh_en: "Manual Meshtastic PDF (EN)",
         ft_terms: "Términos y Soporte",
+          ft_terms_new: "Términos y Condiciones",
+          ft_support: "Soporte y Contacto",
         ft_follow: "Síguenos"
     },
     en: {
         nav_features: "Features",
         nav_reviews: "Reviews",
+        nav_manual: "User Manual",
+        nav_manual_mesh: "Meshtastic Manual",
         nav_download: "Download",
         nav_contact: "Contact",
         hero_title: "Dominate the battlefield.",
@@ -52,7 +60,11 @@
         ft_legal: "Legal & Support",
         ft_privacy: "Privacy Policy",
         ft_manual: "User Manual PDF",
+        ft_manual_mesh: "Meshtastic Manual PDF (ES)",
+        ft_manual_mesh_en: "Meshtastic Manual PDF (EN)",
         ft_terms: "Terms & Support",
+          ft_terms_new: "Terms and Conditions",
+          ft_support: "Support and Contact",
         ft_follow: "Follow Us"
     }
 };
@@ -74,6 +86,13 @@ function applyTranslations(lang) {
     const langBtn = document.getElementById('langBtn');
     if (langBtn) {
         langBtn.innerHTML = lang === 'es' ? '🇬🇧 EN' : '🇪🇸 ES';
+    }
+
+    const navMeshManualLink = document.getElementById('navMeshManualLink');
+    if (navMeshManualLink) {
+        navMeshManualLink.href = lang === 'en'
+            ? 'Manual_Configuracion_Meshtastic_AirsoftMaps_EN.pdf'
+            : 'Manual_Configuracion_Meshtastic_AirsoftMaps.pdf';
     }
 }
 
